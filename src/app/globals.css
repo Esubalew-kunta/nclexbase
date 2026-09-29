@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Design tokens extracted from app.bootcamp.com (see research/INVENTORY.md §2).
+ * App theme = dark shell + purple gradient. Exam theme = Pearson VUE look-alike.
+ */
+@theme {
+  --font-sans: var(--font-brand), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-exam: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --color-shell: #151a1e;
+  --color-shell-2: #202529;
+  --color-shell-3: #2a3035;
+
+  --color-brand: #6255e5;
+  --color-brand-light: #776cfe;
+  --color-brand-mid: #6b60e5;
+  --color-brand-dark: #4a3ac8;
+  --color-brand-tint: #eeecfd;
+
+  --color-ink: #252e33;
+  --color-ink-strong: #2f3037;
+  --color-muted: #85868e;
+  --color-faint: #c8c9ce;
+  --color-line: #ececef;
+  --color-track: #f2f2f2;
+
+  --color-good: #54964b;
+  --color-good-light: #7bcc6f;
+  --color-warn: #d09528;
+  --color-warn-light: #f9d95b;
+  --color-bad: #c43c35;
+  --color-bad-light: #f96a62;
+
+  --color-exam: #006daa;
+  --color-exam-tool: #80aee1;
+  --color-exam-tab: #e9e9e9;
+  --color-exam-panel: #eeeeee;
+
+  --shadow-card: 0 8px 20px 0 rgba(0, 0, 0, 0.12);
+  --shadow-press: 0 2px 0 0 #4a3ac8;
+  --shadow-press-gray: 0 2px 0 0 #d6d6da;
+  --shadow-track: inset 0 2px 6px 0 rgba(0, 0, 0, 0.07);
+
+  --radius-card: 8px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    background: var(--color-shell);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background: var(--color-shell);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .bg-app-gradient {
+    background:
+      linear-gradient(121.4deg, rgba(14, 20, 24, 0) 0%, rgba(14, 20, 23, 0.4) 100%),
+      linear-gradient(180deg, #776cfe 0%, #6b60e5 50%, #4a3ac8 100%);
+  }
+  .bg-card {
+    background: linear-gradient(180deg, #fff 0%, #fff 50.68%, #f5f5f5 100%);
+  }
+  .bg-grad-good {
+    background: linear-gradient(180deg, #7bcc6f 0%, #66ac5c 48.96%, #54964b 100%);
+  }
+  .bg-grad-warn {
+    background: linear-gradient(180deg, #f9d95b 0%, #f3d456 49.48%, #d09528 100%);
+  }
+  .bg-grad-bad {
+    background: linear-gradient(180deg, #f96a62 5.47%, #e05e57 51.56%, #c43c35 100%);
+  }
+  .bg-grad-brand {
+    background: linear-gradient(180deg, #776cfe 0%, #6b60e5 50%, #4a3ac8 100%);
+  }
+
+  /* Rich text used in rationales and question stems (trusted local mock data). */
+  .prose-exam p { margin: 0 0 1rem; }
+  .prose-exam ul { list-style: disc; padding-left: 1.5rem; margin: 0 0 1rem; }
+  .prose-exam li { margin-bottom: 0.25rem; }
+  .prose-exam b, .prose-exam strong { font-weight: 700; }
+  .prose-exam h4 { font-weight: 700; margin: 1.25rem 0 0.25rem; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+.animate-fade-in { animation: fade-in 150ms ease-out; }
+.animate-pop-in { animation: pop-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.animate-slide-in-right { animation: slide-in-right 220ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in, .animate-pop-in, .animate-slide-in-right { animation: none; }
 }

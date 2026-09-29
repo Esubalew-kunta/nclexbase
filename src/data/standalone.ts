@@ -1,0 +1,260 @@
+import type { Item } from "@/lib/types";
+
+/* Original NCLEX-style standalone items written for the prototype. */
+export const STANDALONE: Item[] = [
+  {
+    id: "s-pharm-1",
+    type: "mcq",
+    subject: "pharmacology",
+    system: "Cardiovascular",
+    topic: "Cardiac Glycosides",
+    stem: "The nurse is preparing to administer digoxin 0.125 mg PO to a client with heart failure. Which finding requires the nurse to <b>withhold</b> the medication?",
+    options: ["Apical pulse of 54/min", "Serum potassium of 4.2 mEq/L", "Blood pressure of 132/80 mm Hg", "Digoxin level of 1.0 ng/mL"],
+    answer: 0,
+    avgPercent: 82,
+    linkedVideo: "Heart Failure",
+    linkedSheet: "Heart Failure",
+    rationale: {
+      explanation:
+        "<p>Check the apical pulse for 1 full minute before giving digoxin, and <b>hold for a pulse below 60/min</b> in adults. Digoxin slows conduction through the AV node, so bradycardia may mean toxicity.</p><p>Potassium of 4.2 mEq/L and a digoxin level of 0.5–2.0 ng/mL are within expected ranges.</p>",
+      takeaway: ["Hold digoxin for an apical pulse below 60/min in adults, and watch for hypokalemia."],
+    },
+  },
+  {
+    id: "s-pharm-2",
+    type: "sata",
+    subject: "pharmacology",
+    system: "Anti-Infectives",
+    topic: "Vancomycin",
+    stem: "A client is receiving IV vancomycin. Which findings should the nurse report to the provider? <b>Select all that apply.</b>",
+    options: [
+      "Ringing in the ears",
+      "Flushing of the face and neck during the infusion",
+      "Trough level within the target range",
+      "Serum creatinine increased from 0.9 to 1.8 mg/dL",
+      "Urine output of 60 mL/hr",
+    ],
+    answers: [0, 1, 3],
+    avgPercent: 59,
+    linkedSheet: "Antibiotics",
+    rationale: {
+      explanation:
+        "<p>Vancomycin can cause <b>ototoxicity</b> (tinnitus), <b>nephrotoxicity</b> (rising creatinine), and <b>vancomycin infusion reaction</b> (flushing from infusing too fast). Report all three.</p><p>A therapeutic trough and adequate urine output are expected.</p>",
+      takeaway: ["Vancomycin: watch the ears, kidneys, and infusion rate."],
+    },
+  },
+  {
+    id: "s-fund-1",
+    type: "mcq",
+    subject: "fundamentals",
+    system: "Mobility",
+    topic: "Assistive Devices",
+    stem: "A client with left-sided weakness is learning to walk with a cane. Which instruction should the nurse give?",
+    options: [
+      "“Hold the cane in your right hand.”",
+      "“Hold the cane in your left hand.”",
+      "“Move your right leg forward with the cane.”",
+      "“Keep the cane 12 inches in front of your feet.”",
+    ],
+    answer: 0,
+    avgPercent: 76,
+    rationale: {
+      explanation:
+        "<p>Hold the cane on the <b>strong (unaffected) side</b> so it supports the weak leg. The cane and the weak leg move forward together, and the cane stays about 6 inches to the side of the foot.</p>",
+      takeaway: ["Cane on the strong side. It moves with the weak leg."],
+    },
+  },
+  {
+    id: "s-fund-2",
+    type: "sata",
+    subject: "fundamentals",
+    system: "Infection Control",
+    topic: "Contact Precautions",
+    stem: "The nurse is caring for a client with <i>Clostridioides difficile</i> infection. Which actions are appropriate? <b>Select all that apply.</b>",
+    options: [
+      "Wear a gown and gloves when entering the room.",
+      "Wash hands with soap and water after care.",
+      "Use a dedicated stethoscope for the client.",
+      "Use alcohol-based hand rub as the only hand hygiene method.",
+      "Wear an N95 respirator during care.",
+    ],
+    answers: [0, 1, 2],
+    avgPercent: 71,
+    linkedSheet: "Infection Control",
+    rationale: {
+      explanation:
+        "<p><i>C. difficile</i> requires <b>contact precautions</b>. Its spores are not killed by alcohol, so use soap and water. Dedicated equipment prevents spreading it to others.</p><p>An N95 respirator is used for airborne precautions, such as tuberculosis.</p>",
+      takeaway: ["C. diff: contact precautions plus soap and water, never alcohol rub alone."],
+    },
+  },
+  {
+    id: "s-mh-1",
+    type: "mcq",
+    subject: "mental-health",
+    system: "Mood Disorders",
+    topic: "Lithium",
+    stem: "A client taking lithium reports vomiting, diarrhea, and a coarse hand tremor. The lithium level is 2.1 mEq/L. What is the nurse's <b>priority</b> action?",
+    options: [
+      "Hold the next dose and notify the provider.",
+      "Administer the dose with food to reduce nausea.",
+      "Encourage the client to limit fluid intake.",
+      "Recheck the lithium level in 1 week.",
+    ],
+    answer: 0,
+    avgPercent: 84,
+    rationale: {
+      explanation:
+        "<p>The therapeutic lithium range is roughly 0.6–1.2 mEq/L. A level of 2.1 mEq/L with GI symptoms and a coarse tremor indicates <b>moderate toxicity</b>. Hold the dose and notify the provider right away.</p><p>Fluids should be encouraged, because dehydration raises lithium levels.</p>",
+      takeaway: ["Lithium toxicity: hold the dose, notify the provider, and keep the client hydrated."],
+    },
+  },
+  {
+    id: "s-mh-2",
+    type: "matrix",
+    subject: "mental-health",
+    system: "Therapeutic Communication",
+    topic: "Therapeutic Communication",
+    stem: "A client says, “I don't think I can keep going like this.” For each nurse response, click to specify whether it is <b>therapeutic</b> or <b>nontherapeutic</b>.",
+    rowHeader: "Nurse Response",
+    columns: ["Therapeutic", "Nontherapeutic"],
+    rows: [
+      "“Are you thinking about killing yourself?”",
+      "“Everything will look better tomorrow.”",
+      "“Tell me more about what you mean by ‘keep going.’”",
+      "“Why would you say something like that?”",
+    ],
+    answers: [0, 1, 0, 1],
+    avgPercent: 68,
+    linkedSheet: "Therapeutic Communication",
+    rationale: {
+      explanation:
+        "<p>Asking directly about suicide does <b>not</b> increase risk. It is an essential assessment step. Open-ended clarification is also therapeutic.</p><p>False reassurance and &ldquo;why&rdquo; questions block communication and can feel judgmental.</p>",
+      takeaway: ["Ask about suicide directly and clearly."],
+    },
+  },
+  {
+    id: "s-moc-1",
+    type: "mcq",
+    subject: "management-of-care",
+    system: "Delegation",
+    topic: "Delegation",
+    stem: "Which task can the RN delegate to an unlicensed assistive personnel (UAP)?",
+    options: [
+      "Measuring and recording intake and output for a stable client",
+      "Assessing a newly admitted client's skin",
+      "Teaching a client how to self-administer insulin",
+      "Evaluating a client's pain after an opioid dose",
+    ],
+    answer: 0,
+    avgPercent: 86,
+    linkedSheet: "Delegation",
+    rationale: {
+      explanation:
+        "<p>UAPs can perform routine, standardized tasks for <b>stable</b> clients, such as measuring I&amp;O. Assessment, teaching, and evaluation stay with the RN.</p>",
+      takeaway: ["The RN never delegates assessment, teaching, or evaluation."],
+    },
+  },
+  {
+    id: "s-moc-2",
+    type: "mcq",
+    subject: "management-of-care",
+    system: "Prioritization",
+    topic: "Prioritization",
+    stem: "After receiving report, which client should the nurse see <b>first</b>?",
+    options: [
+      "A client with COPD whose pulse oximetry reading is 90%",
+      "A client 1 day after appendectomy reporting incisional pain of 4/10",
+      "A client with new-onset chest pain and diaphoresis",
+      "A client with diabetes whose blood glucose is 180 mg/dL",
+    ],
+    answer: 2,
+    avgPercent: 90,
+    rationale: {
+      explanation:
+        "<p>New chest pain with diaphoresis may be <b>acute coronary syndrome</b>, which is unstable and life-threatening.</p><p>An SpO₂ of 88–92% is often the target for clients with COPD. The other findings are expected or stable.</p>",
+      takeaway: ["See the unexpected, unstable client first."],
+    },
+  },
+  {
+    id: "s-adult-1",
+    type: "dropdown",
+    subject: "adult-health",
+    system: "Endocrine",
+    topic: "Diabetic Ketoacidosis",
+    stem: "Complete the following sentence by choosing from the lists of options.",
+    template: "As insulin therapy begins for DKA, the nurse anticipates the serum potassium will {0} because insulin moves potassium {1} the cells.",
+    blanks: [
+      { options: ["increase", "decrease", "remain the same"], answer: 1 },
+      { options: ["into", "out of"], answer: 0 },
+    ],
+    avgPercent: 74,
+    linkedSheet: "Diabetes",
+    rationale: {
+      explanation:
+        "<p>Insulin drives potassium <b>into</b> cells, so serum potassium <b>falls</b> quickly during DKA treatment. Potassium must be at least 3.3 mEq/L before starting insulin, and it is replaced as needed.</p>",
+      takeaway: ["Insulin lowers serum potassium. Check K⁺ before and during an insulin infusion."],
+    },
+  },
+  {
+    id: "s-adult-2",
+    type: "selectN",
+    n: 3,
+    subject: "adult-health",
+    system: "Cardiovascular",
+    topic: "Heart Failure",
+    stem: "Select the <b>3</b> findings most consistent with <b>left-sided</b> heart failure.",
+    options: ["Crackles in bilateral lung bases", "Orthopnea", "Pink, frothy sputum", "Jugular venous distention", "Dependent peripheral edema", "Hepatomegaly"],
+    answers: [0, 1, 2],
+    avgPercent: 79,
+    linkedVideo: "Heart Failure",
+    linkedSheet: "Heart Failure",
+    rationale: {
+      explanation:
+        "<p><b>Left</b>-sided failure backs up into the <b>lungs</b>, causing crackles, orthopnea, and pink frothy sputum.</p><p><b>Right</b>-sided failure backs up into the systemic circulation, causing JVD, peripheral edema, and hepatomegaly.</p>",
+      takeaway: ["Left = Lungs. Right = the Rest of the body."],
+    },
+  },
+  {
+    id: "s-child-1",
+    type: "mcq",
+    subject: "child-health",
+    system: "Respiratory",
+    topic: "Epiglottitis",
+    stem: "A 4-year-old is drooling, sitting upright leaning forward, and has a muffled voice. Which action should the nurse <b>avoid</b>?",
+    options: [
+      "Inspecting the throat with a tongue blade",
+      "Keeping the child on the parent's lap",
+      "Preparing emergency airway equipment",
+      "Administering humidified oxygen as tolerated",
+    ],
+    answer: 0,
+    avgPercent: 83,
+    rationale: {
+      explanation:
+        "<p>These signs suggest <b>epiglottitis</b>. Inserting a tongue blade can trigger laryngospasm and complete airway obstruction. Keep the child calm and have airway equipment ready.</p>",
+      takeaway: ["Suspected epiglottitis: never put anything in the child's mouth."],
+    },
+  },
+  {
+    id: "s-mat-1",
+    type: "mcq",
+    subject: "maternal-and-newborn-health",
+    system: "Intrapartum",
+    topic: "Fetal Heart Monitoring",
+    stem: "The nurse notes recurrent late decelerations on the fetal monitor of a client in labor receiving oxytocin. What is the nurse's <b>first</b> action?",
+    options: [
+      "Discontinue the oxytocin infusion.",
+      "Document the finding and continue to monitor.",
+      "Prepare for an immediate cesarean birth.",
+      "Increase the rate of the oxytocin infusion.",
+    ],
+    answer: 0,
+    avgPercent: 72,
+    linkedSheet: "Fetal Heart Monitoring",
+    rationale: {
+      explanation:
+        "<p>Late decelerations reflect <b>uteroplacental insufficiency</b>. Stop the oxytocin first to reduce uterine activity, then reposition the client to the left side, give an IV bolus, apply oxygen if prescribed, and notify the provider.</p>",
+      takeaway: ["Late decels plus oxytocin: stop the oxytocin first."],
+    },
+  },
+];
