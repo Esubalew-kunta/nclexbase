@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
 import { SearchBox } from "./SearchBox";
 import { SidebarContent } from "./Sidebar";
+import { DevResetButton } from "./DevResetButton";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -56,6 +57,8 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center">
+        {/* TEMPORARY: prototype-only reset button (see DevResetButton.tsx). */}
+        <DevResetButton />
         <div className="group relative hidden sm:block">
           <p className="flex h-[42px] cursor-pointer items-center rounded-full bg-white/10 px-4 py-3 text-base leading-4 font-semibold text-white/90 transition-colors duration-100 hover:bg-white/20">
             <img src="/assets/brand/flame.png" alt="Streak" className="mr-2 h-4 w-3.5" />

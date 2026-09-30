@@ -72,6 +72,8 @@ interface Actions {
   setFlag: (key: string, on: boolean) => void;
   touchStreak: () => void;
   resetProgress: () => void;
+  /** Wipe everything saved in this browser (tests, tags, schedule, settings, user). */
+  resetAll: () => void;
   deleteSession: (sessionId: string) => void;
   setSidebarSubjectsOpen: (open: boolean) => void;
   dismissTip: (key: string) => void;
@@ -207,6 +209,10 @@ export const useStore = create<Store>()(
         }),
 
       resetProgress: () => set({ sessions: [], tags: {}, bookmarks: {} }),
+      resetAll: () => {
+        useStore.persist.clearStorage();
+        set({ ...initial, streak: { count: 1, lastDay: today() }, createTestOpen: false, mobileNavOpen: false, contactOpen: false });
+      },
       setSidebarSubjectsOpen: (sidebarSubjectsOpen) => set({ sidebarSubjectsOpen }),
       deleteSession: (id) => set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id) })),
       dismissTip: (key) => set((s) => ({ dismissedTips: { ...s.dismissedTips, [key]: true } })),
