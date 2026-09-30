@@ -2,11 +2,12 @@
 
 import clsx from "clsx";
 import { useRef, useState, type ReactNode } from "react";
-import { Bookmark, Calculator as CalcIcon, ChevronsRight, CirclePause, Search, Settings, SquareX } from "lucide-react";
+import { Calculator as CalcIcon, SquareX } from "lucide-react";
 import { useStore, type ExamSettings } from "@/lib/store";
 import { itemById } from "@/lib/bank";
-import { isAnswered } from "@/lib/scoring";
-import type { TestSession } from "@/lib/types";
+import { formatDuration, scoreItem } from "@/lib/scoring";
+import type { MasteryTag, TestSession } from "@/lib/types";
+import { Icon } from "@/components/ui/Icon";
 
 /* ------------------------------------------------------------------ */
 /* Calculator (TI-108 look-alike, draggable)                            */
@@ -123,124 +124,232 @@ export function Calculator({ onClose }: { onClose: () => void }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Settings drawer (right side)                                         */
+/* Settings / Navigate drawer (right side, #006daa)                     */
 /* ------------------------------------------------------------------ */
 
-const SETTING_ROWS: { key: keyof ExamSettings; label: string }[] = [
+const SETTING_ROWS: { key: keyof ExamSettings; label: string; caseOnly?: boolean }[] = [
   { key: "answerStats", label: "Answer Stats" },
+  { key: "timer", label: "Timer", caseOnly: true },
   { key: "shortcuts", label: "Show Keyboard Shortcuts" },
   { key: "restrictions", label: "NCLEX Restrictions" },
   { key: "gridView", label: "Grid View" },
   { key: "hoverPreview", label: "Hover Preview" },
 ];
 
+export const TAG_STYLE: Record<MasteryTag | "unused" | "bookmarked", string> = {
+  unused: "#8a8fe8",
+  learning: "#e05e57",
+  reviewing: "#f3d456",
+  mastered: "#66ac5c",
+  bookmarked: "#3b82f6",
+};
+
+export function TagIcon({ tag, size = 16 }: { tag: keyof typeof TAG_STYLE; size?: number }) {
+  return (
+    <span className="inline-flex shrink-0 items-center justify-center rounded" style={{ width: size, height: size, background: TAG_STYLE[tag] }}>
+      <svg viewBox="0 0 24 24" style={{ width: size * 0.62, height: size * 0.62 }} fill="white">
+        {tag === "bookmarked" ? <path d="M6 3h12v18l-6-4-6 4z" /> : <path d="M3 12.6V4a1 1 0 0 1 1-1h8.6l8.7 8.7a1 1 0 0 1 0 1.4l-7.6 7.6a1 1 0 0 1-1.4 0L3 12.6ZM8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />}
+      </svg>
+    </span>
+  );
+}
+
+function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      onClick={onClick}
+      className={clsx("relative ml-auto h-5 w-10 shrink-0 cursor-pointer rounded-[20px] border transition-colors duration-300", on ? "border-[#87d068] bg-[#87d068]" : "border-[#ccc] bg-[#ccc]")}
+    >
+      <span className={clsx("absolute top-px left-0.5 size-4 rounded-full bg-white shadow transition-transform duration-300", on && "translate-x-[18px]")} />
+    </button>
+  );
+}
+
+const CHECK = "M40.32 12.7a1.5 1.5 0 0 1-.02 2.12l-22.25 22a1.5 1.5 0 0 1-2.11 0L7.68 28.5a1.5 1.5 0 1 1 2.1-2.12l7.2 7.13 21.2-20.83a1.5 1.5 0 0 1 2.14.02Z";
+const HALF = "M2.03 11.25a10 10 0 0 1 19.94 0H22V12a10 10 0 0 1-20 0v-.75h.03ZM12 20.5a8.5 8.5 0 0 0 8.47-7.75H3.53A8.5 8.5 0 0 0 12 20.5Z";
+const CROSS = "M8.56 6.44a1.5 1.5 0 1 0-2.12 2.12L21.88 24 6.44 39.44a1.5 1.5 0 1 0 2.12 2.12L24 26.12l15.44 15.44a1.5 1.5 0 0 0 2.12-2.12L26.12 24 41.56 8.56a1.5 1.5 0 0 0-2.12-2.12L24 21.88 8.56 6.44Z";
+
 export function SettingsDrawer({ session, onClose, onJump }: { session: TestSession; onClose: () => void; onJump: (i: number) => void }) {
   const settings = useStore((s) => s.examSettings);
   const setSettings = useStore((s) => s.setExamSettings);
-  const [tab, setTab] = useState<"All" | "Status" | "Topics">("All");
+  const tags = useStore((s) => s.tags);
+  const bookmarks = useStore((s) => s.bookmarks);
+  const isCase = session.kind === "case";
+  const tabsList: string[] = isCase ? ["All", "Status"] : ["All", "Status", "Topics"];
+  const [tab, setTab] = useState("All");
+  const [showSettings, setShowSettings] = useState(true);
   const [q, setQ] = useState("");
+  const total = session.entries.length;
   const answered = session.entries.filter((e) => session.submitted[e.itemId]).length;
 
-  const rows = session.entries
-    .map((e, i) => ({ i, item: itemById(e.itemId), e }))
-    .filter(({ item, i }) => !q || `question ${i + 1} ${item.topic}`.toLowerCase().includes(q.toLowerCase()));
+  const credit = { full: 0, partial: 0, none: 0 };
+  const pools = { unused: 0, learning: 0, reviewing: 0, mastered: 0, bookmarked: 0 };
+  session.entries.forEach((e) => {
+    if (session.submitted[e.itemId]) {
+      const sc = scoreItem(itemById(e.itemId), session.answers[e.itemId]);
+      if (sc.earned >= sc.max) credit.full++;
+      else if (sc.earned > 0) credit.partial++;
+      else credit.none++;
+    } else pools.unused++;
+    const t = tags[e.itemId];
+    if (t) pools[t]++;
+    if (bookmarks[e.itemId]) pools.bookmarked++;
+  });
 
-  const grouped: [string, typeof rows][] =
-    tab === "All"
-      ? [["", rows]]
-      : tab === "Status"
-        ? [
-            ["Unanswered", rows.filter((r) => !session.submitted[r.e.itemId])],
-            ["Answered", rows.filter((r) => session.submitted[r.e.itemId])],
-            ["Marked", rows.filter((r) => session.marked[r.e.itemId])],
-          ]
-        : [...new Set(rows.map((r) => r.item.topic))].map((t) => [t, rows.filter((r) => r.item.topic === t)]);
+  const rows = session.entries
+    .map((e, i) => ({ e, i, item: itemById(e.itemId) }))
+    .filter(({ i, item }) => !q || `question ${i + 1} ${item.topic}`.toLowerCase().includes(q.toLowerCase()));
+  const topics = [...new Set(rows.map((r) => r.item.topic))];
+  const tabIndex = Math.max(0, tabsList.indexOf(tab));
+
+  const creditRows: [string, number, string, string][] = [
+    ["Full Credit", credit.full, CHECK, "0 0 48 48"],
+    ["Partial Credit", credit.partial, HALF, "0 0 24 24"],
+    ["No Credit", credit.none, CROSS, "0 0 48 48"],
+  ];
 
   return (
-    <div className="fixed inset-0 z-40 font-exam" role="dialog" aria-label="Test settings">
-      <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={onClose} />
-      <aside className="animate-slide-in-right absolute inset-y-0 right-0 flex w-[256px] flex-col bg-[#0f6cb0] text-white">
-        <div className="px-4 pt-4">
-          <button onClick={onClose} aria-label="Close settings" className="flex size-14 items-center justify-center rounded-full bg-white/20 hover:bg-white/30">
-            <ChevronsRight className="size-6" />
-          </button>
-          <div className="mt-6 text-[15px]">Bootcamp.com</div>
-          <div className="text-[17px] font-bold">
-            {session.tutor ? "Tutored" : "Untutored"}, {session.timed ? "Timed" : "Untimed"}
-          </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/20">
-            <div className="h-full bg-white" style={{ width: `${(answered / session.entries.length) * 100}%` }} />
-          </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-[15px]">
-              {answered}/{session.entries.length}
-            </span>
-            <span className="flex size-8 items-center justify-center rounded bg-white text-[#0f6cb0]">
-              <Settings className="size-4" />
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-3 divide-y divide-white/15 border-y border-white/15 px-4 text-[14px]">
-          <div className="flex items-center justify-between py-2.5">
-            <span>Text Size</span>
-            <span className="flex items-center gap-2">
-              <button aria-label="Smaller text" onClick={() => setSettings({ textSize: Math.max(14, settings.textSize - 1) })} className="px-1">
-                −
-              </button>
-              <span className="text-xs">aA</span>
-              <button aria-label="Larger text" onClick={() => setSettings({ textSize: Math.min(22, settings.textSize + 1) })} className="px-1">
-                +
-              </button>
-            </span>
-          </div>
-          {SETTING_ROWS.map((r) => (
-            <div key={r.key} className="flex items-center justify-between py-2.5">
-              <span>{r.label}</span>
-              <button
-                role="switch"
-                aria-checked={Boolean(settings[r.key])}
-                onClick={() => setSettings({ [r.key]: !settings[r.key] })}
-                className={clsx("relative h-5 w-10 rounded-full transition-colors", settings[r.key] ? "bg-[#5fd068]" : "bg-white/35")}
-              >
-                <span className={clsx("absolute top-0.5 left-0.5 size-4 rounded-full bg-white transition-transform", settings[r.key] && "translate-x-5")} />
-              </button>
+    <div className="fixed inset-0 z-40 font-exam tracking-normal" role="dialog" aria-label="Test navigation">
+      <div className="animate-fade-in absolute inset-0 bg-black/45" onClick={onClose} />
+      <aside className="animate-slide-in-right absolute inset-y-0 right-0 flex w-[256px] flex-col overflow-y-auto bg-[#006daa] text-white">
+        <div className="shrink-0">
+          <div className="border-b border-black/10 px-4 pt-4 pb-3">
+            <button onClick={onClose} aria-label="Close" className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-white/5 bg-white/10 p-4 hover:bg-white/20">
+              <svg viewBox="0 0 20 20" className="h-6 w-[22px] rotate-180" fill="white">
+                <path d="M11.27 15.8a.75.75 0 0 1-1.06-.03l-5-5.25a.75.75 0 0 1 0-1.04l5-5.25a.75.75 0 1 1 1.08 1.04L6.8 10l4.5 4.73c.29.3.28.78-.02 1.06Zm4 0a.75.75 0 0 1-1.06-.03l-5-5.25a.75.75 0 0 1 0-1.04l5-5.25a.75.75 0 1 1 1.09 1.04L10.8 10l4.5 4.73c.29.3.28.78-.02 1.06Z" />
+              </svg>
+            </button>
+            <div className="pt-4">
+              <h4 className="mb-1 text-base leading-4 text-white/70">{isCase ? "Question Bank" : "Bootcamp.com"}</h4>
+              <h4 className="text-lg leading-[18px] font-bold">{isCase ? session.title : `${session.tutor ? "Tutored" : "Untutored"}, ${session.timed ? "Timed" : "Untimed"}`}</h4>
             </div>
-          ))}
-        </div>
-
-        <div className="px-4 pt-3">
-          <div className="grid grid-cols-3 rounded-md bg-white/15 p-1 text-sm">
-            {(["All", "Status", "Topics"] as const).map((t) => (
-              <button key={t} onClick={() => setTab(t)} className={clsx("rounded py-1", tab === t && "bg-[#2b86d0]")}>
-                {t}
-              </button>
-            ))}
-          </div>
-          <label className="mt-2 flex items-center gap-2 rounded-md bg-white/15 px-3 py-1.5">
-            <Search className="size-4 opacity-70" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search..." className="w-full bg-transparent text-sm outline-none placeholder:text-white/70" />
-          </label>
-        </div>
-
-        <div className="mt-3 min-h-0 flex-1 overflow-y-auto bg-white/5 px-4 py-3">
-          {grouped.map(([label, list]) => (
-            <div key={label} className="mb-2">
-              {label && <div className="mb-1 text-xs font-semibold tracking-wide text-white/70 uppercase">{label}</div>}
-              {list.map(({ i, e }) => (
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="flex h-[10px] overflow-hidden rounded-lg bg-[linear-gradient(rgba(0,0,0,0.04),rgba(0,0,0,0.02))] shadow-[inset_0_2px_6px_rgba(0,0,0,0.07)]">
+                <span className="bg-grad-good h-2" style={{ width: `${(pools.mastered / total) * 100}%` }} />
+                <span className="bg-grad-warn h-2" style={{ width: `${(pools.reviewing / total) * 100}%` }} />
+                <span className="bg-grad-bad h-2" style={{ width: `${(pools.learning / total) * 100}%` }} />
+              </div>
+              <div className="flex items-center gap-2">
+                <h5 className="text-sm leading-[14px]">
+                  {answered}/{total}
+                </h5>
                 <button
-                  key={e.itemId + label}
-                  onClick={() => onJump(i)}
-                  className={clsx(
-                    "mb-1.5 flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm font-semibold",
-                    session.current === i ? "border-white bg-white text-[#0f3b66]" : "border-white/20 bg-white/10 hover:bg-white/15",
-                  )}
+                  onClick={() => setShowSettings((v) => !v)}
+                  aria-label="Toggle settings"
+                  className="ml-auto flex size-8 cursor-pointer items-center justify-center rounded-lg border border-black/5 bg-white p-2 text-ink-strong"
                 >
-                  <span className={clsx("size-3 rounded-full border-2", session.submitted[e.itemId] ? "border-current bg-current" : "border-current")} />
-                  <span className="flex-1">Question {i + 1}</span>
-                  {session.marked[e.itemId] && <Bookmark className="size-3.5 fill-current" />}
+                  <Icon name="examSettings" size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-hidden transition-[max-height] duration-[400ms] ease-in-out" style={{ maxHeight: showSettings ? 400 : 0 }}>
+            <div className="px-4 pt-2">
+              <div className="flex items-center border-b border-black/10 pb-2 text-sm">
+                <span>Text Size</span>
+                <div className="ml-auto flex">
+                  <button aria-label="Smaller text" onClick={() => setSettings({ textSize: Math.max(14, settings.textSize - 1) })} className="flex size-6 cursor-pointer items-center justify-center rounded-full hover:bg-white/10">
+                    <svg viewBox="0 0 48 48" className="size-3.5" fill="white">
+                      <path d="M6 23.5c0-.83.67-1.5 1.5-1.5h33a1.5 1.5 0 0 1 0 3h-33A1.5 1.5 0 0 1 6 23.5Z" />
+                    </svg>
+                  </button>
+                  <button aria-label="Reset text size" onClick={() => setSettings({ textSize: 16 })} className="flex size-6 cursor-pointer items-center justify-center rounded-full text-xs hover:bg-white/10">
+                    aA
+                  </button>
+                  <button aria-label="Larger text" onClick={() => setSettings({ textSize: Math.min(22, settings.textSize + 1) })} className="flex size-6 cursor-pointer items-center justify-center rounded-full hover:bg-white/10">
+                    <svg viewBox="0 0 28 28" className="size-3.5" fill="white">
+                      <path d="M24 13h-9V4a1 1 0 1 0-2 0v9H4a1 1 0 1 0 0 2h9v9a1 1 0 1 0 2 0v-9h9a1 1 0 1 0 0-2Z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              {SETTING_ROWS.filter((r) => !r.caseOnly || isCase).map((r) => (
+                <div key={r.key} className="flex items-center border-b border-black/10 py-2 text-sm leading-[19px]">
+                  <span>{r.label}</span>
+                  <Switch on={Boolean(settings[r.key])} onClick={() => setSettings({ [r.key]: !settings[r.key] })} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="px-4 py-3">
+            <div className="relative flex rounded-lg bg-white/10 p-1">
+              <span
+                className="absolute inset-y-1 rounded-lg bg-white/10 shadow-[0_4px_8px_rgba(0,0,0,0.08)] transition-[left] duration-300"
+                style={{ width: `calc((100% - 8px) / ${tabsList.length})`, left: `calc(4px + (100% - 8px) / ${tabsList.length} * ${tabIndex})` }}
+              />
+              {tabsList.map((t) => (
+                <button key={t} onClick={() => setTab(t)} className="relative z-10 flex-1 cursor-pointer py-0.5 text-sm">
+                  {t}
                 </button>
               ))}
+            </div>
+
+            {tab === "Status" ? (
+              <>
+                <div className="mt-2 rounded-lg bg-white/10 px-3 text-sm leading-[14px]">
+                  {creditRows.map(([label, n, d, vb], i) => (
+                    <div key={label} className={clsx("flex items-center py-2", i === 0 && "pt-3", i === creditRows.length - 1 ? "pb-3" : "border-b border-black/10")}>
+                      <svg viewBox={vb} className="size-3.5" fill="white">
+                        <path d={d} />
+                      </svg>
+                      <span className="ml-2">{label}</span>
+                      <span className="ml-auto">{n}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 rounded-lg bg-white/10 px-3 text-sm leading-[14px]">
+                  {(["unused", "learning", "reviewing", "mastered", "bookmarked"] as const).map((k, i, a) => (
+                    <div key={k} className={clsx("flex items-center py-2", i === 0 && "pt-3", i === a.length - 1 ? "pb-3" : "border-b border-black/10")}>
+                      <TagIcon tag={k} />
+                      <span className="ml-2 capitalize">{k}</span>
+                      <span className="ml-auto">{pools[k]}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <label className="mt-2 flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5">
+                <svg viewBox="0 0 24 24" className="size-4 opacity-70" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
+                </svg>
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search..." className="w-full bg-transparent text-sm outline-none placeholder:text-white/70" />
+              </label>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 bg-black/10 pt-3 pb-6 shadow-[inset_-4px_4px_12px_rgba(0,0,0,0.15)]">
+          {(tab === "Topics" ? topics : [""]).map((topic) => (
+            <div key={topic || "all"}>
+              {topic && <div className="px-4 pt-2 pb-1 text-xs font-semibold tracking-wide text-white/70 uppercase">{topic}</div>}
+              {rows
+                .filter((r) => !topic || r.item.topic === topic)
+                .map(({ e, i }) => {
+                  const current = session.current === i;
+                  const t = tags[e.itemId];
+                  return (
+                    <div key={e.itemId} className="px-4 py-1">
+                      <button
+                        onClick={() => onJump(i)}
+                        className={clsx(
+                          "flex w-full cursor-pointer items-center rounded-lg border px-3 py-2 text-left text-sm font-semibold",
+                          current ? "border-white bg-white text-[#006daa]" : "border-white/10 bg-white/10 text-white/70 hover:bg-white/15",
+                        )}
+                      >
+                        <Icon name={current ? "qStatusCurrent" : "qStatusOther"} size={14} />
+                        <span className="ml-2 flex-1">Question {i + 1}</span>
+                        {session.marked[e.itemId] && <Icon name="examBookmark" size={14} />}
+                        <span className="ml-1">
+                          <TagIcon tag={t ?? "unused"} size={14} />
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
           ))}
         </div>
@@ -250,16 +359,23 @@ export function SettingsDrawer({ session, onClose, onJump }: { session: TestSess
 }
 
 /* ------------------------------------------------------------------ */
-/* Navigator + dialogs (Pearson look)                                  */
+/* Dialogs (Pearson look: #0f6292 panel, outlined buttons)              */
 /* ------------------------------------------------------------------ */
 
-function ExamDialog({ title, children, actions }: { title: string; children: ReactNode; actions: ReactNode }) {
+function ExamDialog({ title, children, actions, onClose, width = 474 }: { title: string; children: ReactNode; actions: ReactNode; onClose?: () => void; width?: number }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 font-exam" role="dialog" aria-label={title}>
-      <div className="w-full max-w-[520px] overflow-hidden bg-white shadow-2xl animate-pop-in">
-        <div className="bg-exam px-4 py-2 text-white">{title}</div>
-        <div className="px-5 py-5">{children}</div>
-        <div className="flex justify-end gap-2 border-t border-[#ddd] px-5 py-3">{actions}</div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 font-exam tracking-normal" role="dialog" aria-label={title}>
+      <div className="animate-pop-in w-full bg-[#0f6292] text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)]" style={{ maxWidth: width }}>
+        <div className="mx-4 flex items-center border-b border-white py-2.5">
+          <span className="flex-1 text-base">{title}</span>
+          {onClose && (
+            <button onClick={onClose} aria-label="Close" className="cursor-pointer text-white/90 hover:text-white">
+              <SquareX className="size-4" />
+            </button>
+          )}
+        </div>
+        {children}
+        <div className="flex justify-center gap-4 px-5 pt-2 pb-5">{actions}</div>
       </div>
     </div>
   );
@@ -267,16 +383,40 @@ function ExamDialog({ title, children, actions }: { title: string; children: Rea
 
 export function ExamButton({ children, onClick, primary }: { children: ReactNode; onClick: () => void; primary?: boolean }) {
   return (
-    <button onClick={onClick} className={clsx("min-w-[110px] px-4 py-2", primary ? "bg-exam text-white hover:bg-[#005a8e]" : "border border-exam text-exam hover:bg-[#eef6fc]")}>
+    <button
+      onClick={onClick}
+      className={clsx(
+        "min-w-[90px] cursor-pointer border px-3 py-1 text-base",
+        primary ? "border-white font-semibold text-white hover:bg-white/10" : "border-white/40 text-white/60 hover:border-white/70 hover:text-white",
+      )}
+    >
       {children}
     </button>
   );
 }
 
-export function EndDialog({ onCancel, onEnd, unanswered }: { onCancel: () => void; onEnd: () => void; unanswered: number }) {
+function InfoIcon() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
+      <defs>
+        <radialGradient id="exam-info" cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#7cc4ff" />
+          <stop offset="1" stopColor="#0b62c4" />
+        </radialGradient>
+      </defs>
+      <circle cx="16" cy="16" r="15" fill="url(#exam-info)" stroke="#e8f4ff" strokeWidth="1.5" />
+      <rect x="14.2" y="13" width="3.6" height="11" rx="1" fill="white" />
+      <circle cx="16" cy="9.2" r="2.1" fill="white" />
+    </svg>
+  );
+}
+
+/** Custom test / readiness exam: "End Test". */
+export function EndDialog({ onCancel, onEnd }: { onCancel: () => void; onEnd: () => void }) {
   return (
     <ExamDialog
       title="End Test"
+      onClose={onCancel}
       actions={
         <>
           <ExamButton onClick={onCancel}>Return to Test</ExamButton>
@@ -286,54 +426,107 @@ export function EndDialog({ onCancel, onEnd, unanswered }: { onCancel: () => voi
         </>
       }
     >
-      <p>Do you want to end this test? Once ended you can review your test results from the previous tests page.</p>
-      {unanswered > 0 && <p className="mt-3 text-[#b3261e]">You have {unanswered} unanswered question{unanswered > 1 ? "s" : ""}.</p>}
+      <div className="flex items-start gap-4 px-5 py-5">
+        <InfoIcon />
+        <p className="text-base leading-6">Do you want to end this test? Once ended you can review your test results from the previous tests page.</p>
+      </div>
+    </ExamDialog>
+  );
+}
+
+/** Case study (tutored review): "Would you like to end your review?" with stats and tag counts. */
+export function EndReviewDialog({ session, onCancel, onEnd }: { session: TestSession; onCancel: () => void; onEnd: () => void }) {
+  const tags = useStore((s) => s.tags);
+  const answered = session.entries.filter((e) => session.submitted[e.itemId]).length;
+  const time = Object.values(session.timeSpent).reduce((a, b) => a + b, 0);
+  const count = (t: MasteryTag) => session.entries.filter((e) => tags[e.itemId] === t).length;
+  const tagBadge = (t: MasteryTag, bg: string, color: string) => (
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-white px-2.5 py-0.5 text-base font-semibold" style={{ background: bg, color }}>
+      <svg viewBox="0 0 24 24" className="size-3.5" fill="currentColor">
+        <path d="M3 12.6V4a1 1 0 0 1 1-1h8.6l8.7 8.7a1 1 0 0 1 0 1.4l-7.6 7.6a1 1 0 0 1-1.4 0L3 12.6ZM8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+      </svg>
+      {count(t)}
+    </span>
+  );
+  return (
+    <ExamDialog
+      title="Would you like to end your review?"
+      onClose={onCancel}
+      actions={
+        <>
+          <ExamButton onClick={onCancel}>Return to Review</ExamButton>
+          <ExamButton primary onClick={onEnd}>
+            End Review
+          </ExamButton>
+        </>
+      }
+    >
+      <div className="flex items-start gap-4 px-5 pt-5 pb-4">
+        <InfoIcon />
+        <p className="text-base leading-6">
+          You can resume your review whenever you&apos;re ready.
+          <br />
+          Your tagged questions are saved.
+        </p>
+      </div>
+      <div className="mx-2 grid grid-cols-3 gap-y-4 bg-white/10 px-2 py-5 text-center">
+        {[
+          ["Answered", `${answered} of ${session.entries.length}`],
+          ["Time Taken", formatDuration(time)],
+          ["Per Question", formatDuration(answered ? time / answered : 0)],
+        ].map(([k, v]) => (
+          <div key={k}>
+            <p className="text-base">{k}</p>
+            <p className="text-xl font-semibold">{v}</p>
+          </div>
+        ))}
+        <div>
+          <p className="mb-1 text-base">Learning</p>
+          {tagBadge("learning", "#fcecee", "#e05e57")}
+        </div>
+        <div>
+          <p className="mb-1 text-base">Reviewing</p>
+          {tagBadge("reviewing", "#fffde9", "#d09528")}
+        </div>
+        <div>
+          <p className="mb-1 text-base">Mastered</p>
+          {tagBadge("mastered", "#eaf5ea", "#54964b")}
+        </div>
+      </div>
     </ExamDialog>
   );
 }
 
 export function PauseDialog({ onResume }: { onResume: () => void }) {
   return (
-    <ExamDialog title="Test Paused" actions={<ExamButton primary onClick={onResume}>Resume Test</ExamButton>}>
-      <p className="flex items-center gap-2">
-        <CirclePause className="size-5 text-exam" />
-        Your test is paused and the timer has stopped.
-      </p>
+    <ExamDialog
+      title="Test Paused"
+      actions={
+        <ExamButton primary onClick={onResume}>
+          Resume Test
+        </ExamButton>
+      }
+    >
+      <div className="flex items-start gap-4 px-5 py-5">
+        <InfoIcon />
+        <p className="text-base leading-6">Your test is paused and the timer has stopped. Click Resume Test when you&apos;re ready to continue.</p>
+      </div>
     </ExamDialog>
   );
 }
 
-export function NavigateDialog({ session, onJump, onClose }: { session: TestSession; onJump: (i: number) => void; onClose: () => void }) {
+/** First-time tip above the tag buttons. */
+export function TagTip({ onClose }: { onClose: () => void }) {
   return (
-    <ExamDialog title="Navigation" actions={<ExamButton onClick={onClose}>Close</ExamButton>}>
-      <div className="max-h-[50vh] overflow-y-auto">
-        <table className="w-full border-collapse text-left text-[15px]">
-          <thead>
-            <tr className="bg-[#e8f1fb]">
-              <th className="border border-[#d0d0d0] px-2 py-1">Question</th>
-              <th className="border border-[#d0d0d0] px-2 py-1">Status</th>
-              <th className="border border-[#d0d0d0] px-2 py-1">Marked</th>
-            </tr>
-          </thead>
-          <tbody>
-            {session.entries.map((e, i) => {
-              const item = itemById(e.itemId);
-              const status = session.submitted[e.itemId] ? "Answered" : isAnswered(item, session.answers[e.itemId]) ? "Incomplete" : "Unanswered";
-              return (
-                <tr key={e.itemId} className={clsx(i === session.current && "bg-[#fff8d6]")}>
-                  <td className="border border-[#d0d0d0] px-2 py-1">
-                    <button onClick={() => onJump(i)} className="text-exam underline">
-                      Question {i + 1}
-                    </button>
-                  </td>
-                  <td className={clsx("border border-[#d0d0d0] px-2 py-1", status === "Unanswered" && "text-[#b3261e]")}>{status}</td>
-                  <td className="border border-[#d0d0d0] px-2 py-1">{session.marked[e.itemId] ? <Bookmark className="size-4 fill-exam text-exam" /> : ""}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <div className="animate-fade-in absolute right-[330px] bottom-12 z-30 w-[250px] rounded-lg bg-[#1f2023] p-3 font-sans text-white shadow-xl">
+      <div className="flex items-center border-b border-white/20 pb-2">
+        <span className="flex-1 text-base font-bold">Tag Questions</span>
+        <button onClick={onClose} aria-label="Dismiss" className="cursor-pointer text-white/80 hover:text-white">
+          <SquareX className="size-4" />
+        </button>
       </div>
-    </ExamDialog>
+      <p className="pt-2 text-[15px] leading-[21px]">Use mastery tags to rate your understanding of each question. You can sort and review tagged questions later.</p>
+      <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-[#1f2023]" />
+    </div>
   );
 }

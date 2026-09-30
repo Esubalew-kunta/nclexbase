@@ -2,23 +2,20 @@
 
 import clsx from "clsx";
 import Link from "next/link";
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { CalendarDays, ChevronRight, Clock, ListChecks, Settings2 } from "lucide-react";
-import { SUBJECTS, subjectById } from "@/data/catalog";
-import { itemById } from "@/lib/bank";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Fragment, Suspense, useState } from "react";
+import { EXPERTS, REVIEW_FAQS, SUBJECTS, subjectById } from "@/data/catalog";
+import { caseForItem, itemById } from "@/lib/bank";
 import { avgPoints, formatDuration, scoreItem, scoreSession } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
-import { formatLong } from "@/lib/schedule";
-import type { TestSession } from "@/lib/types";
-import { Avatar, ButtonLink, Card, FaqList, PageHeader, SectionTitle } from "@/components/ui/primitives";
-import { Gauge } from "@/components/ui/visuals";
-import { SubjectPerformanceTable, TimeTable, type SubjectStat } from "@/components/performance/Tables";
+import { formatFull } from "@/lib/schedule";
+import type { SubjectId, TestSession } from "@/lib/types";
+import { Icon } from "@/components/ui/Icon";
+import { Button, FaqList, PageHeader } from "@/components/ui/primitives";
+import { SubjectIcon } from "@/components/ui/visuals";
+import { ExpandAllToggle, ScoreCell, SectionHeading, SortArrows, TimeManagementTable, WarningInline } from "@/components/performance/SubjectPerformance";
 
-const FAQS = [
-  ["How can I improve my score?", "Review every explanation, including the ones you got right, then tag each question as Learning, Reviewing, or Mastered. Build your next tests from the Learning and Reviewing pools."],
-  ["How are partial credit questions scored?", "Next Gen items use 0/1, +/-, or rationale scoring. You earn points for each correct part, and +/- items subtract points for incorrect selections."],
-] as const;
+/* eslint-disable @next/next/no-img-element */
 
 function Report() {
   const id = useSearchParams().get("id");
@@ -28,208 +25,446 @@ function Report() {
   if (!session)
     return (
       <>
-        <PageHeader trail={[{ label: "Previous Tests", href: "/nclex/previous-tests" }]} title="Test not found" />
-        <p className="text-white/80">This test is not saved on this device.</p>
+        <PageHeader trail={[{ label: "Previous Tests", href: "/nclex/previous-tests" }, { label: "Not found" }]} title="Test not found" />
+        <p className="text-white/80">This test is not saved in this browser.</p>
       </>
     );
   return <ScoreReport session={session} />;
 }
 
+/** 270° ring like the live canvas gauge: gray track, blue value arc, average tick. */
+function RingGauge({ value, avg }: { value: number; avg: number }) {
+  const r = 112;
+  const cx = 133;
+  const cy = 128;
+  const start = 135;
+  const sweep = 270;
+  const polar = (deg: number, rad = r) => [cx + rad * Math.cos((deg * Math.PI) / 180), cy + rad * Math.sin((deg * Math.PI) / 180)];
+  const arc = (from: number, to: number) => {
+    const [x1, y1] = polar(from);
+    const [x2, y2] = polar(to);
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${x2} ${y2}`;
+  };
+  const v = Math.max(0, Math.min(100, value));
+  const t = start + (sweep * avg) / 100;
+  const [a1, b1] = polar(t, r - 14);
+  const [a2, b2] = polar(t, r + 14);
+  return (
+    <svg width="266" height="242" viewBox="0 0 266 242" aria-hidden>
+      <defs>
+        <linearGradient id="ring" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stopColor="#3b82f6" />
+          <stop offset="1" stopColor="#6255e5" />
+        </linearGradient>
+      </defs>
+      <path d={arc(start, start + sweep)} stroke="#ededf0" strokeWidth="22" fill="none" strokeLinecap="round" />
+      {v > 0 && <path d={arc(start, start + (sweep * v) / 100)} stroke="url(#ring)" strokeWidth="22" fill="none" strokeLinecap="round" />}
+      <line x1={a1} y1={b1} x2={a2} y2={b2} stroke="#c8c9ce" strokeWidth="3" />
+    </svg>
+  );
+}
+
+function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <p className="flex items-center justify-center gap-1 rounded-lg border border-[#ededf0] px-2 py-1 text-sm leading-[14px] text-ink-strong">
+      {icon}
+      {children}
+    </p>
+  );
+}
+
+const chipIcon = {
+  date: <svg viewBox="0 0 48 48" className="size-3.5" fill="currentColor"><path d="M6 12.25C6 8.8 8.8 6 12.25 6h23.5C39.2 6 42 8.8 42 12.25v23.5C42 39.2 39.2 42 35.75 42h-23.5A6.25 6.25 0 0 1 6 35.75v-23.5ZM9 17v18.75C9 37.55 10.46 39 12.25 39h23.5c1.8 0 3.25-1.46 3.25-3.25V17H9Zm7 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm8 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm8 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" /></svg>,
+  clock: <svg viewBox="0 0 48 48" className="size-3.5" fill="currentColor"><path d="M24 5a19 19 0 1 1 0 38 19 19 0 0 1 0-38Zm-1.25 7c-.83 0-1.5.67-1.5 1.5V26c0 .83.67 1.5 1.5 1.5h8.5a1.5 1.5 0 0 0 0-3h-7v-11c0-.83-.67-1.5-1.5-1.5Z" /></svg>,
+  tutor: <svg viewBox="0 0 24 24" className="size-3.5" fill="currentColor"><path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3Zm-6.82 9.72v4L12 20.5l6.82-3.78v-4L12 16.5l-6.82-3.78Z" /></svg>,
+  list: <Icon name="bites" size={14} />,
+};
+
 function ScoreReport({ session }: { session: TestSession }) {
+  const router = useRouter();
+  const goTo = useStore((s) => s.goTo);
   const sc = scoreSession(session);
-  const data = buildStats(session);
-  const avgPct = sc.max ? Math.round((data.avgEarned / sc.max) * 100) : 0;
+  const stats = buildStats(session);
+  const avgPct = sc.max ? Math.round((stats.avgEarned / sc.max) * 100) : 0;
   const perQ = session.entries.length ? sc.time / session.entries.length : 0;
-  const avgPerQ = data.avgTime / Math.max(1, session.entries.length);
-  const message =
-    sc.percent >= avgPct
-      ? "Great work! You scored above the average. Keep reviewing the explanations to lock in these concepts."
-      : "Keep your head up! Review these solutions carefully and learn from your mistakes. I'm confident you'll bring this score up with hard work and practice.";
+  const avgPerQ = stats.avgTime / Math.max(1, session.entries.length);
+  const [open, setOpen] = useState<Set<string>>(() => new Set(stats.subjects.map((s) => s.id)));
+  const [openCases, setOpenCases] = useState<Set<string>>(() => new Set(stats.caseIds));
+  const good = sc.percent >= avgPct;
+  const message = good
+    ? "Great job! You scored above average. Keep reviewing the explanations to lock in what you learned."
+    : "Keep your head up! Review these solutions carefully and learn from your mistakes. I'm confident you'll bring this score up with hard work and practice.";
+  const review = (index = 0) => {
+    goTo(session.id, index);
+    router.push(`/nclex/custom-test?id=${session.id}&review=1`);
+  };
+  const allOpen = open.size === stats.subjects.length;
+  const faster = perQ <= avgPerQ;
+  const diff = Math.min(1, Math.abs(perQ - avgPerQ) / Math.max(1, avgPerQ));
 
   return (
     <>
       <PageHeader trail={[{ label: "Previous Tests", href: "/nclex/previous-tests" }, { label: session.title }]} title={session.title} />
 
-      <Card>
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line px-6 py-5">
-          <div>
-            <h2 className="text-lg font-semibold text-ink-strong">Score Report</h2>
-            <div className="mt-2 flex flex-wrap gap-2 text-sm text-ink">
-              <Chip icon={CalendarDays}>{formatLong(new Date(session.createdAt))}</Chip>
-              <Chip icon={Clock}>{session.timed ? "Timed" : "Untimed"}</Chip>
-              <Chip icon={Settings2}>{session.tutor ? "Tutored" : "Untutored"}</Chip>
-              <Chip icon={ListChecks}>{session.entries.length} Questions</Chip>
+      <div className="mb-8 rounded-lg bg-white shadow-card">
+        <div className="sticky top-0 z-[5] flex flex-wrap gap-4 rounded-t-lg border-b border-[#ededf0] bg-white px-6 py-4">
+          <div className="flex flex-col">
+            <h4 className="mb-2 text-lg leading-[22.5px] font-semibold text-ink">Score Report</h4>
+            <div className="flex flex-wrap gap-2">
+              <Chip icon={chipIcon.date}>{formatFull(new Date(session.createdAt))}</Chip>
+              <Chip icon={chipIcon.clock}>{session.timed ? "Timed" : "Untimed"}</Chip>
+              <Chip icon={chipIcon.tutor}>{session.tutor ? "Tutored" : "Untutored"}</Chip>
+              <Chip icon={chipIcon.list}>{session.entries.length} Questions</Chip>
             </div>
           </div>
-          <ButtonLink href={`/nclex/custom-test?id=${session.id}&review=1`}>
-            Start Review <ChevronRight className="size-4" />
-          </ButtonLink>
-        </div>
-
-        <div className="grid items-center gap-8 px-6 py-8 md:grid-cols-2">
-          <Gauge value={sc.percent} label={`Average: ${avgPct}%`} caption="Your Score" size={250} />
-          <div className="overflow-hidden rounded-lg border border-line">
-            <table className="w-full text-left text-base">
-              <thead>
-                <tr className="border-b border-line bg-[#fafafb]">
-                  <th className="px-5 py-3" />
-                  <th className="py-3 font-semibold text-ink-strong">You</th>
-                  <th className="py-3 font-semibold text-muted">Average</th>
-                </tr>
-              </thead>
-              <tbody className="[&_td]:py-3.5 [&_tr]:border-b [&_tr]:border-line [&_tr:last-child]:border-0">
-                <tr>
-                  <td className="px-5">Score</td>
-                  <td>{sc.percent}%</td>
-                  <td className="text-muted">{avgPct}%</td>
-                </tr>
-                <tr>
-                  <td className="px-5">Correct / Total Pts</td>
-                  <td>
-                    {sc.earned} / {sc.max}
-                  </td>
-                  <td className="text-muted">
-                    {round1(data.avgEarned)} / {sc.max}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-5">Time Per Question</td>
-                  <td>{formatDuration(perQ)}</td>
-                  <td className="text-muted">{formatDuration(avgPerQ)}</td>
-                </tr>
-                <tr>
-                  <td className="px-5">Total Time</td>
-                  <td>{formatDuration(sc.time)}</td>
-                  <td className="text-muted">{formatDuration(data.avgTime)}</td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="ml-auto flex items-center justify-end gap-4">
+            <Button onClick={() => review(0)}>
+              <span className="mr-2">Start Review</span>
+              <Icon name="chevronRight" size={18} />
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-start gap-3 px-6 pb-6">
-          <Avatar initials="EW" color="#8b6f5c" size={40} />
-          <p className="flex-1 rounded-lg bg-brand-tint px-5 py-3.5 text-base leading-6 text-ink">{message}</p>
+        <div className="flex flex-col px-6 pt-4 pb-6">
+          <div className="flex flex-col gap-8 lg:flex-row">
+            <div className="flex flex-1 items-center justify-center py-6">
+              <div className="relative">
+                <RingGauge value={sc.percent} avg={avgPct} />
+                <div className="absolute top-1/2 left-1/2 w-[140px] -translate-x-1/2 -translate-y-[42%] text-center">
+                  <p className="text-lg leading-[18px] font-bold text-[#3b82f6]">Your Score</p>
+                  <div className="my-2 text-[64px] leading-[64px] font-bold tracking-[-1px] text-[#3b82f6]">{sc.percent}%</div>
+                  <p className="text-lg leading-[18px] text-muted">Average: {avgPct} %</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-1 items-center">
+              <div className="w-full overflow-auto rounded-lg border border-[#ededf0]">
+                <table className="w-full text-ink-strong">
+                  <tbody>
+                    <tr className="border-b border-[#ededf0] bg-[#fafafa] text-base leading-4 font-semibold">
+                      <td className="w-1/2 px-6" />
+                      <td className="p-4">You</td>
+                      <td className="p-4 text-muted">Average</td>
+                    </tr>
+                    {[
+                      ["Score", `${sc.percent}%`, `${avgPct}%`],
+                      ["Correct / Total Pts", `${sc.earned} / ${sc.max}`, `${round1(stats.avgEarned)} / ${sc.max}`],
+                      ["Time Per Question", formatDuration(perQ), formatDuration(avgPerQ)],
+                      ["Total Time", formatDuration(sc.time), formatDuration(stats.avgTime)],
+                    ].map(([k, you, avg], i, a) => (
+                      <tr key={k} className={clsx("bg-white text-base leading-4", i < a.length - 1 && "border-b border-[#ededf0]")}>
+                        <td className="h-12 px-6">{k}</td>
+                        <td className="p-4">{you}</td>
+                        <td className="p-4 text-muted">{avg}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div className="relative mt-6">
+            <img src={EXPERTS.emily.photo} alt="" className="absolute top-1/2 left-0 size-12 -translate-y-1/2 rounded-full object-cover" />
+            <p className="ml-9 rounded-lg bg-[#e0e6ff] py-3 pr-6 pl-8 text-base leading-6 text-ink-strong">{message}</p>
+          </div>
         </div>
-      </Card>
-
-      <SectionTitle>Subject Breakdown</SectionTitle>
-      <p className="-mt-3 mb-4 text-white/70">Increase your score by focusing on subjects marked with a red ⚠ - that&apos;s where you can improve the most!</p>
-      <SubjectPerformanceTable stats={data.subjects} showUsage={false} startTest={false} />
-
-      <SectionTitle>Time Management</SectionTitle>
-      <p className="-mt-3 mb-4 text-white/70">Green means you&apos;re faster than average! Red shows where you can improve your pace.</p>
-      <div className="grid gap-4 md:grid-cols-[1fr_2fr]">
-        <Card className="flex flex-col items-center justify-center px-6 py-8 text-center">
-          <span className={clsx("h-5 w-10 rounded-sm", perQ <= avgPerQ ? "bg-grad-good" : "bg-grad-bad")} />
-          <div className="mt-4 text-lg font-semibold text-brand">Your Time Per Question</div>
-          <div className="text-5xl font-bold text-brand">{formatDuration(perQ)}</div>
-          <div className="mt-1 text-base text-muted">Average: {formatDuration(avgPerQ)}</div>
-        </Card>
-        <TimeTable stats={data.subjects} />
       </div>
 
-      <SectionTitle>Question Breakdown</SectionTitle>
-      <p className="-mt-3 mb-4 text-white/70">Click any question to jump directly to it.</p>
-      <Card className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-base">
-          <thead>
-            <tr className="border-b border-line font-semibold text-ink-strong">
-              <th className="w-14" />
-              <th className="py-4">Question</th>
-              <th>Subject</th>
-              <th>System</th>
-              <th>Correct / Total Pts</th>
-              <th>Time</th>
-              <th className="w-10" />
-            </tr>
-          </thead>
+      <SectionHeading
+        title="Subject Breakdown"
+        description={
+          <>
+            Increase your score by focusing on subjects marked with a red
+            <WarningInline />- that&apos;s where you can improve the most!
+          </>
+        }
+        action={<ExpandAllToggle allOpen={allOpen} onClick={() => setOpen(allOpen ? new Set() : new Set(stats.subjects.map((s) => s.id)))} />}
+      />
+      <div className="mb-6 overflow-auto rounded-lg bg-white shadow-card">
+        <table className="w-full min-w-[720px] text-ink-strong">
           <tbody>
-            {session.entries.map((e, i) => {
-              const item = itemById(e.itemId);
-              const s = scoreItem(item, session.submitted[e.itemId] ? session.answers[e.itemId] : undefined);
-              const state = s.earned === s.max ? "full" : s.earned > 0 ? "partial" : "none";
+            <tr className="border-b border-[#ededf0] bg-[#fafafa] text-base leading-4 font-semibold text-muted">
+              <td className="w-14 py-4 pr-4 pl-6" />
+              <td className="p-4 text-ink-strong">Subject</td>
+              <td className="p-4">
+                <span className="inline-flex items-center text-ink-strong">
+                  Correct / Total Pts
+                  <SortArrows />
+                </span>
+              </td>
+              <td className="p-4">
+                <span className="inline-flex items-center text-ink-strong">
+                  Score
+                  <SortArrows />
+                </span>
+              </td>
+              <td className="p-4">Avg. Score</td>
+              <td className="w-14 p-4" />
+            </tr>
+            {stats.subjects.map((s) => {
+              const isOpen = open.has(s.id);
+              const pct = s.max ? Math.round((s.earned / s.max) * 100) : 0;
               return (
-                <tr key={e.itemId} className="border-b border-line text-muted last:border-0 hover:bg-[#fafafb]">
-                  <td className="pl-6">
-                    <span
-                      className={clsx(
-                        "block size-4 rounded-full border-2",
-                        state === "full" && "border-good bg-good-light",
-                        state === "partial" && "border-warn bg-[linear-gradient(180deg,#f9d95b_50%,transparent_50%)]",
-                        state === "none" && "border-bad-light",
+                <Fragment key={s.id}>
+                  <tr
+                    className="group cursor-pointer border-b border-[#ededf0] bg-white shadow-[inset_3px_0_0_0_#ededf0] hover:bg-[#f6f6f6]"
+                    onClick={() =>
+                      setOpen((o) => {
+                        const n = new Set(o);
+                        if (n.has(s.id)) n.delete(s.id);
+                        else n.add(s.id);
+                        return n;
+                      })
+                    }
+                  >
+                    <td className="py-4 pr-4 pl-6">
+                      {isOpen ? (
+                        <svg viewBox="0 0 48 48" className="size-4 text-faint" fill="currentColor">
+                          <path d="M6 23.5c0-.83.67-1.5 1.5-1.5h33a1.5 1.5 0 0 1 0 3h-33A1.5 1.5 0 0 1 6 23.5Z" />
+                        </svg>
+                      ) : (
+                        <Icon name="plus" size={16} className="text-faint" />
                       )}
-                    />
-                  </td>
-                  <td className="py-3 text-ink">
-                    <Link href={`/nclex/custom-test?id=${session.id}&review=1`} onClick={() => useStore.getState().goTo(session.id, i)} className="hover:text-brand">
-                      {i + 1}
-                    </Link>
-                  </td>
-                  <td>{subjectById(item.subject).name}</td>
-                  <td>{item.system}</td>
-                  <td className="text-ink">
-                    {s.earned} / {s.max}
-                  </td>
-                  <td className="text-ink">{formatDuration(session.timeSpent[e.itemId] ?? 0)}</td>
-                  <td>
-                    <ChevronRight className="size-4 text-faint" />
-                  </td>
-                </tr>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <SubjectIcon id={s.id} size={20} />
+                        <p className="text-base leading-4 group-hover:text-brand">{subjectById(s.id).name}</p>
+                        {pct < s.avg && <WarningInline />}
+                      </div>
+                    </td>
+                    <td className="p-4 text-base leading-4">
+                      {round1(s.earned)} / {s.max}
+                    </td>
+                    <td className="p-4">
+                      <ScoreCell pct={pct} avg={s.avg} />
+                    </td>
+                    <td className="p-4 text-base leading-4 text-muted">{s.avg}%</td>
+                    <td className="p-4 text-right">
+                      <Link
+                        href={`/nclex/${s.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="ml-auto flex size-8 items-center justify-center rounded-full bg-brand text-white hover:bg-[#6765ef]"
+                      >
+                        <Icon name="chevronRight" size={16} />
+                      </Link>
+                    </td>
+                  </tr>
+                  {isOpen &&
+                    s.systems.map((sys) => {
+                      const sp = sys.max ? Math.round((sys.earned / sys.max) * 100) : 0;
+                      return (
+                        <tr key={sys.name} className="border-b border-[#ededf0] bg-[#fafafa] shadow-[inset_3px_0_0_0_#ededf0]">
+                          <td />
+                          <td className="p-4">
+                            <p className="ml-7 text-base leading-4">{sys.name}</p>
+                          </td>
+                          <td className="p-4 text-base leading-4">
+                            {round1(sys.earned)} / {sys.max}
+                          </td>
+                          <td className="p-4">
+                            <ScoreCell pct={sp} avg={sys.avg} />
+                          </td>
+                          <td className="p-4 text-base leading-4 text-muted">{sys.avg}%</td>
+                          <td />
+                        </tr>
+                      );
+                    })}
+                </Fragment>
               );
             })}
           </tbody>
         </table>
-      </Card>
+      </div>
 
-      <FaqList items={FAQS} />
+      <SectionHeading title="Time Management" description="Green means you're faster than average! Red shows where you can improve your pace." />
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row">
+        <div className="flex shrink-0 flex-col items-center justify-center rounded-lg bg-white px-6 py-8 text-center shadow-card lg:w-[346px]">
+          <div className="mb-4 flex h-7 w-[216px] items-center justify-center overflow-hidden">
+            <div className="flex h-7 w-[107px] justify-end py-1">{faster && <div className="bg-grad-good h-5" style={{ width: Math.max(8, diff * 107) }} />}</div>
+            <div className="h-7 w-[3px] bg-faint" />
+            <div className="h-7 w-[107px] py-1">{!faster && <div className="bg-grad-bad h-5" style={{ width: Math.max(8, diff * 107) }} />}</div>
+          </div>
+          <p className="text-lg leading-[18px] font-bold text-brand">Your Time Per Question</p>
+          <span className="text-[64px] leading-[80px] font-bold tracking-[-1px] text-brand">{formatDuration(perQ)}</span>
+          <p className="text-lg leading-[18px] text-muted">Average: {formatDuration(avgPerQ)}</p>
+        </div>
+        <div className="min-w-0 flex-1 overflow-hidden rounded-lg shadow-card">
+          <TimeManagementTable
+            subjects={stats.subjects.map((s) => s.id)}
+            perQuestion={Object.fromEntries(stats.subjects.map((s) => [s.id, s.time / Math.max(1, s.count)]))}
+          />
+        </div>
+      </div>
+
+      <h2 className="text-2xl leading-[30px] font-bold text-white">Question Breakdown</h2>
+      <p className="mt-1 mb-4 text-base leading-6 text-white/70">Click any question to jump directly to it.</p>
+      <div className="mb-6 overflow-auto rounded-lg bg-white shadow-card">
+        <table className="w-full min-w-[760px] text-ink-strong">
+          <tbody>
+            <tr className="border-b border-[#ededf0] bg-[#fafafa] text-base leading-4 font-semibold text-muted">
+              <td className="w-[60px] py-4 pr-4 pl-6" />
+              <td className="p-4 text-ink-strong">Question</td>
+              <td className="p-4 text-ink-strong">Subject</td>
+              <td className="p-4 text-ink-strong">System</td>
+              <td className="p-4">
+                <span className="inline-flex items-center text-ink-strong">
+                  Correct / Total Pts
+                  <SortArrows />
+                </span>
+              </td>
+              <td className="p-4">
+                <span className="inline-flex items-center text-ink-strong">
+                  Time
+                  <SortArrows />
+                </span>
+              </td>
+              <td className="w-[52px] p-4" />
+            </tr>
+            {stats.groups.map((g) => {
+              const caseOpen = g.caseId ? openCases.has(g.caseId) : true;
+              return (
+                <Fragment key={g.caseId ?? g.rows[0].index}>
+                  {g.caseId && (
+                    <tr
+                      className="cursor-pointer border-b border-[#ededf0] bg-white shadow-[inset_3px_0_0_0_#ededf0] hover:bg-[#f6f6f6]"
+                      onClick={() =>
+                        setOpenCases((o) => {
+                          const n = new Set(o);
+                          if (n.has(g.caseId!)) n.delete(g.caseId!);
+                          else n.add(g.caseId!);
+                          return n;
+                        })
+                      }
+                    >
+                      <td className="py-4 pr-4 pl-6">
+                        {caseOpen ? (
+                          <svg viewBox="0 0 48 48" className="size-4 text-faint" fill="currentColor">
+                            <path d="M6 23.5c0-.83.67-1.5 1.5-1.5h33a1.5 1.5 0 0 1 0 3h-33A1.5 1.5 0 0 1 6 23.5Z" />
+                          </svg>
+                        ) : (
+                          <Icon name="plus" size={16} className="text-faint" />
+                        )}
+                      </td>
+                      <td className="p-4 text-base leading-4">Case Study</td>
+                      <td className="p-4 text-base leading-4">{subjectById(g.subject).name}</td>
+                      <td className="p-4 text-base leading-4">{g.system}</td>
+                      <td className="p-4 text-base leading-4">
+                        {g.earned} / {g.max}
+                      </td>
+                      <td className="p-4 text-base leading-4">{formatDuration(g.time)}</td>
+                      <td />
+                    </tr>
+                  )}
+                  {caseOpen &&
+                    g.rows.map((r) => (
+                      <tr
+                        key={r.index}
+                        onClick={() => review(r.index)}
+                        className={clsx("cursor-pointer border-b border-[#ededf0] last:border-0 hover:bg-[#f6f6f6]", g.caseId ? "bg-[#fafafa] shadow-[inset_3px_0_0_0_#ededf0]" : "bg-white")}
+                      >
+                        <td className="py-4 pr-4 pl-6">
+                          <StatusIcon earned={r.earned} max={r.max} />
+                        </td>
+                        <td className="p-4 text-base leading-4">
+                          <span className="mr-2">{r.index + 1}</span>
+                        </td>
+                        <td className="p-4 text-base leading-4 text-muted">{subjectById(r.subject).name}</td>
+                        <td className="p-4 text-base leading-4 text-muted">{r.system}</td>
+                        <td className="p-4 text-base leading-4">
+                          {r.earned} / {r.max}
+                        </td>
+                        <td className="p-4 text-base leading-4">{formatDuration(r.time)}</td>
+                        <td className="p-4 text-right">
+                          <Icon name="chevronRight" size={20} className="ml-auto text-faint" />
+                        </td>
+                      </tr>
+                    ))}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <FaqList items={REVIEW_FAQS} />
     </>
+  );
+}
+
+function StatusIcon({ earned, max }: { earned: number; max: number }) {
+  if (earned >= max)
+    return (
+      <svg viewBox="0 0 24 24" className="size-5 text-[#66ac5c]" fill="currentColor">
+        <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm4.3 6.6-5.8 5.8-2.8-2.8a1 1 0 1 0-1.4 1.4l3.5 3.5a1 1 0 0 0 1.4 0l6.5-6.5a1 1 0 1 0-1.4-1.4Z" />
+      </svg>
+    );
+  if (earned > 0)
+    return (
+      <svg viewBox="0 0 24 24" className="size-5 text-[#f3d456]" fill="currentColor">
+        <path d="M2.03 11.25a10 10 0 0 1 19.94 0H22V12a10 10 0 0 1-20 0v-.75h.03ZM12 20.5a8.5 8.5 0 0 0 8.47-7.75H3.53A8.5 8.5 0 0 0 12 20.5Z" />
+      </svg>
+    );
+  return (
+    <svg viewBox="0 0 48 48" className="size-5 text-[#e05e57]" fill="currentColor">
+      <path d="M24 6.5a17.5 17.5 0 1 0 0 35 17.5 17.5 0 0 0 0-35ZM4 24a20 20 0 1 1 40 0 20 20 0 0 1-40 0Z" />
+    </svg>
   );
 }
 
 function buildStats(session: TestSession) {
   let avgEarned = 0;
   let avgTime = 0;
-  const bySubject = new Map<string, SubjectStat>();
-  for (const e of session.entries) {
+  const bySubject = new Map<SubjectId, { id: SubjectId; earned: number; max: number; avgEarned: number; time: number; count: number; avg: number; systems: Map<string, { name: string; earned: number; max: number; avgEarned: number }> }>();
+  const groups: { caseId?: string; subject: SubjectId; system: string; earned: number; max: number; time: number; rows: { index: number; subject: SubjectId; system: string; earned: number; max: number; time: number }[] }[] = [];
+  const caseIds: string[] = [];
+
+  session.entries.forEach((e, index) => {
     const item = itemById(e.itemId);
     const subject = subjectById(item.subject);
     const s = scoreItem(item, session.submitted[e.itemId] ? session.answers[e.itemId] : undefined);
     const avg = avgPoints(item);
+    const time = session.timeSpent[e.itemId] ?? 0;
     avgEarned += avg;
     avgTime += subject.avgTimeSec;
-    const row =
-      bySubject.get(item.subject) ??
-      ({ id: item.subject, earned: 0, max: 0, used: 0, total: 0, avgScore: 0, time: 0, answered: 0, systems: [] } as SubjectStat & { avgEarned?: number });
+
+    const row = bySubject.get(item.subject) ?? { id: item.subject, earned: 0, max: 0, avgEarned: 0, time: 0, count: 0, avg: 0, systems: new Map() };
     row.earned += s.earned;
     row.max += s.max;
-    row.time += session.timeSpent[e.itemId] ?? 0;
-    row.answered += 1;
-    let sys = row.systems.find((x) => x.name === item.system);
-    if (!sys) {
-      sys = { name: item.system, earned: 0, max: 0, avgScore: 0 };
-      row.systems.push(sys);
-    }
+    row.avgEarned += avg;
+    row.time += time;
+    row.count += 1;
+    const sys = row.systems.get(item.system) ?? { name: item.system, earned: 0, max: 0, avgEarned: 0 };
     sys.earned += s.earned;
     sys.max += s.max;
-    sys.avgScore = Math.round(((sys.avgScore / 100) * (sys.max - s.max) + avg) / sys.max * 100);
-    row.avgScore = Math.round(((row.avgScore / 100) * (row.max - s.max) + avg) / row.max * 100);
+    sys.avgEarned += avg;
+    row.systems.set(item.system, sys);
     bySubject.set(item.subject, row);
-  }
-  const subjects = SUBJECTS.map((s) => bySubject.get(s.id)).filter(Boolean) as SubjectStat[];
-  return { avgEarned, avgTime, subjects };
+
+    const caseId = caseForItem(item.id) ? e.caseId : undefined;
+    let g = groups.at(-1);
+    if (!g || !caseId || g.caseId !== caseId) {
+      g = { caseId, subject: item.subject, system: item.system, earned: 0, max: 0, time: 0, rows: [] };
+      groups.push(g);
+      if (caseId) caseIds.push(caseId);
+    }
+    g.earned += s.earned;
+    g.max += s.max;
+    g.time += time;
+    g.rows.push({ index, subject: item.subject, system: item.system, earned: s.earned, max: s.max, time });
+  });
+
+  const subjects = SUBJECTS.map((s) => bySubject.get(s.id))
+    .filter(<T,>(x: T | undefined): x is T => Boolean(x))
+    .map((r) => ({
+      ...r,
+      avg: r.max ? Math.round((r.avgEarned / r.max) * 100) : 0,
+      systems: [...r.systems.values()].map((x) => ({ ...x, avg: x.max ? Math.round((x.avgEarned / x.max) * 100) : 0 })),
+    }));
+  return { avgEarned, avgTime, subjects, groups, caseIds };
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
-
-function Chip({ icon: Icon, children }: { icon: typeof Clock; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1">
-      <Icon className="size-3.5" />
-      {children}
-    </span>
-  );
-}
 
 export default function ReviewPage() {
   return (
@@ -238,4 +473,3 @@ export default function ReviewPage() {
     </Suspense>
   );
 }
-

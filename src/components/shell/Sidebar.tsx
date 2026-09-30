@@ -3,47 +3,122 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { ChevronDown, ChevronRight, GraduationCap, ShieldCheck, SquarePlus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { SUBJECTS } from "@/data/catalog";
 import { useStore } from "@/lib/store";
-import { NAV, type NavLink } from "./nav";
-
-export function Logo() {
-  return (
-    <Link href="/nclex" className="flex items-center gap-3 text-white">
-      <svg viewBox="0 0 36 36" className="size-9 shrink-0" aria-hidden>
-        <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" />
-        <circle cx="18" cy="18" r="11" fill="currentColor" />
-        <path d="M18 11.5l1.9 4.2 4.6.4-3.5 3 1.1 4.5-4.1-2.4-4.1 2.4 1.1-4.5-3.5-3 4.6-.4z" fill="#151a1e" />
-      </svg>
-      <span className="leading-tight">
-        <span className="block text-lg font-bold">Bootcamp.com</span>
-        <span className="block text-sm text-white/80">NCLEX Bootcamp</span>
-      </span>
-    </Link>
-  );
-}
+import { Icon } from "@/components/ui/Icon";
+import { NAV, PRODUCTS, type NavLink } from "./nav";
 
 export const normalize = (p: string) => (p.length > 1 ? p.replace(/\/$/, "") : p);
 
-function Item({ link, active, onNavigate }: { link: NavLink; active: boolean; onNavigate?: () => void }) {
-  const Icon = link.icon;
+/* eslint-disable @next/next/no-img-element */
+
+/** Logo + "NCLEX Bootcamp ⌄" product switcher. */
+function Brand({ onNavigate }: { onNavigate?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [section, setSection] = useState<string | null>("⚕️ Nursing");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
+    window.addEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative flex h-[72px] p-4">
+      <div className="group flex cursor-pointer items-center" onClick={() => setOpen((o) => !o)}>
+        <img src="/assets/brand/logo-mark.png" alt="" className="mr-2 size-9" />
+        <div className="w-[127px]">
+          <img src="/assets/brand/logo-word.png" alt="Bootcamp.com" className="h-5 w-[120px]" />
+          <div className="mt-px flex items-center text-sm leading-[14px] whitespace-nowrap text-faint">
+            NCLEX Bootcamp
+            <svg
+              viewBox="0 0 24 24"
+              className={clsx("ml-1 size-3.5 transition-opacity", open ? "rotate-180 opacity-100" : "opacity-0 group-hover:opacity-100")}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {open && (
+        <div className="animate-fade-in absolute top-[72px] right-[15px] left-[15px] z-10 overflow-hidden rounded-lg bg-white shadow-[0_16px_30px_rgba(0,0,0,0.24)]">
+          {PRODUCTS.map((p, i) => {
+            const expanded = section === p.label;
+            return (
+              <div key={p.label} className={clsx("flex flex-col", i < PRODUCTS.length - 1 && "border-b border-[#ededf0]")}>
+                <h3
+                  onClick={() => setSection(expanded ? null : p.label)}
+                  className="flex cursor-pointer items-center justify-between p-4 text-base leading-5 font-semibold text-ink-strong hover:bg-[#f6f6f6]"
+                >
+                  <span>{p.label}</span>
+                  <svg viewBox="0 0 24 24" className={clsx("size-6 text-faint transition-transform", !expanded && "-rotate-90")} fill="none" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </h3>
+                {expanded && (
+                  <div className="bg-[#fafafa]">
+                    {p.items.map((item) => (
+                      <a
+                        key={item.name}
+                        href={item.current ? undefined : item.href}
+                        onClick={() => item.current && (setOpen(false), onNavigate?.())}
+                        className={clsx("block cursor-pointer border-t border-[#ededf0] p-4 hover:bg-[#f6f6f6]", item.current && "opacity-[0.48]")}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-base leading-[19px] font-bold text-ink-strong">{item.name}</h4>
+                            <p className={clsx("text-sm leading-[21px] font-bold", item.current ? "text-brand" : "text-muted")}>
+                              {item.current ? "Currently Studying" : "Membership Required"}
+                            </p>
+                          </div>
+                          <Icon name="shield" size={16} className="text-muted" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Item({ link, active, onNavigate, indent }: { link: NavLink; active: boolean; onNavigate?: () => void; indent?: boolean }) {
+  const setUi = useStore((s) => s.setUi);
   const cls = clsx(
-    "flex h-[42px] items-center gap-3 rounded-lg px-3 text-base transition-colors",
-    active ? "bg-shell-2 font-bold text-white" : "text-white/80 hover:bg-shell-2/60 hover:text-white",
+    "group flex h-[42px] cursor-pointer items-center rounded-lg p-3 transition-colors",
+    active ? "bg-white/5 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
   );
   const inner = (
     <>
-      <Icon className="size-[18px] shrink-0" strokeWidth={active ? 2.5 : 2} />
-      <span className="truncate">{link.label}</span>
+      {!indent && <Icon name={link.icon} size={20} className={active ? "text-white" : "text-current"} />}
+      <h4 className={clsx("ml-2.5 min-w-0 flex-1 truncate text-base leading-4", active ? "font-bold text-white" : "font-normal")}>{link.label}</h4>
+      {link.external && <Icon name="externalLink" size={16} className="hidden text-white/50 group-hover:block" />}
     </>
   );
-  return link.external ? (
-    <a href={link.href} target="_blank" rel="noreferrer" className={cls}>
-      {inner}
-    </a>
-  ) : (
+  if (link.action === "contact")
+    return (
+      <div className={cls} onClick={() => setUi({ contactOpen: true })}>
+        {inner}
+      </div>
+    );
+  if (link.external)
+    return (
+      <a href={link.href} target="_blank" rel="noreferrer" className={cls}>
+        {inner}
+      </a>
+    );
+  return (
     <Link href={link.href} className={cls} onClick={onNavigate} aria-current={active ? "page" : undefined}>
       {inner}
     </Link>
@@ -54,114 +129,95 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = normalize(usePathname());
   const plan = useStore((s) => s.user.plan);
   const setUi = useStore((s) => s.setUi);
+  const subjectsOpen = useStore((s) => s.sidebarSubjectsOpen);
   const inSubject = SUBJECTS.some((s) => pathname.startsWith(`/nclex/${s.id}`));
-  const [subjectsOpen, setSubjectsOpen] = useState(inSubject);
+  const open = subjectsOpen || inSubject;
+
+  const isActive = (href: string) =>
+    href === "/nclex" ? pathname === "/nclex" : href.includes("strategy-course") ? pathname.startsWith("/nclex/next-gen-strategy-course") : pathname.startsWith(href);
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 [scrollbar-width:thin] [scrollbar-color:#2a3035_transparent]">
-        <Logo />
+    <div className="relative h-full">
+      <div className={clsx("h-full overflow-y-auto [scrollbar-width:none]", plan === "free" ? "pb-[212px]" : "pb-6")}>
+        <Brand onNavigate={onNavigate} />
         <button
           onClick={() => {
             onNavigate?.();
             setUi({ createTestOpen: true });
           }}
-          className="mt-4 inline-flex h-11 items-center gap-2.5 rounded-full bg-brand pr-4 pl-4 text-base font-semibold text-white shadow-press hover:bg-[#6a5eef] active:translate-y-px active:shadow-none"
+          className="mx-4 mb-2 inline-flex h-[42px] cursor-pointer items-center rounded-[64px] bg-brand p-4 text-white shadow-[0_2px_0_0_#4a3ac8] transition-[background,box-shadow,transform] duration-[50ms] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none"
         >
-          <SquarePlus className="size-5" strokeWidth={2.2} />
-          Create Test
+          <Icon name="plusSquare" size={20} />
+          <span className="ml-2 text-base leading-4 font-semibold">Create Test</span>
         </button>
 
-        <nav className="mt-4" aria-label="Main">
+        <nav className="px-4" aria-label="Main">
           {NAV.map((section, si) => (
-            <div key={si} className={clsx(section.title && "mt-3")}>
-              {section.title && (
-                <div className="px-3 pt-1 pb-2 text-[10px] font-semibold tracking-wide text-white/60 uppercase">{section.title}</div>
-              )}
-              {section.subjects && (
-                <>
-                  <button
-                    onClick={() => setSubjectsOpen((o) => !o)}
-                    aria-expanded={subjectsOpen}
-                    className="flex h-[42px] w-full items-center gap-3 rounded-lg px-3 text-base text-white/80 hover:bg-shell-2/60 hover:text-white"
-                  >
-                    <GraduationCap className="size-[18px]" />
-                    <span className="flex-1 text-left">Subjects</span>
-                    {subjectsOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  </button>
-                  {subjectsOpen && (
-                    <div className="mb-1">
-                      {SUBJECTS.map((s) => {
-                        const href = `/nclex/${s.id}`;
-                        const active = pathname.startsWith(href);
-                        return (
-                          <Link
-                            key={s.id}
-                            href={href}
-                            onClick={onNavigate}
-                            className={clsx(
-                              "flex h-[42px] items-center truncate rounded-lg pr-3 pl-[42px] text-base",
-                              active ? "bg-shell-2 font-bold text-white" : "text-white/80 hover:bg-shell-2/60 hover:text-white",
-                            )}
-                          >
-                            <span className="truncate">{s.name}</span>
-                          </Link>
-                        );
-                      })}
+            <div key={si}>
+              {section.title && <div className="px-3 pt-2 text-[10px] leading-[10px] font-semibold text-muted uppercase">{section.title}</div>}
+              <div className="py-2">
+                {section.subjects && (
+                  <div className="mb-1">
+                    <div
+                      onClick={() => useStore.getState().setSidebarSubjectsOpen(!open)}
+                      className="flex h-[42px] cursor-pointer items-center rounded-lg p-3 text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                      aria-expanded={open}
+                    >
+                      <Icon name="subjects" size={20} />
+                      <h4 className="ml-2.5 flex-1 text-base leading-4">Subjects</h4>
+                      <svg viewBox="0 0 24 24" className="size-5 text-faint" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d={open ? "m19.5 8.25-7.5 7.5-7.5-7.5" : "m8.25 4.5 7.5 7.5-7.5 7.5"} />
+                      </svg>
                     </div>
-                  )}
-                </>
-              )}
-              {section.links.map((link) => (
-                <Item
-                  key={link.href}
-                  link={link}
-                  onNavigate={onNavigate}
-                  active={link.href === "/nclex" ? pathname === "/nclex" : pathname.startsWith(link.href)}
-                />
-              ))}
+                    {open && (
+                      <div className="pl-5">
+                        {SUBJECTS.map((s) => (
+                          <Item key={s.id} indent link={{ label: s.name, href: `/nclex/${s.id}`, icon: "home" }} active={pathname.startsWith(`/nclex/${s.id}`)} onNavigate={onNavigate} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {section.links.map((link) => (
+                  <Item key={link.label} link={link} onNavigate={onNavigate} active={!link.external && !link.action && isActive(link.href)} />
+                ))}
+                {si === NAV.length - 1 && (
+                  <div className="flex h-[42px] items-center gap-0 rounded-lg p-3">
+                    <img src="/assets/brand/app-store.png" alt="Download on the App Store" className="h-8 w-[95px] cursor-pointer" />
+                    <img src="/assets/brand/google-play.png" alt="Get it on Google Play" className="ml-1 h-8 w-[95px] cursor-pointer" />
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </nav>
 
-        <div className="mt-4 flex gap-2 px-3">
-          <StoreBadge store="App Store" sub="Download on the" />
-          <StoreBadge store="Google Play" sub="GET IT ON" />
+        <div className="px-7 py-2 text-xs leading-4 text-white/70">
+          <a href="https://bootcamp.com" className="mb-2 block">
+            © {new Date().getFullYear()} Bootcamp.com™
+          </a>
+          <div className="mb-2">
+            <a href="https://bootcamp.com/terms">Terms</a> · <a href="https://bootcamp.com/privacy">Privacy</a>
+          </div>
         </div>
-        <p className="mt-5 px-3 text-xs leading-5 text-white/80">
-          © {new Date().getFullYear()} Bootcamp.com™
-          <br />
-          <a className="hover:underline" href="https://bootcamp.com/terms">Terms</a> ·{" "}
-          <a className="hover:underline" href="https://bootcamp.com/privacy">Privacy</a>
-        </p>
       </div>
 
       {plan === "free" && (
-        <div className="shrink-0 px-4 pb-4">
-          <div className="rounded-lg bg-white/5 px-4 pt-4 pb-4 text-center">
-            <p className="text-[15px] leading-6 text-white/80">Upgrade your membership to get instant access to all content and features.</p>
+        <div className="absolute inset-x-0 bottom-0 bg-shell">
+          <div className="m-4 flex flex-col rounded-lg bg-white/5 p-4">
+            <p className="mb-4 text-center text-sm leading-[21px] text-white/70">Upgrade your membership to get instant access to all content and features.</p>
             <Link
               href="/nclex/upgrade"
-              className="mt-3 flex h-11 items-center justify-center gap-2 rounded-full bg-brand font-semibold text-white shadow-press hover:bg-[#6a5eef]"
+              onClick={onNavigate}
+              className="flex h-[42px] items-center justify-center rounded-[64px] bg-brand p-4 text-white shadow-[0_2px_0_0_#4a3ac8] transition-[background,box-shadow,transform] duration-[50ms] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none"
             >
-              <ShieldCheck className="size-5" />
-              Upgrade
+              <Icon name="shield" size={16} />
+              <span className="ml-2 text-base leading-4 font-semibold">Upgrade</span>
             </Link>
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-function StoreBadge({ store, sub }: { store: string; sub: string }) {
-  return (
-    <span className="inline-flex h-8 items-center gap-1 rounded-md border border-white/40 bg-black px-2 text-white">
-      <span className="leading-none">
-        <span className="block text-[6px] uppercase">{sub}</span>
-        <span className="block text-[11px] font-semibold">{store}</span>
-      </span>
-    </span>
   );
 }
 

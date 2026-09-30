@@ -1,0 +1,1688 @@
+{
+ "adult-health": {
+  "lessons": 86,
+  "runtime": "7h 53m",
+  "items": [
+   {
+    "type": "video",
+    "title": "Acute & Concerning Skin Conditions",
+    "duration": "10:06",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Acute & Concerning Skin Conditions",
+    "count": 7,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Acute Kidney Injury & Chronic Kidney Disease",
+    "duration": "11:37",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Acute Kidney Injury & Chronic Kidney Disease",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Anemia & Leukemia",
+    "duration": "11:58",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Anemia & Leukemia",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Appendicitis, Diverticulitis, & Bowel Obstruction",
+    "duration": "10:29",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Appendicitis, Diverticulitis, & Bowel Obstruction",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Arthritis & Osteoporosis",
+    "duration": "11:39",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Arthritis & Osteoporosis",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "BPH & Prostate Cancer",
+    "duration": "10:43",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "BPH & Prostate Cancer",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Brain Injuries & Increased ICP",
+    "duration": "12:51",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Brain Injuries & Increased ICP",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Burns & Inhalation Injury",
+    "duration": "10:30",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Burns & Inhalation Injury",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Cancer",
+    "duration": "13:57",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Cancer",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Cholecystitis & Pancreatitis",
+    "duration": "9:37",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Cholecystitis & Pancreatitis",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Chronic Obstructive Pulmonary Disease (COPD)",
+    "duration": "11:59",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Chronic Obstructive Pulmonary Disease",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Coronary Artery Disease & Myocardial Infarction Part",
+    "duration": "19:45",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Coronary Artery Disease & Myocardial Infarction Part",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Coronary Artery Disease & Myocardial Infarction Part 2",
+    "duration": "11:25",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Coronary Artery Disease & Myocardial Infarction Part",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Cranial Nerves, Bell Palsy, & Trigeminal Neuralgia",
+    "duration": "7:48",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Cranial Nerves, Bell Palsy, & Trigeminal Neuralgia",
+    "count": 5,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Cushing & Addison Disease",
+    "duration": "11:34",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Cushing & Addison Disease",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Deep Vein Thrombosis & Pulmonary Embolism",
+    "duration": "12:02",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Deep Vein Thrombosis & Pulmonary Embolism",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Endocarditis, Pericarditis, & Cardiac Tamponade",
+    "duration": "10:30",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Endocarditis, Pericarditis, & Cardiac Tamponade",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Eye Conditions",
+    "duration": "10:56",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Eye Conditions",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Fractures",
+    "duration": "11:32",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Fractures",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "GERD, Peptic Ulcer Disease, & GI Bleeding",
+    "duration": "11:11",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "GERD, Peptic Ulcer Disease, & GI Bleeding",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Hepatitis, Cirrhosis, & Esophageal Varices",
+    "duration": "12:14",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Hepatitis, Cirrhosis, & Esophageal Varices",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "HIV & AIDS",
+    "duration": "9:55",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "HIV & AIDS",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Hypertension",
+    "duration": "11:29",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Hypertension",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "IBS, IBD, & Celiac Disease",
+    "duration": "11:56",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "IBS, IBD, & Celiac Disease",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Lupus & Lyme Disease",
+    "duration": "6:53",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Lupus & Lyme Disease",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Lymphoma & Myeloma",
+    "duration": "10:41",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Lymphoma & Myeloma",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Nephrolithiasis",
+    "duration": "8:34",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Nephrolithiasis",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Neuromuscular Disorders",
+    "duration": "11:42",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Neuromuscular Disorders",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Organ & Bone Marrow Transplant",
+    "duration": "8:32",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Organ & Bone Marrow Transplant",
+    "count": 5,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Orthopedic Surgeries",
+    "duration": "10:09",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Orthopedic Surgeries",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Parkinson Disease & ALS",
+    "duration": "12:00",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Parkinson Disease & ALS",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Pneumonia, TB, Flu, & COVID-19",
+    "duration": "12:10",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Pneumonia, TB, Flu, & COVID-",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Pneumothorax & Chest Tube Management",
+    "duration": "9:48",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Pneumothorax & Chest Tube Management",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Reproductive Conditions",
+    "duration": "12:29",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Reproductive Conditions",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Seizures",
+    "duration": "9:22",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Seizures",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Shock & Sepsis",
+    "duration": "11:57",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Shock & Sepsis",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "SIADH & DI",
+    "duration": "11:37",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "SIADH & DI",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Spinal Cord Injury & Spinal Surgeries",
+    "duration": "12:00",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Spinal Cord Injury & Spinal Surgeries",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Stroke",
+    "duration": "10:33",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Stroke",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Thyroid & Parathyroid Disorders",
+    "duration": "12:05",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Thyroid & Parathyroid Disorders",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Tracheostomy & Laryngectomy",
+    "duration": "11:36",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Tracheostomy & Laryngectomy",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Urinary Tract Infections",
+    "duration": "11:48",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Urinary Tract Infections",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Vascular Disorders",
+    "duration": "11:36",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Vascular Disorders",
+    "count": 8,
+    "locked": true
+   }
+  ]
+ },
+ "child-health": {
+  "lessons": 46,
+  "runtime": "4h 05m",
+  "items": [
+   {
+    "type": "video",
+    "title": "Asthma",
+    "duration": "9:52",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Asthma",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "",
+    "duration": "",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": ", Stings, & Irritants10:38",
+    "count": 0,
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "",
+    "count": 0,
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": ", Stings, & Irritants",
+    "count": 7,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Childhood Musculoskeletal Conditions",
+    "duration": "10:01",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Childhood Musculoskeletal Conditions",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Cleft Palate, Tracheoesophageal Fistula, & Reflux",
+    "duration": "11:30",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Cleft Palate, Tracheoesophageal Fistula, & Reflux",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Common Skin Conditions",
+    "duration": "10:01",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Common Skin Conditions",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Congenital Heart Defects",
+    "duration": "11:23",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Congenital Heart Defects",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Cystic Fibrosis",
+    "duration": "12:00",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Cystic Fibrosis",
+    "count": 6,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Croup, Epiglottitis, & Tonsillitis",
+    "duration": "10:54",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Croup, Epiglottitis, & Tonsillitis",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Developmental Theories Part 1",
+    "duration": "14:38",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Developmental Theories Part",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Developmental Theories Part 2",
+    "duration": "13:40",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Developmental Theories Part",
+    "count": 4,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Glomerulonephritis, Nephrotic Syndrome, & Nephroblastoma",
+    "duration": "12:04",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Glomerulonephritis, Nephrotic Syndrome, & Nephroblastoma",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Growth & Development",
+    "duration": "10:24",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Growth & Development",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Hemophilia",
+    "duration": "8:13",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Hemophilia",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Infant & Child Safety",
+    "duration": "10:39",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Infant & Child Safety",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Infectious Diseases of Childhood",
+    "duration": "9:35",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Infectious Diseases of Childhood",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Meningitis",
+    "duration": "9:40",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Meningitis",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Neural Tube Defects & Hydrocephalus",
+    "duration": "10:31",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Neural Tube Defects & Hydrocephalus",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Obstructive & Inflammatory GI Conditions of Childhood",
+    "duration": "9:47",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Obstructive & Inflammatory GI Conditions of Childhood",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Omphalocele & Gastroschisis",
+    "duration": "8:28",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Omphalocele & Gastroschisis",
+    "count": 5,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Otitis Media, Conjunctivitis, & Strabismus",
+    "duration": "10:04",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Otitis Media, Conjunctivitis, & Strabismus",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Rheumatic Fever & Kawasaki Disease",
+    "duration": "11:36",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Rheumatic Fever & Kawasaki Disease",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "RSV & Bronchiolitis",
+    "duration": "9:15",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "RSV & Bronchiolitis",
+    "count": 5,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Sickle Cell Disease",
+    "duration": "10:29",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Sickle Cell Disease",
+    "count": 8,
+    "locked": true
+   }
+  ]
+ },
+ "fundamentals": {
+  "lessons": 26,
+  "runtime": "2h 32m",
+  "items": [
+   {
+    "type": "video",
+    "title": "Acid-Base Imbalances Part 1",
+    "duration": "12:06",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Acid-Base Imbalances Part",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Acid-Base Imbalances Part 2",
+    "duration": "12:29",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Acid-Base Imbalances Part",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Bowel Elimination",
+    "duration": "10:56",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Bowel Elimination",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Hearing Loss & Vertigo",
+    "duration": "10:46",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Hearing Loss & Vertigo",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Infection Control",
+    "duration": "11:32",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Infection Control",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Intracranial Regulation",
+    "duration": "12:57",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Intracranial Regulation",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Mobility & Positioning",
+    "duration": "12:06",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Mobility & Positioning",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Nutrition",
+    "duration": "13:01",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Nutrition",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Oxygenation",
+    "duration": "13:49",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Oxygenation",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Perioperative Care",
+    "duration": "10:30",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Perioperative Care",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Safety",
+    "duration": "9:35",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Safety",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Urinary Elimination",
+    "duration": "12:02",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Urinary Elimination",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Wounds & Hygiene",
+    "duration": "10:25",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Wounds & Hygiene",
+    "count": 10,
+    "locked": true
+   }
+  ]
+ },
+ "maternal-and-newborn-health": {
+  "lessons": 36,
+  "runtime": "3h 05m",
+  "items": [
+   {
+    "type": "video",
+    "title": "Abortion, Cervical Insufficiency, & Intrauterine Fetal Demise",
+    "duration": "8:53",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Abortion, Cervical Insufficiency, & Intrauterine Fetal Demise",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Antepartum Assessment & Discomforts of Pregnancy",
+    "duration": "12:48",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Antepartum Assessment & Discomforts of Pregnancy",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Chorioamnionitis & Neonatal Sepsis",
+    "duration": "8:50",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Chorioamnionitis & Neonatal Sepsis",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Ectopic & Molar Pregnancy",
+    "duration": "8:48",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Ectopic & Molar Pregnancy",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Fetal Monitoring",
+    "duration": "11:13",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Fetal Monitoring",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Gestational Diabetes",
+    "duration": "10:41",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Gestational Diabetes",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Hyperbilirubinemia & Hemolytic Disease of the Newborn",
+    "duration": "10:40",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Hyperbilirubinemia & Hemolytic Disease of the Newborn",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Labor Emergencies",
+    "duration": "9:57",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Labor Emergencies",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Neonatal Abstinence Syndrome & Fetal Alcohol Syndrome",
+    "duration": "8:20",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Neonatal Abstinence Syndrome & Fetal Alcohol Syndrome",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Newborn Care",
+    "duration": "12:14",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Newborn Care",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Newborn Respiratory Complications",
+    "duration": "9:34",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Newborn Respiratory Complications",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Placenta Previa & Placental Abruption",
+    "duration": "8:32",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Placenta Previa & Placental Abruption",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Postpartum Care",
+    "duration": "11:01",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Postpartum Care",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Postpartum Hemorrhage (PPH)",
+    "duration": "10:41",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Postpartum Hemorrhage (PPH)",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Preeclampsia & HELLP Syndrome",
+    "duration": "10:48",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Preeclampsia & HELLP Syndrome",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Preterm Labor & Delivery",
+    "duration": "12:04",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Preterm Labor & Delivery",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Process of Labor & OB Procedures",
+    "duration": "11:01",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Process of Labor & OB Procedures",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "TORCH Infections",
+    "duration": "9:49",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "TORCH Infections",
+    "count": 7,
+    "locked": true
+   }
+  ]
+ },
+ "mental-health": {
+  "lessons": 24,
+  "runtime": "2h 15m",
+  "items": [
+   {
+    "type": "video",
+    "title": "Addiction & Substance Use Disorders",
+    "duration": "13:24",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Addiction & Substance Use Disorders",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "ADHD & Autism",
+    "duration": "9:19",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "ADHD & Autism",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Aggression, Abuse, & Assault",
+    "duration": "12:04",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Aggression, Abuse, & Assault",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Anxiety & OCD",
+    "duration": "10:10",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Anxiety & OCD",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Bipolar Disorders",
+    "duration": "10:20",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Bipolar Disorders",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Dementia & Delirium",
+    "duration": "11:41",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Dementia & Delirium",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Depression & Suicide",
+    "duration": "9:54",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Depression & Suicide",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Eating Disorders",
+    "duration": "11:42",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Eating Disorders",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Personality Disorders",
+    "duration": "11:59",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Personality Disorders",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Schizophrenia",
+    "duration": "12:03",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Schizophrenia",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Therapeutic Communication",
+    "duration": "10:37",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Therapeutic Communication",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Trauma, Stress, & Coping",
+    "duration": "11:56",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Trauma, Stress, & Coping",
+    "count": 6,
+    "locked": true
+   }
+  ]
+ },
+ "pharmacology": {
+  "lessons": 42,
+  "runtime": "3h 51m",
+  "items": [
+   {
+    "type": "video",
+    "title": "Acid-Controlling Medications",
+    "duration": "10:38",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Acid-Controlling Medications",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Analgesics",
+    "duration": "11:37",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Analgesics",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Antibiotic Medications",
+    "duration": "12:46",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Antibiotic Medications",
+    "count": 9,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Antidepressants",
+    "duration": "10:05",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Antidepressants",
+    "count": 9,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Antidysrhythmics",
+    "duration": "11:33",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Antidysrhythmics",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Antiepileptic Drugs",
+    "duration": "12:22",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Antiepileptic Drugs",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Antihypertensives",
+    "duration": "11:26",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Antihypertensives",
+    "count": 10,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Antipsychotics",
+    "duration": "10:34",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Antipsychotics",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Anxiolytics & Seditive Hypnotics",
+    "duration": "9:44",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Anxiolytics & Seditive Hypnotics",
+    "count": 5,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Asthma & COPD Medications",
+    "duration": "9:22",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Asthma & COPD Medications",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Chemotherapy & Hematologic Medications",
+    "duration": "13:26",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Chemotherapy & Hematologic Medications",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Cold, Flu, & Allergy Medications",
+    "duration": "10:51",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Cold, Flu, & Allergy Medications",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Corticosteroids",
+    "duration": "11:06",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Corticosteroids",
+    "count": 4,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Diuretics",
+    "duration": "9:46",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Diuretics",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "GI Medications",
+    "duration": "12:17",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "GI Medications",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Integumentary Medications",
+    "duration": "8:49",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Integumentary Medications",
+    "count": 6,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Male & Female Reproductive Medications",
+    "duration": "7:13",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Male & Female Reproductive Medications",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Medication Administration Part 1",
+    "duration": "12:24",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Medication Administration Part",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Medication Administration Part 2",
+    "duration": "13:35",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Medication Administration Part",
+    "count": 8,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Musculoskeletal Medications",
+    "duration": "9:55",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Musculoskeletal Medications",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "OB Meds",
+    "duration": "12:08",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "OB Meds",
+    "count": 7,
+    "locked": true
+   }
+  ]
+ },
+ "management-of-care": {
+  "lessons": 12,
+  "runtime": "1h 26m",
+  "items": [
+   {
+    "type": "video",
+    "title": "Delegation & Assignment Part 1",
+    "duration": "14:21",
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Delegation & Assignment Part 2",
+    "duration": "13:07",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Delegation & Assignment",
+    "count": 5,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Ethics",
+    "duration": "12:01",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Ethics",
+    "count": 7,
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Legal",
+    "duration": "10:39",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Legal",
+    "count": 10,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Management Principles",
+    "duration": "11:07",
+    "locked": false
+   },
+   {
+    "type": "bites",
+    "title": "Management Principles",
+    "count": 8,
+    "locked": false
+   },
+   {
+    "type": "video",
+    "title": "Prioritization Part 1: Prioritization Toolkit",
+    "duration": "14:06",
+    "locked": true
+   },
+   {
+    "type": "video",
+    "title": "Prioritization Part 2: Practice Questions",
+    "duration": "11:15",
+    "locked": true
+   },
+   {
+    "type": "bites",
+    "title": "Prioritization",
+    "count": 9,
+    "locked": true
+   }
+  ]
+ }
+}

@@ -83,9 +83,9 @@ Routes mirror the live URLs (`/nclex/next-gen-cases`, `/nclex/previous-tests/rev
 
 ## Prototype-only controls
 
-**Account → Prototype Controls** lets you:
+Not part of the live product: open **/nclex/prototype** (or press **Ctrl+Shift+P** anywhere). From there you can:
 - switch between the Free and Premium plans,
-- reset all progress,
+- reset progress or clear all local data,
 - toggle experiments.
 
 ## Adding a proposed feature
@@ -95,12 +95,19 @@ Routes mirror the live URLs (`/nclex/next-gen-cases`, `/nclex/previous-tests/rev
    export const EXPERIMENTS = [{ key: "today-card", name: "Today card", description: "…" }];
    ```
 2. Gate the UI with `useFeature("today-card")`.
-3. Turn it on from Account → Prototype Controls, or append `?feature=today-card` to any URL.
+3. Turn it on from /nclex/prototype, or append `?feature=today-card` to any URL.
 
 Flags are off by default, so the clone keeps matching production and each proposal can be shown before and after on the same screen.
 
+## How fidelity was checked
+
+Every page was captured from the live app (free account) with a script that records each element's size, font, colors, borders, shadows, and its `:hover` / `:active` / `:focus` rules (`research/tree.js`, output in `research/walk/*.tree.txt`). Components were rebuilt from those values and compared side by side with the live screenshots.
+
+Real catalog data comes from the live pages: systems per subject with averages (Performance), crash course lessons (Video/Bites with durations), 143 cheat sheets with their systems, and all FAQ answers. See `src/data/live/`.
+
 ## Content notes
 
-- Question and case content is **original mock content** written for this prototype, not copied from the production bank. Catalog counts (565 questions, 27 cases, and so on) mirror the live site.
-- One case is authored per subject (Adult Health, Maternal & Newborn, Child Health), plus 12 standalone items. Other catalog rows replay the closest authored case.
-- Videos, PDFs, and expert photos are placeholders.
+- Question and case content is **original mock content** written for this prototype, not copied from the production bank. Catalog counts mirror the live site.
+- UI assets (logo, subject icons, expert photos, app-store badges, icons) are the live app's own assets, for internal prototyping.
+- Proxima Nova is licensed through Adobe, so the clone uses Figtree with -0.01em tracking, which matches Proxima's line widths within about 1%.
+- Not replicated: video and PDF media, search illustrations, and the post-creation study schedule view (it didn't load for the free account, so that view is my own design).

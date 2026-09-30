@@ -7,7 +7,7 @@ import { BookOpen, CirclePlay, ClipboardList, Pencil, Target, Trash2 } from "luc
 import { SCHEDULE_FAQS } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import { buildPlan, formatLong, toISODate } from "@/lib/schedule";
-import { Button, Card, FaqList, PageHeader, SectionTitle } from "@/components/ui/primitives";
+import { Button, Card, FaqList, PageHeader } from "@/components/ui/primitives";
 import { StudyScheduleCard } from "@/components/home/StudyScheduleCard";
 import { CreateScheduleModal } from "@/components/home/CreateScheduleModal";
 
@@ -84,8 +84,7 @@ export default function StudySchedulePage() {
           <CreateScheduleModal open={editing} onClose={() => setEditing(false)} />
         </>
       )}
-      <SectionTitle>FAQs</SectionTitle>
-      <FaqList items={SCHEDULE_FAQS} title={null} />
+      <FaqList items={SCHEDULE_FAQS} />
     </>
   );
 }

@@ -1,87 +1,159 @@
 "use client";
 
 import clsx from "clsx";
-import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, CirclePlay, Lock } from "lucide-react";
+import { useState } from "react";
+import type { Lesson } from "@/data/catalog";
 import { useStore } from "@/lib/store";
-import { Button, Modal, ProgressBar } from "@/components/ui/primitives";
+import { Icon } from "@/components/ui/Icon";
+import { ProgressBar, UsageBar } from "@/components/ui/primitives";
 
 export interface Course {
   id: string;
   title: string;
-  lessons: string[];
   runtime: string;
-  /** Lessons free users can watch. */
-  freeLessons?: number;
+  lessons: Lesson[];
+  /** "N lessons" shown in the header (live counts videos and bites). */
+  count: number;
+  /** Base URL for lesson links; `?index=N` is appended (1-based). */
+  href: string;
 }
 
-export function CourseList({ courses }: { courses: Course[] }) {
-  const router = useRouter();
-  const plan = useStore((s) => s.user.plan);
-  const [open, setOpen] = useState<string | null>(null);
-  const [playing, setPlaying] = useState<{ course: Course; index: number } | null>(null);
+/** Filter input above the course list ("Start typing to filter the lessons"). */
+export function LessonFilter({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="relative mb-4 text-white">
+      <Icon name="filter" size={24} className="absolute top-1/2 left-7 -translate-y-1/2 text-white/70" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Start typing to filter the lessons"
+        className="h-12 w-full rounded-full bg-white/10 py-4 pr-8 pl-16 text-lg leading-[27px] text-white transition-[box-shadow,background] duration-[400ms] outline-none placeholder:text-white/70 focus:bg-white/15"
+      />
+    </div>
+  );
+}
 
-  const play = (course: Course, index: number) => {
-    const free = plan === "premium" || index < (course.freeLessons ?? 1);
-    if (!free) return router.push("/nclex/upgrade");
-    setPlaying({ course, index });
-  };
+/** Crash course cards: header (index, title, lessons bar, Start) + expandable Video/Bites rows. */
+export function CourseList({ courses, filter = "", defaultOpen = false }: { courses: Course[]; filter?: string; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState<Set<string>>(() => new Set(defaultOpen ? courses.map((c) => c.id) : []));
+  const term = filter.trim().toLowerCase();
+  const toggle = (id: string) =>
+    setOpen((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
 
   return (
-    <div className="space-y-2">
-      {courses.map((c, n) => (
-        <div key={c.id} className="bg-card overflow-hidden rounded-lg shadow-card">
-          <div className="flex items-center gap-4 px-6 py-5">
-            <span className="w-6 shrink-0 text-center text-faint">{n + 1}</span>
-            <div className="min-w-0 flex-1">
-              <div className="text-lg font-semibold text-ink-strong">{c.title}</div>
-              <ProgressBar value={0} className="mt-2.5" />
-              <div className="mt-2 text-base text-muted">
-                <b className="font-semibold text-ink">0</b> of {c.lessons.length} lessons completed <span className="mx-1">•</span> {c.runtime} runtime
+    <div className="flex flex-col">
+      {courses.map((c, n) => {
+        const lessons = c.lessons.map((l, i) => ({ ...l, index: i + 1 })).filter((l) => !term || l.title.toLowerCase().includes(term));
+        if (term && !lessons.length) return null;
+        const expanded = Boolean(term) || open.has(c.id);
+        const firstFree = c.lessons.findIndex((l) => !l.locked) + 1 || 1;
+        return (
+          <div key={c.id} className="mb-2 rounded-lg bg-white shadow-card transition-transform duration-200 hover:scale-[1.01]">
+            <Link href={`${c.href}?index=${firstFree}`} className="flex items-center rounded-t-lg bg-white px-6 py-4">
+              <div className="mr-4 flex min-w-0 flex-1 items-start">
+                <h4 className="mr-4 text-lg leading-[22.5px] font-semibold text-faint">{n + 1}</h4>
+                <div className="min-w-0 flex-1 lg:max-w-[630px]">
+                  <h4 className="mr-4 text-lg leading-[22.5px] font-semibold text-ink-strong">{c.title}</h4>
+                  <div className="mt-2">
+                    <ProgressBar value={0} className="mb-2" />
+                    <p className="text-base leading-4 text-muted">
+                      <strong className="font-bold">0</strong> of {c.count} lessons completed
+                      <span className="mx-1 text-faint">•</span>
+                      {c.runtime} runtime
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-            <Button className="min-w-[92px]" onClick={() => play(c, 0)}>
-              Start
-            </Button>
+              <div className="flex items-center justify-end pr-2 pl-4">
+                <span className="flex h-[42px] w-[98px] items-center justify-center rounded-[64px] bg-brand text-base leading-[18px] font-semibold text-white shadow-[0_2px_0_0_#4a3ac8] transition-[background,transform] duration-[50ms] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none">
+                  Start
+                </span>
+              </div>
+            </Link>
+
+            {expanded && (
+              <div className="flex flex-col">
+                {lessons.map((l) => (
+                  <LessonRow key={l.index} lesson={l} href={`${c.href}?index=${l.index}`} />
+                ))}
+              </div>
+            )}
+
+            {!term && (
+              <div
+                onClick={() => toggle(c.id)}
+                className="flex cursor-pointer items-center rounded-b-lg border-t border-[#ededf0] bg-[#fafafa] px-[18px] py-4 transition-colors duration-200 hover:bg-[#f6f6f6]"
+              >
+                <Icon name={expanded ? "chevronUpThin" : "chevronDownThin"} size={24} className="text-muted" />
+                <p className="ml-4 text-base leading-4 font-medium text-muted">{expanded ? "Hide lessons" : `Show all ${c.count} lessons`}</p>
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => setOpen(open === c.id ? null : c.id)}
-            aria-expanded={open === c.id}
-            className="flex w-full items-center justify-center gap-1.5 border-t border-line py-2.5 text-[15px] font-semibold text-brand hover:bg-[#fafafb]"
+        );
+      })}
+      {term && courses.every((c) => !c.lessons.some((l) => l.title.toLowerCase().includes(term))) && (
+        <p className="py-8 text-center text-lg text-white/70">No lessons match “{filter}”.</p>
+      )}
+    </div>
+  );
+}
+
+function LessonRow({ lesson, href }: { lesson: Lesson & { index: number }; href: string }) {
+  const router = useRouter();
+  const plan = useStore((s) => s.user.plan);
+  const locked = plan === "free" && lesson.locked;
+  return (
+    <Link
+      href={locked ? "/nclex/upgrade" : href}
+      onClick={(e) => {
+        if (locked) {
+          e.preventDefault();
+          router.push("/nclex/upgrade");
+        }
+      }}
+      className="group border-b border-[#ededf0] bg-white px-2 transition-colors duration-200 hover:rounded-lg hover:bg-[#f6f6f6]"
+    >
+      <div className="flex items-center">
+        <div className="flex size-12 items-center justify-center p-3">
+          <span className="rounded-full p-1 transition-colors duration-100 hover:bg-[#ededf0]">
+            <span className="block size-4 rounded-full border border-black/30" />
+          </span>
+        </div>
+        <div className="flex size-12 items-center justify-center rounded-lg p-4">
+          {lesson.type === "bites" && <Icon name="bites" size={16} className="text-faint" />}
+        </div>
+        <div className="px-3.5 py-[11px]">
+          <div
+            className={clsx(
+              "w-[52px] rounded border px-2 py-1 text-center",
+              lesson.type === "video" ? "border-[rgba(20,184,166,0.25)] text-[#14b8a6]" : "border-[rgba(249,115,22,0.25)] text-[#f97316]",
+            )}
           >
-            {open === c.id ? "Hide lessons" : `Show all ${c.lessons.length} lessons`}
-            {open === c.id ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-          </button>
-          {open === c.id && (
-            <ol className="divide-y divide-line border-t border-line">
-              {c.lessons.map((l, i) => {
-                const locked = plan === "free" && i >= (c.freeLessons ?? 1);
-                return (
-                  <li key={i}>
-                    <button onClick={() => play(c, i)} className="flex w-full items-center gap-4 px-6 py-3 text-left hover:bg-[#fafafb]">
-                      <span className="w-10 text-sm text-muted">
-                        {n + 1}.{i + 1}
-                      </span>
-                      <span className={clsx("flex-1 text-base", locked ? "text-muted" : "text-ink")}>{l}</span>
-                      {locked ? <Lock className="size-4 text-faint" /> : <CirclePlay className="size-5 text-brand" />}
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
+            <p className="text-xs leading-3">{lesson.type === "video" ? "Video" : "Bites"}</p>
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-1 p-4">
+          <p className="truncate text-base leading-4 text-ink-strong">{lesson.title}</p>
+          {lesson.type === "video" ? (
+            <p className="shrink-0 text-base leading-4 text-muted">{lesson.duration}</p>
+          ) : (
+            <div className="flex shrink-0 items-center gap-2">
+              <p className="text-base leading-4 text-muted">0 / {lesson.count}</p>
+              <UsageBar total={lesson.count ?? 1} className="hidden w-[76px] sm:flex" />
+            </div>
           )}
         </div>
-      ))}
-
-      <Modal open={Boolean(playing)} onClose={() => setPlaying(null)} title={playing ? `${playing.course.title} · ${playing.course.lessons[playing.index]}` : ""} width={900}>
-        <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-[#1b1f3b] to-[#4a3ac8] text-white">
-          <div className="text-center">
-            <CirclePlay className="mx-auto size-16 opacity-90" />
-            <p className="mt-3 text-white/80">Video player placeholder. Lesson videos are not included in the static prototype.</p>
-          </div>
+        <div className="flex size-12 items-center justify-center p-4">
+          {locked ? <Icon name="shield" size={20} className="text-[#85868e]" /> : <Icon name="chevronRight" size={16} className="text-faint" />}
         </div>
-      </Modal>
-    </div>
+      </div>
+    </Link>
   );
 }

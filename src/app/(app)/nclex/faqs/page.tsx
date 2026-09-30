@@ -7,7 +7,7 @@ export default function FaqsPage() {
       <PageHeader
         trail={[{ label: "FAQs" }]}
         title="FAQs"
-        description="Don't see your question answered here? Just send us a message by clicking the Contact link in the sidebar."
+        description="Don’t see your question answered here? Just send us a message by clicking the Contact link in the sidebar or click the blue chat button at the bottom-right of your screen."
       />
       <FaqList items={HOME_FAQS} title={null} />
     </>

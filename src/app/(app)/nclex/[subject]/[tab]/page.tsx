@@ -6,8 +6,7 @@ import { tabsFor, type SubjectTab } from "@/lib/subjectTabs";
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  // The first tab lives at /nclex/:subject, so only the remaining tabs get their own path.
-  return SUBJECTS.flatMap((s) => tabsFor(s.id).slice(1).map((tab) => ({ subject: s.id, tab })));
+  return SUBJECTS.flatMap((s) => tabsFor(s.id).map((tab) => ({ subject: s.id, tab })));
 }
 
 export default async function SubjectTabPage({ params }: { params: Promise<{ subject: string; tab: string }> }) {

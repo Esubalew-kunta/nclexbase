@@ -24,6 +24,11 @@ export function toISODate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** "September 29th, 2026" (score report chip). */
+export function formatFull(d: Date) {
+  return formatLong(d).replace(/^\w{3}/, d.toLocaleString("en-US", { month: "long" }));
+}
+
 export function formatLong(d: Date) {
   const day = d.getDate();
   const suffix = day % 10 === 1 && day !== 11 ? "st" : day % 10 === 2 && day !== 12 ? "nd" : day % 10 === 3 && day !== 13 ? "rd" : "th";
@@ -39,7 +44,7 @@ export function buildPlan(s: Schedule): PlanDay[] {
   const end = s.exam ? parseDate(s.exam) : new Date(start.getTime() + 56 * 864e5);
   const days: PlanDay[] = [];
   for (let d = new Date(start); d < end; d = new Date(d.getTime() + 864e5)) {
-    days.push({ date: d, off: s.daysOff.includes(d.getDay()), tasks: [] });
+    days.push({ date: d, off: s.daysOff.includes(d.getDay()) || Boolean(s.offDates?.includes(toISODate(d))), tasks: [] });
   }
   const study = days.filter((d) => !d.off);
   if (!study.length) return days;

@@ -3,9 +3,10 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
-import { CHEAT_SHEETS, LESSON_TITLES, SUBJECTS } from "@/data/catalog";
+import { CHEAT_SHEETS, LESSONS, SUBJECTS } from "@/data/catalog";
+import { useStore } from "@/lib/store";
 import type { SubjectId } from "@/lib/types";
+import { Icon } from "@/components/ui/Icon";
 
 type Kind = "Video" | "Cheat Sheet";
 interface Hit {
@@ -14,41 +15,43 @@ interface Hit {
   subject: SubjectId;
   href: string;
   index?: string;
+  locked: boolean;
 }
 
-const INDEX: Hit[] = [
-  ...SUBJECTS.flatMap((s, si) =>
-    LESSON_TITLES[s.id].map((title, li) => ({
-      title,
-      kind: "Video" as const,
-      subject: s.id,
-      index: `${si + 1}.${li + 1}`,
-      href: `/nclex/${s.id}/crash-courses`,
-    })),
-  ),
-  ...CHEAT_SHEETS.map((c) => ({ title: c.title, kind: "Cheat Sheet" as const, subject: c.subject, href: `/nclex/cheat-sheets` })),
-];
+function buildIndex(): Hit[] {
+  const hits: Hit[] = [];
+  for (const s of SUBJECTS)
+    LESSONS[s.id].forEach((l, i) => {
+      if (l.type === "video") hits.push({ title: l.title, kind: "Video", subject: s.id, index: `1.${i + 1}`, href: `/nclex/${s.id}/videos`, locked: l.locked });
+    });
+  for (const c of CHEAT_SHEETS) hits.push({ title: c.title, kind: "Cheat Sheet", subject: c.subject, href: `/nclex/${c.subject}/cheat-sheets`, locked: !c.free });
+  return hits;
+}
 
 const FILTERS = ["All", "Videos", "Cheat Sheets"] as const;
 
 export function SearchBox() {
-  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
+  const plan = useStore((s) => s.user.plan);
   const input = useRef<HTMLInputElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
+  const index = useMemo(() => buildIndex(), []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
         e.preventDefault();
-        setOpen(true);
-        requestAnimationFrame(() => input.current?.focus());
+        input.current?.focus();
       }
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setFocused(false);
+        input.current?.blur();
+      }
     };
     const onClick = (e: MouseEvent) => {
-      if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
+      if (wrap.current && !wrap.current.contains(e.target as Node)) setFocused(false);
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("mousedown", onClick);
@@ -58,90 +61,97 @@ export function SearchBox() {
     };
   }, []);
 
+  const term = q.trim().toLowerCase();
   const groups = useMemo(() => {
-    const term = q.trim().toLowerCase();
     if (!term) return [];
-    const hits = INDEX.filter(
-      (h) =>
-        h.title.toLowerCase().includes(term) &&
-        (filter === "All" || (filter === "Videos" ? h.kind === "Video" : h.kind === "Cheat Sheet")),
+    const hits = index.filter(
+      (h) => h.title.toLowerCase().includes(term) && (filter === "All" || (filter === "Videos" ? h.kind === "Video" : h.kind === "Cheat Sheet")),
     );
     return SUBJECTS.map((s) => ({ subject: s, hits: hits.filter((h) => h.subject === s.id) })).filter((g) => g.hits.length);
-  }, [q, filter]);
+  }, [term, filter, index]);
+
+  const active = focused || Boolean(q);
+  const showResults = active && Boolean(term);
 
   return (
-    <div ref={wrap} className="relative">
-      {!open ? (
-        <button
-          onClick={() => {
-            setOpen(true);
-            requestAnimationFrame(() => input.current?.focus());
-          }}
-          className="flex h-[42px] w-[200px] items-center gap-2.5 rounded-full bg-white/10 px-4 text-white/70 hover:bg-white/15"
-        >
-          <Search className="size-[18px]" />
-          <span className="flex-1 text-left">Search</span>
-          <kbd className="rounded-md bg-white/15 px-1.5 py-0.5 font-sans text-xs font-semibold text-white/80">ctrl + F</kbd>
-        </button>
-      ) : (
-        <div className="absolute top-0 left-0 z-40 w-[400px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl bg-white shadow-2xl animate-fade-in">
-          <div className="flex h-[42px] items-center gap-2.5 px-4">
-            <Search className="size-[18px] text-muted" />
-            <input
-              ref={input}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search Bootcamp content"
-              aria-label="Search Bootcamp content"
-              className="flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
-            />
-            <button onClick={() => (q ? setQ("") : setOpen(false))} aria-label="Clear search" className="text-brand">
-              <X className="size-5" />
-            </button>
-          </div>
-          <div className="flex gap-2 px-4 pb-3">
+    <div ref={wrap} className="relative mr-4 flex transition-[max-width] duration-200 ease-in-out" style={{ width: active ? 400 : 200 }}>
+      <div
+        className={clsx(
+          "flex h-[42px] w-full items-center border px-4 py-2 transition-[box-shadow,background,border] duration-200",
+          active ? "border-white bg-white" : "border-white/5 bg-white/10",
+          showResults ? "rounded-t-[21px]" : "rounded-3xl",
+        )}
+      >
+        <Icon name="search" size={20} className={active ? "text-brand" : "text-white/70"} />
+        <input
+          ref={input}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onFocus={() => setFocused(true)}
+          placeholder="Search"
+          aria-label="Search Bootcamp content"
+          className={clsx(
+            "h-full min-w-0 flex-1 bg-transparent pl-2.5 text-base outline-none",
+            active ? "text-ink-strong placeholder:text-muted" : "text-white placeholder:text-white/70",
+          )}
+        />
+        {!active && (
+          <kbd className="flex h-5 items-center justify-center rounded-lg bg-black/10 px-2 font-sans text-sm leading-none font-semibold text-white/70">ctrl + F</kbd>
+        )}
+        {active && q && (
+          <button onClick={() => (setQ(""), input.current?.focus())} aria-label="Clear search" className="cursor-pointer text-brand">
+            <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {showResults && (
+        <div className="absolute top-[42px] left-0 z-40 flex w-full flex-col overflow-hidden rounded-b-[21px] bg-white shadow-[0_16px_30px_rgba(0,0,0,0.24)]">
+          <div className="flex gap-2 overflow-auto px-4 pt-2 pb-3">
             {FILTERS.map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={clsx(
-                  "h-8 rounded-full border px-3 text-sm",
-                  filter === f ? "border-brand bg-brand text-white" : "border-line text-ink hover:bg-[#f6f6f8]",
+                  "flex cursor-pointer items-center justify-center rounded-xl border px-2.5 py-1.5 text-sm",
+                  filter === f ? "border-brand bg-brand text-white" : "border-black/10 bg-white text-ink-strong hover:bg-[#f6f6f6]",
                 )}
               >
                 {f}
               </button>
             ))}
           </div>
-          <div className="max-h-[420px] overflow-y-auto border-t border-line">
-            {!q.trim() && <p className="px-4 py-6 text-center text-sm text-muted">Search videos, cheat sheets, and topics.</p>}
-            {q.trim() && !groups.length && <p className="px-4 py-6 text-center text-sm text-muted">No results for “{q}”.</p>}
+          <div className="flex max-h-[420px] flex-col overflow-auto">
+            {!groups.length && <p className="px-4 py-6 text-center text-sm text-muted">No results for “{q}”.</p>}
             {groups.map(({ subject, hits }) => (
               <div key={subject.id}>
-                <div className="bg-brand-tint px-4 py-2.5">
-                  <div className="font-semibold text-brand">{subject.name}</div>
-                  <div className="text-[10px] font-semibold tracking-wide text-brand/80 uppercase">
-                    {hits.length} result{hits.length > 1 ? "s" : ""}
-                  </div>
-                </div>
+                <Link
+                  href={`/nclex/${subject.id}`}
+                  onClick={() => setFocused(false)}
+                  className="flex flex-col justify-center border-b border-black/5 bg-[#eef1ff] px-4 py-3 hover:bg-[#e0e6ff]"
+                >
+                  <h5 className="text-base leading-5 font-semibold text-brand">{subject.name}</h5>
+                  <p className="mt-1 text-[10px] leading-[10px] font-semibold text-brand uppercase">
+                    {hits.length} {hits.length === 1 ? "result" : "results"}
+                  </p>
+                </Link>
                 {hits.map((h) => (
                   <Link
                     key={h.kind + h.title}
-                    href={h.href}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 border-b border-line px-6 py-3 hover:bg-[#fafafb]"
+                    href={h.locked && plan === "free" ? "/nclex/upgrade" : h.href}
+                    onClick={() => setFocused(false)}
+                    className="flex items-center justify-between gap-3 border-b border-black/5 py-3 pr-4 pl-6 hover:bg-[#f6f6f6]"
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-semibold text-ink-strong">
-                        {h.index && <span className="mr-1 font-normal text-muted">{h.index}</span>}
-                        {h.title}
-                      </div>
-                      <div className="text-sm text-muted">{subject.name}</div>
-                    </div>
+                    <h5 className="text-base leading-5 font-semibold text-ink-strong">
+                      {h.index && <span className="mr-1 font-normal text-muted">{h.index}</span>}
+                      {h.title}
+                    </h5>
                     <span
                       className={clsx(
-                        "rounded-md px-2 py-0.5 text-xs font-medium",
-                        h.kind === "Video" ? "bg-[#e7f7ef] text-[#2a9d62]" : "bg-[#fdecef] text-[#d9577a]",
+                        "shrink-0 rounded-lg border px-2 py-1 text-xs leading-3",
+                        h.kind === "Video" ? "border-[#d1fae5] bg-[#d1fae5]/25 text-[#047857]" : "border-[#fae8ff] bg-[#fae8ff]/25 text-[#a21caf]",
                       )}
                     >
                       {h.kind}

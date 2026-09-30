@@ -3,31 +3,59 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Info, Minus, Plus, ShieldCheck } from "lucide-react";
-import { SUBJECTS } from "@/data/catalog";
-import { CASES } from "@/data/cases";
+import { useMemo, useState, type ReactNode } from "react";
+import { SUBJECTS, TOTALS } from "@/data/catalog";
+import { CASE_ROWS } from "@/data/cases";
 import { ALL_ITEMS, buildEntries } from "@/lib/bank";
 import { usedItemIds, useStore } from "@/lib/store";
 import type { Item, Pool, SubjectId } from "@/lib/types";
+import { Icon } from "@/components/ui/Icon";
 import { Checkbox, CountPill, Modal, Toggle } from "@/components/ui/primitives";
 
-const POOLS: { id: Pool; label: string }[] = [
-  { id: "unused", label: "Unused" },
-  { id: "learning", label: "Learning" },
-  { id: "reviewing", label: "Reviewing" },
-  { id: "mastered", label: "Mastered" },
-  { id: "bookmarked", label: "Bookmarked" },
+const POOLS: { id: Pool; label: string; tone: "brand" | "bad" | "warn" | "good" }[] = [
+  { id: "unused", label: "Unused", tone: "brand" },
+  { id: "learning", label: "Learning", tone: "bad" },
+  { id: "reviewing", label: "Reviewing", tone: "warn" },
+  { id: "mastered", label: "Mastered", tone: "good" },
+  { id: "bookmarked", label: "Bookmarked", tone: "brand" },
 ];
 
 const MAX_QUESTIONS = 150;
-const caseItemIds = new Set(CASES.flatMap((c) => c.items.map((i) => i.id)));
+
+function LockBox() {
+  return (
+    <span className="flex size-[18px] shrink-0 items-center justify-center rounded-[4px] bg-[#f6f6f6]">
+      <Icon name="shield" size={11} className="text-muted" />
+    </span>
+  );
+}
+
+function Info({ tip }: { tip: string }) {
+  return (
+    <span className="group relative ml-1.5 flex text-faint" tabIndex={0}>
+      <svg viewBox="0 0 28 28" className="size-4" fill="currentColor">
+        <path d="M2 14a12 12 0 1 0 24 0 12 12 0 0 0-24 0Zm13.25-6a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0ZM14 11c.55 0 1 .45 1 1v8a1 1 0 1 1-2 0v-8c0-.55.45-1 1-1Z" />
+      </svg>
+      <span className="pointer-events-none absolute top-6 left-1/2 z-10 hidden w-64 -translate-x-1/2 rounded-lg bg-shell px-3 py-2 text-sm font-normal text-white shadow-lg group-hover:block group-focus:block">
+        {tip}
+      </span>
+    </span>
+  );
+}
 
 export function CreateTestModal() {
   const open = useStore((s) => s.createTestOpen);
   const setUi = useStore((s) => s.setUi);
-  // Remount on open so the form resets each time.
   return open ? <CreateTestForm onClose={() => setUi({ createTestOpen: false })} /> : null;
+}
+
+interface Node {
+  id: string;
+  label: string;
+  count: number;
+  locked: boolean;
+  subject?: SubjectId;
+  children: { id: string; label: string; count: number; locked: boolean; system?: string }[];
 }
 
 function CreateTestForm({ onClose }: { onClose: () => void }) {
@@ -37,75 +65,110 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
   const bookmarks = useStore((s) => s.bookmarks);
   const plan = useStore((s) => s.user.plan);
   const createSession = useStore((s) => s.createSession);
+  const isFree = plan === "free";
 
   const [tutor, setTutor] = useState(true);
   const [timed, setTimed] = useState(false);
   const [pools, setPools] = useState<Set<Pool>>(new Set(["unused"]));
-  const [subjects, setSubjects] = useState<Set<SubjectId>>(new Set(SUBJECTS.map((s) => s.id)));
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [count, setCount] = useState(6);
 
   const used = useMemo(() => usedItemIds(sessions), [sessions]);
-  const inPool = (item: Item, pool: Pool) => {
-    switch (pool) {
-      case "unused":
-        return !used.has(item.id);
-      case "bookmarked":
-        return Boolean(bookmarks[item.id]);
-      default:
-        return tags[item.id] === pool;
-    }
+  const inPool = (item: Item, pool: Pool) =>
+    pool === "unused" ? !used.has(item.id) : pool === "bookmarked" ? Boolean(bookmarks[item.id]) : tags[item.id] === pool;
+  const poolCount = (pool: Pool) => {
+    const n = ALL_ITEMS.filter((i) => inPool(i, pool)).length;
+    // Free accounts see the live free-question count (36) minus what they've used.
+    return pool === "unused" && isFree ? Math.max(0, TOTALS.freeQuestions - used.size) : n;
   };
-  const poolCount = (pool: Pool) => ALL_ITEMS.filter((i) => inPool(i, pool)).length;
-  const poolItems = ALL_ITEMS.filter((i) => [...pools].some((p) => inPool(i, p)));
-  const selected = poolItems.filter((i) => subjects.has(i.subject));
-  const max = Math.min(MAX_QUESTIONS, selected.length);
-  const n = Math.min(count, max);
 
-  const isFree = plan === "free";
-  const togglePool = (p: Pool) =>
-    setPools((prev) => {
-      const next = new Set(prev);
-      if (next.has(p)) next.delete(p);
-      else next.add(p);
-      return next;
+  const nodes: Node[] = [
+    {
+      id: "cases",
+      label: "Case Studies",
+      count: TOTALS.cases,
+      locked: isFree,
+      children: CASE_ROWS.map((r) => ({ id: `case:${r.id}`, label: r.title, count: 6, locked: isFree })),
+    },
+    ...SUBJECTS.map((s) => ({
+      id: s.id,
+      label: s.name,
+      count: s.standaloneCount,
+      locked: isFree,
+      subject: s.id,
+      children: s.systems.map((sys) => ({ id: `${s.id}:${sys.name}`, label: sys.name, count: sys.count, locked: isFree, system: sys.name })),
+    })),
+  ];
+  const leftIds = ["cases", "adult-health", "child-health", "fundamentals"];
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(isFree ? ["free", "free:all"] : nodes.flatMap((n) => [n.id, ...n.children.map((c) => c.id)])));
+
+  const toggleSel = (ids: string[], on: boolean) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      ids.forEach((id) => (on ? n.add(id) : n.delete(id)));
+      return n;
     });
-  const toggleSubject = (id: SubjectId) =>
-    setSubjects((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const toggleExp = (id: string) =>
+    setExpanded((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
     });
-  const toggleExpand = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+
+  // Items available for the test given pools + selection.
+  const poolItems = ALL_ITEMS.filter((i) => [...pools].some((p) => inPool(i, p)));
+  const chosen = poolItems.filter((i) =>
+    isFree ? selected.has("free") : selected.has(i.subject) || [...selected].some((id) => id === `${i.subject}:${i.system}`),
+  );
+  const selectedCount = isFree
+    ? selected.has("free")
+      ? poolCount("unused")
+      : 0
+    : nodes.reduce((a, n) => a + n.children.filter((c) => selected.has(c.id)).reduce((b, c) => b + c.count, 0), 0);
+  const max = Math.min(MAX_QUESTIONS, selectedCount);
+  const n = Math.min(count, max);
+  const allSelectable = isFree ? ["free", "free:all"] : nodes.flatMap((x) => [x.id, ...x.children.map((c) => c.id)]);
+  // Live: on free accounts the "Subjects" select-all box stays unchecked.
+  const allOn = !isFree && allSelectable.every((id) => selected.has(id));
+  const someOn = allSelectable.some((id) => selected.has(id));
 
   const start = () => {
-    if (!n) return;
-    const entries = buildEntries({
-      subjects: [...subjects],
-      exclude: new Set(),
-      include: new Set(selected.map((i) => i.id)),
-      count: n,
-    });
+    if (!n || !chosen.length) return;
+    const entries = buildEntries({ subjects: "all", exclude: new Set(), include: new Set(chosen.map((i) => i.id)), count: n });
     const id = createSession({ kind: "custom", entries, tutor, timed, pool: [...pools][0] ?? "unused", timeLimit: timed ? entries.length * 90 : undefined });
     onClose();
     router.push(`/nclex/custom-test?id=${id}`);
   };
 
-  const subjectRows = SUBJECTS.map((s) => ({
-    subject: s,
-    count: poolItems.filter((i) => i.subject === s.id).length,
-    systems: groupBySystem(poolItems.filter((i) => i.subject === s.id)),
-  }));
-  const allSubjects = subjects.size === SUBJECTS.length;
-  const freeCount = poolItems.length;
-  const caseCount = poolItems.filter((i) => caseItemIds.has(i.id)).length;
+  const renderNode = (node: Node) => {
+    const exp = expanded.has(node.id);
+    const childIds = node.children.map((c) => c.id);
+    const on = selected.has(node.id);
+    return (
+      <div key={node.id}>
+        <div className="flex cursor-pointer items-center justify-between rounded hover:bg-[#f6f6f6]" onClick={() => toggleExp(node.id)}>
+          <label className="flex items-center pl-1" onClick={(e) => e.stopPropagation()}>
+            {node.locked ? <LockBox /> : <Checkbox checked={on} onChange={(v) => toggleSel([node.id, ...childIds], v)} />}
+            <div className="px-2 py-1.5 text-base text-ink">{node.label}</div>
+            <CountPill>{node.count}</CountPill>
+          </label>
+          <Icon name={exp ? "chevronDownBold" : "chevronRight"} size={18} className="text-faint" />
+        </div>
+        {exp && (
+          <div className="flex flex-col pl-5 text-sm">
+            {node.children.map((c) => (
+              <label key={c.id} className="flex cursor-pointer items-center rounded pl-1.5 hover:bg-[#f6f6f6]">
+                {c.locked ? <LockBox /> : <Checkbox checked={selected.has(c.id)} onChange={(v) => toggleSel([c.id], v)} />}
+                <div className="px-2 py-1.5 text-ink">{c.label}</div>
+                <CountPill>{c.count}</CountPill>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <Modal
@@ -113,193 +176,171 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
       onClose={onClose}
       title="Create Test"
       width={780}
+      bodyClassName="px-6 pb-6"
       footer={
-        <button
-          onClick={start}
-          disabled={!n}
-          className="h-14 w-full rounded-full bg-brand text-lg font-semibold text-white shadow-press hover:bg-[#6a5eef] active:translate-y-px active:shadow-none disabled:opacity-50"
-        >
-          Start Test
-        </button>
+        <div className="border-t border-[#ededf0] bg-white px-6 py-4">
+          <button
+            onClick={start}
+            disabled={!n}
+            className="flex h-14 w-full cursor-pointer items-center justify-center rounded-[64px] bg-brand p-4 text-lg leading-[18px] font-semibold text-white shadow-[0_2px_0_0_#4a3ac8] transition-[background,box-shadow,transform] duration-[50ms] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:bg-faint disabled:shadow-none"
+          >
+            Start Test
+          </button>
+        </div>
       }
     >
-      <div className="px-6">
-        {/* Settings */}
-        <Section title="Test Settings" info="Tutor mode shows the answer and explanation after each question. Timed mode gives about 1.5 minutes per question.">
-          <div className="flex flex-wrap gap-6">
-            <Toggle checked={tutor} onChange={setTutor} label="Tutor" />
-            <Toggle checked={timed} onChange={setTimed} label="Timed" />
-          </div>
-        </Section>
+      <Section>
+        <div className="mb-4 flex items-center">
+          <h4 className="text-lg leading-[22.5px] font-semibold text-ink">Test Settings</h4>
+          <Info tip="Tutor mode shows the correct answer and explanation after each question. Timed mode gives you about 1.5 minutes per question, like the real exam." />
+        </div>
+        <div className="flex">
+          <Toggle checked={tutor} onChange={setTutor} label="Tutor" />
+          <Toggle checked={timed} onChange={setTimed} label="Timed" />
+        </div>
+      </Section>
 
-        {/* Pools */}
-        <Section title="Question Pools" info="Pick which questions to draw from. Tag questions as Learning, Reviewing, or Mastered after you answer them.">
-          <div className="flex flex-wrap gap-x-6 gap-y-3">
-            {POOLS.map((p) => {
-              const c = poolCount(p.id);
-              const on = pools.has(p.id);
-              return (
-                <label key={p.id} className={clsx("flex cursor-pointer items-center gap-2 text-base", on ? "text-ink" : "text-muted")}>
-                  <Checkbox checked={on} onChange={() => togglePool(p.id)} />
-                  {p.label}
-                  <CountPill muted={!on}>{c}</CountPill>
+      <Section>
+        <div className="mb-2 flex items-center">
+          <h4 className="text-lg leading-[22.5px] font-semibold text-ink">Question Pools</h4>
+          <Info tip="Build tests from questions you haven't used yet, or from questions you've tagged as Learning, Reviewing, Mastered, or Bookmarked." />
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4">
+          {POOLS.map((p) => {
+            const c = poolCount(p.id);
+            const on = pools.has(p.id);
+            const disabled = c === 0;
+            return (
+              <div key={p.id} className="flex items-center">
+                <label className={clsx("flex items-center", disabled ? "cursor-default" : "cursor-pointer")}>
+                  <Checkbox
+                    checked={on && !disabled}
+                    disabled={disabled}
+                    onChange={() =>
+                      setPools((s) => {
+                        const x = new Set(s);
+                        if (x.has(p.id)) x.delete(p.id);
+                        else x.add(p.id);
+                        return x;
+                      })
+                    }
+                  />
+                  <span className={clsx("px-2 py-1.5 text-base text-ink", disabled && "opacity-50")}>{p.label}</span>
                 </label>
-              );
-            })}
-          </div>
-        </Section>
-
-        {/* Subjects */}
-        <section className="border-b border-line py-5">
-          <div className="flex items-center justify-between">
-            <label className="flex cursor-pointer items-center gap-2 text-lg font-semibold text-ink-strong">
-              <Checkbox
-                checked={allSubjects}
-                indeterminate={!allSubjects && subjects.size > 0}
-                onChange={() => setSubjects(allSubjects ? new Set() : new Set(SUBJECTS.map((s) => s.id)))}
-              />
-              Subjects
-            </label>
-            <button
-              onClick={() => setExpanded(expanded.size ? new Set() : new Set(SUBJECTS.map((s) => s.id)))}
-              className="flex items-center gap-1.5 text-base text-ink hover:text-brand"
-            >
-              {expanded.size ? <Minus className="size-4" /> : <Plus className="size-4" />}
-              {expanded.size ? "Collapse All" : "Expand All"}
-            </button>
-          </div>
-
-          {isFree && (
-            <div className="mt-4 flex items-center gap-3 rounded-lg bg-gradient-to-r from-[#efedfd] to-[#fbeef3] px-4 py-3">
-              <ShieldCheck className="size-6 shrink-0 fill-brand text-white" />
-              <span className="flex-1 text-base text-ink">Upgrade to unlock all questions.</span>
-              <Link href="/nclex/upgrade" onClick={onClose} className="text-base font-medium text-ink underline underline-offset-2">
-                View Pricing
-              </Link>
-            </div>
-          )}
-
-          <div className="mt-4 grid gap-x-10 gap-y-1 sm:grid-cols-2">
-            {isFree && (
-              <>
-                <TreeRow label="Free Questions" count={freeCount} checked={allSubjects} onToggle={() => setSubjects(allSubjects ? new Set() : new Set(SUBJECTS.map((s) => s.id)))} expanded={expanded.has("free")} onExpand={() => toggleExpand("free")} />
-                {expanded.has("free") && (
-                  <TreeRow nested label="Free Questions" count={freeCount} checked={allSubjects} onToggle={() => setSubjects(allSubjects ? new Set() : new Set(SUBJECTS.map((s) => s.id)))} />
-                )}
-                <TreeRow label="Case Studies" count={caseCount} locked />
-              </>
-            )}
-            {subjectRows.map(({ subject, count, systems }) => (
-              <div key={subject.id}>
-                <TreeRow
-                  label={subject.name}
-                  count={isFree ? subject.standaloneCount : count}
-                  locked={isFree}
-                  checked={subjects.has(subject.id)}
-                  onToggle={() => toggleSubject(subject.id)}
-                  expanded={expanded.has(subject.id)}
-                  onExpand={() => toggleExpand(subject.id)}
-                />
-                {!isFree &&
-                  expanded.has(subject.id) &&
-                  systems.map(([system, c]) => (
-                    <TreeRow key={system} nested label={system} count={c} checked={subjects.has(subject.id)} onToggle={() => toggleSubject(subject.id)} />
-                  ))}
+                <CountPill tone={disabled ? "muted" : p.tone}>{c}</CountPill>
               </div>
-            ))}
-          </div>
-        </section>
+            );
+          })}
+        </div>
+      </Section>
 
-        {/* Count */}
-        <section className="py-5">
-          <h3 className="text-lg font-semibold text-ink-strong">Number of Questions</h3>
-          <p className="mt-1 text-base text-muted">You can have a maximum of {MAX_QUESTIONS} questions per test.</p>
-          <div className="mt-4 flex items-center gap-4">
-            <div className="flex h-12 w-24 items-center rounded-lg border border-line px-3">
-              <input
-                type="number"
-                min={1}
-                max={max}
-                value={n}
-                onChange={(e) => setCount(Math.max(1, Number(e.target.value) || 1))}
-                aria-label="Number of questions"
-                className="w-full bg-transparent text-base text-ink outline-none"
-              />
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={Math.max(1, max)}
-              value={n}
-              onChange={(e) => setCount(Number(e.target.value))}
-              aria-label="Number of questions slider"
-              className="h-1.5 flex-1 cursor-pointer accent-brand"
-            />
+      <Section>
+        <div className="mb-4 flex items-center justify-between px-1">
+          <label className="flex cursor-pointer items-center">
+            <Checkbox checked={allOn} indeterminate={!isFree && !allOn && someOn} onChange={(v) => toggleSel(allSelectable, v)} />
+            <h4 className="ml-1.5 text-lg leading-[22.5px] font-semibold text-ink">Subjects</h4>
+          </label>
+          <button
+            onClick={() => setExpanded(expanded.size ? new Set() : new Set(["free", ...nodes.map((x) => x.id)]))}
+            className="flex cursor-pointer items-center gap-2 text-base leading-4 text-ink"
+          >
+            {expanded.size ? (
+              <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            )}
+            {expanded.size ? "Collapse All" : "Expand All"}
+          </button>
+        </div>
+
+        {isFree && (
+          <Link
+            href="/nclex/upgrade"
+            onClick={onClose}
+            className="mb-4 flex items-center gap-2 rounded-lg bg-[linear-gradient(90deg,#eef2ff_0%,#f5f3ff_50%,#fdf2f8_100%)] px-4 py-3"
+          >
+            <Icon name="shield" size={20} className="text-brand" />
+            <p className="text-base leading-6 text-ink-strong">Upgrade to unlock all questions.</p>
+            <p className="ml-auto text-base leading-6 text-ink-strong underline">View Pricing</p>
+          </Link>
+        )}
+
+        <div className="flex flex-col gap-1 sm:flex-row sm:gap-8">
+          <div className="flex-1">
+            {isFree && (
+              <div>
+                <div className="flex cursor-pointer items-center justify-between rounded hover:bg-[#f6f6f6]" onClick={() => toggleExp("free")}>
+                  <label className="flex items-center pl-1" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox checked={selected.has("free")} onChange={(v) => toggleSel(["free", "free:all"], v)} />
+                    <div className="px-2 py-1.5 text-base text-ink">Free Questions</div>
+                    <CountPill>{poolCount("unused")}</CountPill>
+                  </label>
+                  <Icon name={expanded.has("free") ? "chevronDownBold" : "chevronRight"} size={18} className="text-faint" />
+                </div>
+                {expanded.has("free") && (
+                  <div className="pl-5 text-sm">
+                    <label className="flex cursor-pointer items-center rounded pl-1.5 hover:bg-[#f6f6f6]">
+                      <Checkbox checked={selected.has("free:all")} onChange={(v) => toggleSel(["free", "free:all"], v)} />
+                      <div className="px-2 py-1.5 text-ink">Free Questions</div>
+                      <CountPill>{poolCount("unused")}</CountPill>
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+            {nodes.filter((x) => leftIds.includes(x.id)).map(renderNode)}
           </div>
-          <p className="mt-4 text-base text-muted">
-            {n ? `This test should take about ${Math.max(1, Math.round(n * 1.5))}min to complete.` : "No questions match these filters."}
-          </p>
-        </section>
+          <div className="flex-1">{nodes.filter((x) => !leftIds.includes(x.id)).map(renderNode)}</div>
+        </div>
+      </Section>
+
+      <div className="py-4">
+        <h4 className="mb-2 text-lg leading-[22.5px] font-semibold text-ink">Number of Questions</h4>
+        <p className="mb-4 text-base leading-4 text-muted">You can have a maximum of {MAX_QUESTIONS} questions per test.</p>
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex h-[42px] w-[100px] items-center gap-2 rounded-xl border border-[#ededf0] bg-white px-4 py-3 focus-within:border-faint">
+            <input
+              type="number"
+              min={1}
+              max={max}
+              value={n}
+              onChange={(e) => setCount(Math.max(1, Number(e.target.value) || 1))}
+              aria-label="Number of questions"
+              className="w-[42px] appearance-none bg-transparent text-base leading-4 text-ink-strong outline-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <div className="flex flex-col bg-[#fafafa]">
+              <button onClick={() => setCount(Math.min(max, n + 1))} aria-label="More" className="flex h-2 w-4 cursor-pointer items-center justify-center text-[#585962]">
+                <svg viewBox="0 0 9 6" className="h-1.5 w-[9px]" fill="currentColor"><path d="M4.5 0 9 6H0z" /></svg>
+              </button>
+              <button onClick={() => setCount(Math.max(1, n - 1))} aria-label="Fewer" className="flex h-2 w-4 cursor-pointer items-center justify-center text-[#585962]">
+                <svg viewBox="0 0 9 6" className="h-1.5 w-[9px]" fill="currentColor"><path d="M4.5 6 0 0h9z" /></svg>
+              </button>
+            </div>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={Math.max(1, max)}
+            value={n}
+            disabled={!max}
+            onChange={(e) => setCount(Number(e.target.value))}
+            aria-label="Number of questions slider"
+            className="range-brand flex-1"
+            style={{ ["--fill" as string]: `${max > 1 ? ((n - 1) / (max - 1)) * 100 : 100}%` }}
+          />
+        </div>
+        <p className="my-4 text-base leading-4 text-muted">
+          {n ? `This test should take about ${Math.round(n * 1.5)}min to complete.` : "Select at least one subject to create a test."}
+        </p>
       </div>
     </Modal>
   );
 }
 
-function Section({ title, info, children }: { title: string; info: string; children: React.ReactNode }) {
-  return (
-    <section className="border-b border-line py-5">
-      <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-ink-strong">
-        {title}
-        <span title={info} className="text-faint">
-          <Info className="size-4" />
-        </span>
-      </h3>
-      {children}
-    </section>
-  );
-}
-
-function TreeRow({
-  label,
-  count,
-  locked,
-  checked = false,
-  onToggle,
-  expanded,
-  onExpand,
-  nested,
-}: {
-  label: string;
-  count: number;
-  locked?: boolean;
-  checked?: boolean;
-  onToggle?: () => void;
-  expanded?: boolean;
-  onExpand?: () => void;
-  nested?: boolean;
-}) {
-  return (
-    <div className={clsx("flex h-[31px] items-center gap-2", nested && "pl-6")}>
-      {locked ? (
-        <span className="flex size-[18px] items-center justify-center rounded-[4px] bg-[#f1f1f3]" title="Upgrade to unlock">
-          <ShieldCheck className="size-3 text-muted" />
-        </span>
-      ) : (
-        <Checkbox checked={checked} onChange={onToggle} />
-      )}
-      <span className={clsx("truncate", nested ? "text-sm" : "text-base", locked ? "text-ink" : "text-ink")}>{label}</span>
-      <CountPill>{count}</CountPill>
-      {onExpand && (
-        <button onClick={onExpand} aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`} className="ml-auto text-faint hover:text-ink">
-          {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-        </button>
-      )}
-    </div>
-  );
-}
-
-function groupBySystem(items: Item[]) {
-  const map = new Map<string, number>();
-  for (const i of items) map.set(i.system, (map.get(i.system) ?? 0) + 1);
-  return [...map.entries()];
+function Section({ children }: { children: ReactNode }) {
+  return <div className="border-b border-[#ededf0] py-4">{children}</div>;
 }

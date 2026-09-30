@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Answer, MasteryTag, Pool, SessionEntry, TestSession } from "./types";
+import { scoreItem } from "./scoring";
+import { itemById } from "./bank";
 
 export interface ExamSettings {
   textSize: number;
@@ -11,12 +13,15 @@ export interface ExamSettings {
   restrictions: boolean;
   gridView: boolean;
   hoverPreview: boolean;
+  timer: boolean;
 }
 
 export interface Schedule {
   start: string;
   exam: string | null;
   daysOff: number[];
+  /** Specific dates off (ISO), from the days-off calendar. */
+  offDates?: string[];
   createdAt: string;
 }
 
@@ -29,12 +34,16 @@ interface PersistedState {
   streak: { count: number; lastDay: string };
   examSettings: ExamSettings;
   flags: Record<string, boolean>;
+  sidebarSubjectsOpen: boolean;
+  /** Onboarding tips the user has dismissed (e.g. "tag-questions"). */
+  dismissedTips: Record<string, boolean>;
 }
 
 interface UiState {
   hydrated: boolean;
   createTestOpen: boolean;
   mobileNavOpen: boolean;
+  contactOpen: boolean;
 }
 
 interface Actions {
@@ -48,6 +57,7 @@ interface Actions {
     timed: boolean;
     pool: Pool;
     timeLimit?: number;
+    sourceId?: string;
   }) => string;
   answer: (sessionId: string, itemId: string, answer: Answer) => void;
   submit: (sessionId: string, itemId: string) => void;
@@ -62,6 +72,9 @@ interface Actions {
   setFlag: (key: string, on: boolean) => void;
   touchStreak: () => void;
   resetProgress: () => void;
+  deleteSession: (sessionId: string) => void;
+  setSidebarSubjectsOpen: (open: boolean) => void;
+  dismissTip: (key: string) => void;
 }
 
 export type Store = PersistedState & UiState & Actions;
@@ -82,8 +95,11 @@ const initial: PersistedState = {
     restrictions: true,
     gridView: false,
     hoverPreview: true,
+    timer: true,
   },
   flags: {},
+  sidebarSubjectsOpen: false,
+  dismissedTips: {},
 };
 
 const patchSession = (sessions: TestSession[], id: string, fn: (s: TestSession) => TestSession) =>
@@ -96,13 +112,14 @@ export const useStore = create<Store>()(
       hydrated: false,
       createTestOpen: false,
       mobileNavOpen: false,
+      contactOpen: false,
 
       setUi: (patch) => set(patch),
       setPlan: (plan) => set((s) => ({ user: { ...s.user, plan } })),
 
       createSession: (opts) => {
         const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-        const number = get().sessions.filter((s) => s.kind !== "readiness").length + 1;
+        const number = get().sessions.filter((s) => s.kind === "custom").length + 1;
         const session: TestSession = {
           id,
           number,
@@ -120,6 +137,7 @@ export const useStore = create<Store>()(
           current: 0,
           status: "active",
           timeLimit: opts.timeLimit,
+          sourceId: opts.sourceId,
         };
         set((s) => ({ sessions: [...s.sessions, session] }));
         get().touchStreak();
@@ -130,7 +148,17 @@ export const useStore = create<Store>()(
         set((s) => ({ sessions: patchSession(s.sessions, sid, (x) => ({ ...x, answers: { ...x.answers, [itemId]: answer } })) })),
 
       submit: (sid, itemId) =>
-        set((s) => ({ sessions: patchSession(s.sessions, sid, (x) => ({ ...x, submitted: { ...x.submitted, [itemId]: true } })) })),
+        set((s) => {
+          const session = s.sessions.find((x) => x.id === sid);
+          // Live behavior: answering auto-tags the question (full credit → Mastered,
+          // partial → Reviewing, none → Learning) unless the user already tagged it.
+          let tags = s.tags;
+          if (session && !s.tags[itemId]) {
+            const { earned, max } = scoreItem(itemById(itemId), session.answers[itemId]);
+            tags = { ...s.tags, [itemId]: earned >= max ? "mastered" : earned > 0 ? "reviewing" : "learning" };
+          }
+          return { tags, sessions: patchSession(s.sessions, sid, (x) => ({ ...x, submitted: { ...x.submitted, [itemId]: true } })) };
+        }),
 
       goTo: (sid, index) => set((s) => ({ sessions: patchSession(s.sessions, sid, (x) => ({ ...x, current: index })) })),
 
@@ -179,12 +207,20 @@ export const useStore = create<Store>()(
         }),
 
       resetProgress: () => set({ sessions: [], tags: {}, bookmarks: {} }),
+      setSidebarSubjectsOpen: (sidebarSubjectsOpen) => set({ sidebarSubjectsOpen }),
+      deleteSession: (id) => set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id) })),
+      dismissTip: (key) => set((s) => ({ dismissedTips: { ...s.dismissedTips, [key]: true } })),
     }),
     {
       name: "nclex-bootcamp-clone",
       version: 1,
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
+      // Deep-merge settings so fields added later (e.g. examSettings.timer) get defaults.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<PersistedState>;
+        return { ...current, ...p, examSettings: { ...current.examSettings, ...(p.examSettings ?? {}) }, user: { ...current.user, ...(p.user ?? {}) } };
+      },
       partialize: (s): PersistedState => ({
         user: s.user,
         sessions: s.sessions,
@@ -194,6 +230,8 @@ export const useStore = create<Store>()(
         streak: s.streak,
         examSettings: s.examSettings,
         flags: s.flags,
+        sidebarSubjectsOpen: s.sidebarSubjectsOpen,
+        dismissedTips: s.dismissedTips,
       }),
     },
   ),

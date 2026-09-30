@@ -68,6 +68,7 @@ export const CASES: CaseStudy[] = [
       {
         id: "c1-i1",
         type: "highlight",
+        tabs: 3,
         subject: "adult-health",
         system: "Immune / Infectious Disease",
         topic: "Sepsis",
@@ -95,13 +96,15 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c1-i2",
-        type: "matrix",
+        type: "matrixMulti",
         subject: "adult-health",
         system: "Immune / Infectious Disease",
         topic: "Sepsis",
-        stem: "For each finding, click to specify whether it is consistent with <b>pneumonia</b>, <b>sepsis</b>, or <b>both</b>.",
-        rowHeader: "Finding",
-        columns: ["Pneumonia", "Sepsis", "Both"],
+        tabs: 4,
+        lead: "The nurse reviews the client's Laboratory Results from 1415.",
+        stem: "For each client finding below, click to specify if the finding is consistent with <b>pneumonia</b>, <b>sepsis</b>, or both. Each finding may support more than one disease process.",
+        rowHeader: "Client Findings",
+        columns: ["Pneumonia", "Sepsis"],
         rows: [
           "Temperature 102.4 F (39.1 C)",
           "Crackles in right lower lobe",
@@ -110,7 +113,7 @@ export const CASES: CaseStudy[] = [
           "Rust-colored sputum",
           "White blood cell count 18,500/mm³",
         ],
-        answers: [2, 0, 1, 1, 0, 2],
+        answers: [[0, 1], [0], [1], [1], [0], [0, 1]],
         avgPercent: 58,
         linkedVideo: "Sepsis",
         rationale: {
@@ -122,6 +125,8 @@ export const CASES: CaseStudy[] = [
       {
         id: "c1-i3",
         type: "dropdown",
+        tabs: 4,
+        lead: "The nurse reviews the client's findings and prepares to call the provider.",
         subject: "adult-health",
         system: "Immune / Infectious Disease",
         topic: "Sepsis",
@@ -142,6 +147,8 @@ export const CASES: CaseStudy[] = [
       {
         id: "c1-i4",
         type: "sata",
+        tabs: 4,
+        lead: "The healthcare provider returns the page and asks which orders the nurse anticipates.",
         subject: "adult-health",
         system: "Immune / Infectious Disease",
         topic: "Sepsis",
@@ -173,6 +180,7 @@ export const CASES: CaseStudy[] = [
       {
         id: "c1-i5",
         type: "bowtie",
+        tabs: 4,
         subject: "adult-health",
         system: "Immune / Infectious Disease",
         topic: "Sepsis",
@@ -198,6 +206,8 @@ export const CASES: CaseStudy[] = [
       {
         id: "c1-i6",
         type: "matrix",
+        tabs: 4,
+        lead: "Three hours after treatment began, the nurse reassesses the client.",
         subject: "adult-health",
         system: "Immune / Infectious Disease",
         topic: "Sepsis",
@@ -276,6 +286,7 @@ export const CASES: CaseStudy[] = [
     items: [
       {
         id: "c2-i1",
+        tabs: 2,
         type: "selectN",
         n: 4,
         subject: "maternal-and-newborn-health",
@@ -304,6 +315,8 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c2-i2",
+        tabs: 3,
+        lead: "The nurse reviews the client's Laboratory Results from 1000.",
         type: "dragCloze",
         subject: "maternal-and-newborn-health",
         system: "Antepartum",
@@ -329,6 +342,7 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c2-i3",
+        tabs: 3,
         type: "matrix",
         subject: "maternal-and-newborn-health",
         system: "Antepartum",
@@ -360,6 +374,8 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c2-i4",
+        tabs: 3,
+        lead: "Two hours after the magnesium sulfate infusion begins, the nurse assesses the client.",
         type: "mcq",
         subject: "maternal-and-newborn-health",
         system: "Antepartum",
@@ -382,6 +398,7 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c2-i5",
+        tabs: 3,
         type: "sata",
         subject: "maternal-and-newborn-health",
         system: "Antepartum",
@@ -405,6 +422,8 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c2-i6",
+        tabs: 3,
+        lead: "The client delivers and is preparing for discharge.",
         type: "matrix",
         subject: "maternal-and-newborn-health",
         system: "Postpartum",
@@ -482,31 +501,38 @@ export const CASES: CaseStudy[] = [
     items: [
       {
         id: "c3-i1",
-        type: "highlight",
+        type: "dragTopN",
         subject: "child-health",
         system: "Gastrointestinal",
         topic: "Dehydration",
-        stem: "Click to highlight the findings that indicate <b>dehydration</b>.",
-        headers: ["Body System", "Findings"],
-        rows: [
-          { label: "Neurological", segments: ["Lethargic but arousable;", "cries without tears"] },
-          { label: "Cardiovascular", segments: ["heart rate 160/min;", "capillary refill 3 seconds;", "peripheral pulses 1+"] },
-          { label: "Gastrointestinal", segments: ["6 watery stools today;", "abdomen soft and nondistended"] },
-          { label: "Genitourinary", segments: ["2 wet diapers in 24 hours"] },
-          { label: "Integumentary", segments: ["mucous membranes dry;", "no rashes noted"] },
+        tabs: 2,
+        n: 4,
+        stem: "Drag the top 4 client findings that would require follow-up to the box on the right.",
+        sourceLabel: "Client Findings",
+        targetLabel: "Top 4 Findings",
+        options: [
+          "Heart rate 160/min",
+          "Cries without tears",
+          "Capillary refill 3 seconds",
+          "2 wet diapers in 24 hours",
+          "Temperature 100.8 F (38.2 C)",
+          "Pulse oximetry 99% on room air",
+          "Respiratory rate 34/min",
         ],
-        answers: ["0-0", "0-1", "1-0", "1-1", "1-2", "3-0", "4-0"],
+        answers: [0, 1, 2, 3],
         avgPercent: 72,
         linkedVideo: "Dehydration",
         linkedSheet: "Pediatric Dehydration",
         rationale: {
           explanation:
-            "<p>Lethargy, absent tears, tachycardia, delayed capillary refill, weak pulses, decreased urine output, and dry mucous membranes are classic signs of <b>fluid volume deficit</b> in children.</p><p>The watery stools are the cause of the fluid loss rather than a sign of dehydration.</p>",
+            "<p>Tachycardia, absent tears, delayed capillary refill, and decreased urine output are classic signs of <b>fluid volume deficit</b> in children and require follow-up.</p><p>A low-grade fever and a respiratory rate of 34/min are expected with a febrile toddler, and the oxygen saturation is normal.</p>",
           takeaway: ["In children, tachycardia is an early sign of dehydration. Hypotension is a late, ominous sign."],
         },
       },
       {
         id: "c3-i2",
+        tabs: 3,
+        lead: "The nurse reviews the client's Laboratory Results from 1130.",
         type: "dropdown",
         subject: "child-health",
         system: "Gastrointestinal",
@@ -534,6 +560,8 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c3-i3",
+        tabs: 3,
+        lead: "The healthcare provider prescribes treatment.",
         type: "mcq",
         subject: "child-health",
         system: "Gastrointestinal",
@@ -555,6 +583,7 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c3-i4",
+        tabs: 3,
         type: "dragCloze",
         subject: "child-health",
         system: "Gastrointestinal",
@@ -571,6 +600,7 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c3-i5",
+        tabs: 3,
         type: "matrix",
         subject: "child-health",
         system: "Gastrointestinal",
@@ -600,6 +630,8 @@ export const CASES: CaseStudy[] = [
       },
       {
         id: "c3-i6",
+        tabs: 3,
+        lead: "Four hours later, the nurse reassesses the client.",
         type: "sata",
         subject: "child-health",
         system: "Gastrointestinal",

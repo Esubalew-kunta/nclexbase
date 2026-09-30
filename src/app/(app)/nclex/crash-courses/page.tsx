@@ -1,14 +1,19 @@
-import { LESSON_TITLES, SUBJECTS } from "@/data/catalog";
+"use client";
+
+import { useState } from "react";
+import { LESSONS, SUBJECTS } from "@/data/catalog";
 import { PageHeader } from "@/components/ui/primitives";
-import { CourseList } from "@/components/home/CourseList";
-import { padLessons } from "@/lib/lessons";
+import { CourseList, LessonFilter } from "@/components/home/CourseList";
 
 export default function CrashCoursesPage() {
+  const [filter, setFilter] = useState("");
   const courses = SUBJECTS.map((s) => ({
     id: s.id,
     title: s.name,
     runtime: s.videoRuntime,
-    lessons: padLessons(LESSON_TITLES[s.id], s.lessonCount, s.name),
+    count: s.lessonCount,
+    lessons: LESSONS[s.id],
+    href: `/nclex/crash-courses/videos/${s.id}`,
   }));
   return (
     <>
@@ -17,7 +22,10 @@ export default function CrashCoursesPage() {
         title="Crash Course Videos"
         description="Review the most tested NCLEX concepts with our videos and bite-sized quizzes! More lessons will be added weekly!"
       />
-      <CourseList courses={courses} />
+      <div className="mt-4">
+        <LessonFilter value={filter} onChange={setFilter} />
+        <CourseList courses={courses} filter={filter} />
+      </div>
     </>
   );
 }

@@ -117,7 +117,7 @@ export function DropdownClozeItemView({ item, answer, onChange, locked, reveal }
   };
 
   return (
-    <p className="leading-[2.6]">
+    <p className="leading-[2]">
       {renderTemplate(item.template, (i) => {
         const b = item.blanks[i];
         const v = blanks[i];
@@ -131,7 +131,7 @@ export function DropdownClozeItemView({ item, answer, onChange, locked, reveal }
               onChange={(e) => set(i, e.target.value === "" ? null : Number(e.target.value))}
               aria-label={`Blank ${i + 1}`}
               className={clsx(
-                "h-9 max-w-[320px] rounded-none border bg-white px-2 align-middle disabled:opacity-100",
+                "h-[25px] max-w-[320px] rounded-[2px] border bg-white px-1 align-middle text-base disabled:opacity-100",
                 reveal && !ok ? "border-[#d0312d]" : "border-[#767676]",
               )}
             >

@@ -7,7 +7,7 @@ import { itemById } from "./bank";
  *  - +/-: +1 for each correct selection, -1 for each incorrect selection, floor 0 (SATA, highlight).
  */
 export function scoringRule(item: Item): ScoringRule {
-  return item.type === "sata" || item.type === "highlight" ? "+/-" : "0/1";
+  return item.type === "sata" || item.type === "highlight" || item.type === "matrixMulti" ? "+/-" : "0/1";
 }
 
 export function maxPoints(item: Item): number {
@@ -27,6 +27,10 @@ export function maxPoints(item: Item): number {
       return item.answers.length;
     case "bowtie":
       return 5;
+    case "dragTopN":
+      return item.n;
+    case "matrixMulti":
+      return item.answers.reduce((a, r) => a + r.length, 0);
   }
 }
 
@@ -47,6 +51,10 @@ export function emptyAnswer(item: Item): Answer {
       return { type: "highlight", keys: [] };
     case "bowtie":
       return { type: "bowtie", condition: null, actions: [], parameters: [] };
+    case "dragTopN":
+      return { type: "dragTopN", chosen: [] };
+    case "matrixMulti":
+      return { type: "matrixMulti", cells: item.rows.map(() => []) };
   }
 }
 
@@ -67,6 +75,10 @@ export function isAnswered(item: Item, a: Answer | undefined): boolean {
       return a.keys.length > 0;
     case "bowtie":
       return a.condition !== null && a.actions.length === 2 && a.parameters.length === 2;
+    case "dragTopN":
+      return a.chosen.length > 0;
+    case "matrixMulti":
+      return a.cells.some((c) => c.length > 0);
   }
 }
 
@@ -95,6 +107,12 @@ export function scoreItem(item: Item, a: Answer | undefined): Score {
       break;
     case "dropdown":
       if (a.type === "dropdown") earned = a.blanks.filter((b, i) => b === item.blanks[i].answer).length;
+      break;
+    case "dragTopN":
+      if (a.type === "dragTopN") earned = a.chosen.filter((c) => item.answers.includes(c)).length;
+      break;
+    case "matrixMulti":
+      if (a.type === "matrixMulti") earned = a.cells.reduce((sum, row, r) => sum + plusMinus(row, item.answers[r]), 0);
       break;
     case "bowtie":
       if (a.type === "bowtie") {

@@ -9,7 +9,7 @@ import { useStore } from "@/lib/store";
 
 const SECONDS_PER_QUESTION = 120; // 200 minutes / 100 questions, as on the real exam.
 
-export function ReadinessIntro({ number, title, questions, minutes }: { number: number; title: string; questions: number; minutes: number }) {
+export function ReadinessIntro({ id: examId, number, title, questions, minutes }: { id: string; number: number; title: string; questions: number; minutes: number }) {
   const router = useRouter();
   const createSession = useStore((s) => s.createSession);
   const [restrictions, setRestrictions] = useState(true);
@@ -25,6 +25,7 @@ export function ReadinessIntro({ number, title, questions, minutes }: { number: 
       timed: true,
       pool: "unused",
       timeLimit: Math.round(entries.length * SECONDS_PER_QUESTION * accommodation),
+      sourceId: examId,
     });
     useStore.getState().setExamSettings({ restrictions });
     router.replace(`/nclex/custom-test?id=${id}`);

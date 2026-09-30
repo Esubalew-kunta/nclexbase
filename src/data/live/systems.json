@@ -1,0 +1,560 @@
+{
+ "adult-health": {
+  "avg": 61,
+  "perfTotal": 633,
+  "perfSystems": [
+   {
+    "name": "Cardiovascular",
+    "avg": 66,
+    "total": 119
+   },
+   {
+    "name": "Endocrine",
+    "avg": 65,
+    "total": 62
+   },
+   {
+    "name": "Gastrointestinal",
+    "avg": 64,
+    "total": 62
+   },
+   {
+    "name": "Hematologic",
+    "avg": 57,
+    "total": 21
+   },
+   {
+    "name": "Immune / Infectious Disease",
+    "avg": 66,
+    "total": 13
+   },
+   {
+    "name": "Integumentary",
+    "avg": 65,
+    "total": 18
+   },
+   {
+    "name": "Multisystem",
+    "avg": 63,
+    "total": 30
+   },
+   {
+    "name": "Musculoskeletal",
+    "avg": 63,
+    "total": 40
+   },
+   {
+    "name": "Neurologic",
+    "avg": 61,
+    "total": 56
+   },
+   {
+    "name": "Reproductive",
+    "avg": 47,
+    "total": 18
+   },
+   {
+    "name": "Respiratory",
+    "avg": 61,
+    "total": 97
+   },
+   {
+    "name": "Urinary and Renal",
+    "avg": 58,
+    "total": 64
+   },
+   {
+    "name": "Visual and Auditory",
+    "avg": 58,
+    "total": 25
+   }
+  ],
+  "standaloneTotal": 407,
+  "standaloneSystems": [
+   {
+    "name": "Cardiovascular",
+    "total": 72
+   },
+   {
+    "name": "Endocrine",
+    "total": 34
+   },
+   {
+    "name": "Gastrointestinal",
+    "total": 41
+   },
+   {
+    "name": "Hematologic",
+    "total": 18
+   },
+   {
+    "name": "Immune / Infectious Disease",
+    "total": 13
+   },
+   {
+    "name": "Integumentary",
+    "total": 16
+   },
+   {
+    "name": "Multisystem",
+    "total": 9
+   },
+   {
+    "name": "Musculoskeletal",
+    "total": 31
+   },
+   {
+    "name": "Neurologic",
+    "total": 40
+   },
+   {
+    "name": "Reproductive",
+    "total": 15
+   },
+   {
+    "name": "Respiratory",
+    "total": 61
+   },
+   {
+    "name": "Urinary and Renal",
+    "total": 42
+   },
+   {
+    "name": "Visual and Auditory",
+    "total": 15
+   }
+  ]
+ },
+ "child-health": {
+  "avg": 56,
+  "perfTotal": 259,
+  "perfSystems": [
+   {
+    "name": "Cardiovascular",
+    "avg": 54,
+    "total": 23
+   },
+   {
+    "name": "Endocrine",
+    "avg": 59,
+    "total": 14
+   },
+   {
+    "name": "Gastrointestinal",
+    "avg": 60,
+    "total": 47
+   },
+   {
+    "name": "Growth and Development",
+    "avg": 65,
+    "total": 41
+   },
+   {
+    "name": "Hematologic",
+    "avg": 62,
+    "total": 24
+   },
+   {
+    "name": "Immune / Infectious Disease",
+    "avg": 61,
+    "total": 15
+   },
+   {
+    "name": "Integumentary",
+    "avg": 55,
+    "total": 7
+   },
+   {
+    "name": "Musculoskeletal",
+    "avg": 48,
+    "total": 10
+   },
+   {
+    "name": "Neurologic",
+    "avg": 56,
+    "total": 13
+   },
+   {
+    "name": "Reproductive",
+    "avg": 32,
+    "total": 3
+   },
+   {
+    "name": "Respiratory",
+    "avg": 66,
+    "total": 40
+   },
+   {
+    "name": "Urinary and Renal",
+    "avg": 54,
+    "total": 7
+   },
+   {
+    "name": "Visual and Auditory",
+    "avg": 49,
+    "total": 6
+   }
+  ],
+  "standaloneTotal": 145,
+  "standaloneSystems": [
+   {
+    "name": "Cardiovascular",
+    "total": 11
+   },
+   {
+    "name": "Endocrine",
+    "total": 7
+   },
+   {
+    "name": "Gastrointestinal",
+    "total": 17
+   },
+   {
+    "name": "Growth and Development",
+    "total": 29
+   },
+   {
+    "name": "Hematologic",
+    "total": 10
+   },
+   {
+    "name": "Immune / Infectious Disease",
+    "total": 15
+   },
+   {
+    "name": "Integumentary",
+    "total": 7
+   },
+   {
+    "name": "Musculoskeletal",
+    "total": 10
+   },
+   {
+    "name": "Neurologic",
+    "total": 11
+   },
+   {
+    "name": "Reproductive",
+    "total": 3
+   },
+   {
+    "name": "Respiratory",
+    "total": 12
+   },
+   {
+    "name": "Urinary and Renal",
+    "total": 7
+   },
+   {
+    "name": "Visual and Auditory",
+    "total": 6
+   }
+  ]
+ },
+ "fundamentals": {
+  "avg": 58,
+  "perfTotal": 221,
+  "perfSystems": [
+   {
+    "name": "Basic Care and Comfort",
+    "avg": 59,
+    "total": 71
+   },
+   {
+    "name": "Fluid, Electrolytes, and Acid-Base Balance",
+    "avg": 59,
+    "total": 34
+   },
+   {
+    "name": "Nutrition and Elimination",
+    "avg": 59,
+    "total": 53
+   },
+   {
+    "name": "Safety and Infection Control",
+    "avg": 54,
+    "total": 63
+   }
+  ],
+  "standaloneTotal": 155,
+  "standaloneSystems": [
+   {
+    "name": "Fluid, Electrolytes, and Acid-Base Balance",
+    "total": 28
+   },
+   {
+    "name": "Safety and Infection Control",
+    "total": 39
+   },
+   {
+    "name": "Basic Care and Comfort",
+    "total": 45
+   },
+   {
+    "name": "Nutrition and Elimination",
+    "total": 43
+   }
+  ]
+ },
+ "maternal-and-newborn-health": {
+  "avg": 55,
+  "perfTotal": 267,
+  "perfSystems": [
+   {
+    "name": "Antepartum",
+    "avg": 59,
+    "total": 69
+   },
+   {
+    "name": "Labor & Delivery",
+    "avg": 52,
+    "total": 85
+   },
+   {
+    "name": "Newborn",
+    "avg": 51,
+    "total": 47
+   },
+   {
+    "name": "Postpartum",
+    "avg": 58,
+    "total": 66
+   }
+  ],
+  "standaloneTotal": 141,
+  "standaloneSystems": [
+   {
+    "name": "Antepartum",
+    "total": 37
+   },
+   {
+    "name": "Labor & Delivery",
+    "total": 43
+   },
+   {
+    "name": "Newborn",
+    "total": 32
+   },
+   {
+    "name": "Postpartum",
+    "total": 29
+   }
+  ]
+ },
+ "mental-health": {
+  "avg": 60,
+  "perfTotal": 170,
+  "perfSystems": [
+   {
+    "name": "Anxiety Disorders, Trauma, and Addiction",
+    "avg": 56,
+    "total": 53
+   },
+   {
+    "name": "Cognitive and Developmental Disorders",
+    "avg": 56,
+    "total": 37
+   },
+   {
+    "name": "Foundations and Therapeutic Communication",
+    "avg": 68,
+    "total": 51
+   },
+   {
+    "name": "Mood and Personality Disorders",
+    "avg": 60,
+    "total": 29
+   }
+  ],
+  "standaloneTotal": 104,
+  "standaloneSystems": [
+   {
+    "name": "Cognitive and Developmental Disorders",
+    "total": 21
+   },
+   {
+    "name": "Mood and Personality Disorders",
+    "total": 15
+   },
+   {
+    "name": "Anxiety Disorders, Trauma, and Addiction",
+    "total": 27
+   },
+   {
+    "name": "Foundations and Therapeutic Communication",
+    "total": 41
+   }
+  ]
+ },
+ "pharmacology": {
+  "avg": 55,
+  "perfTotal": 231,
+  "perfSystems": [
+   {
+    "name": "Cardiovascular",
+    "avg": 57,
+    "total": 24
+   },
+   {
+    "name": "Endocrine",
+    "avg": 59,
+    "total": 19
+   },
+   {
+    "name": "Gastrointestinal",
+    "avg": 59,
+    "total": 15
+   },
+   {
+    "name": "Hematologic / Oncologic",
+    "avg": 52,
+    "total": 9
+   },
+   {
+    "name": "Immune",
+    "avg": 54,
+    "total": 18
+   },
+   {
+    "name": "Integumentary",
+    "avg": 58,
+    "total": 4
+   },
+   {
+    "name": "Medication Administration",
+    "avg": 62,
+    "total": 41
+   },
+   {
+    "name": "Musculoskeletal",
+    "avg": 56,
+    "total": 10
+   },
+   {
+    "name": "Neurologic",
+    "avg": 58,
+    "total": 21
+   },
+   {
+    "name": "Psychiatric",
+    "avg": 48,
+    "total": 27
+   },
+   {
+    "name": "Reproductive",
+    "avg": 42,
+    "total": 14
+   },
+   {
+    "name": "Respiratory",
+    "avg": 50,
+    "total": 17
+   },
+   {
+    "name": "Urinary and Renal",
+    "avg": 53,
+    "total": 8
+   },
+   {
+    "name": "Visual and Auditory",
+    "avg": 55,
+    "total": 4
+   }
+  ],
+  "standaloneTotal": 183,
+  "standaloneSystems": [
+   {
+    "name": "Cardiovascular",
+    "total": 20
+   },
+   {
+    "name": "Endocrine",
+    "total": 16
+   },
+   {
+    "name": "Gastrointestinal",
+    "total": 11
+   },
+   {
+    "name": "Hematologic / Oncologic",
+    "total": 5
+   },
+   {
+    "name": "Immune",
+    "total": 13
+   },
+   {
+    "name": "Integumentary",
+    "total": 3
+   },
+   {
+    "name": "Musculoskeletal",
+    "total": 6
+   },
+   {
+    "name": "Neurologic",
+    "total": 17
+   },
+   {
+    "name": "Psychiatric",
+    "total": 23
+   },
+   {
+    "name": "Reproductive",
+    "total": 13
+   },
+   {
+    "name": "Respiratory",
+    "total": 13
+   },
+   {
+    "name": "Urinary and Renal",
+    "total": 6
+   },
+   {
+    "name": "Medication Administration",
+    "total": 34
+   },
+   {
+    "name": "Visual and Auditory",
+    "total": 3
+   }
+  ]
+ },
+ "management-of-care": {
+  "avg": 63,
+  "perfTotal": 199,
+  "perfSystems": [
+   {
+    "name": "Assignment and Delegation",
+    "avg": 70,
+    "total": 50
+   },
+   {
+    "name": "Management Concepts",
+    "avg": 63,
+    "total": 65
+   },
+   {
+    "name": "Prioritization",
+    "avg": 56,
+    "total": 84
+   }
+  ],
+  "standaloneTotal": 145,
+  "standaloneSystems": [
+   {
+    "name": "Assignment and Delegation",
+    "total": 36
+   },
+   {
+    "name": "Prioritization",
+    "total": 59
+   },
+   {
+    "name": "Management Concepts",
+    "total": 50
+   }
+  ]
+ }
+}

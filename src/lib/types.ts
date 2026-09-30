@@ -47,6 +47,10 @@ export interface Rationale {
 
 interface ItemBase {
   id: string;
+  /** Context line above the stem, e.g. "The nurse reviews the client's Laboratory Results from 1200." */
+  lead?: string;
+  /** Case studies reveal tabs progressively: how many scenario tabs this item shows. */
+  tabs?: number;
   subject: SubjectId;
   system: string;
   topic: string;
@@ -118,8 +122,30 @@ export interface BowtieItem extends ItemBase {
   answer: { condition: number; actions: [number, number]; parameters: [number, number] };
 }
 
+/** "Drag the top N findings ... to the box on the right." */
+export interface DragTopNItem extends ItemBase {
+  type: "dragTopN";
+  n: number;
+  sourceLabel: string;
+  targetLabel: string;
+  options: string[];
+  answers: number[];
+}
+
+/** Matrix multiple response: checkboxes, several per row allowed. */
+export interface MatrixMultiItem extends ItemBase {
+  type: "matrixMulti";
+  rowHeader: string;
+  columns: string[];
+  rows: string[];
+  /** Correct column indexes for each row. */
+  answers: number[][];
+}
+
 export type Item =
   | McqItem
+  | DragTopNItem
+  | MatrixMultiItem
   | SataItem
   | SelectNItem
   | MatrixItem
@@ -135,6 +161,8 @@ export type Answer =
   | { type: "mcq"; choice: number | null }
   | { type: "sata" | "selectN"; choices: number[] }
   | { type: "matrix"; cells: (number | null)[] }
+  | { type: "matrixMulti"; cells: number[][] }
+  | { type: "dragTopN"; chosen: number[] }
   | { type: "dragCloze" | "dropdown"; blanks: (number | null)[] }
   | { type: "highlight"; keys: string[] }
   | { type: "bowtie"; condition: number | null; actions: number[]; parameters: number[] };
@@ -192,6 +220,8 @@ export interface TestSession {
   status: "active" | "ended";
   /** Seconds allowed when timed. */
   timeLimit?: number;
+  /** Catalog row that launched this session (case study or readiness exam id). */
+  sourceId?: string;
 }
 
 export interface Score {

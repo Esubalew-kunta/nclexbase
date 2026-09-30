@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CircleCheck, CirclePlay, ClipboardList, SquarePlus, Target, BookOpen, ChevronRight } from "lucide-react";
+import { CirclePlay, ClipboardList, Target, BookOpen, ChevronRight } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import { useStore } from "@/lib/store";
 import { buildPlan, formatLong, toISODate } from "@/lib/schedule";
 import { Button, Card } from "@/components/ui/primitives";
@@ -16,26 +17,8 @@ const BENEFITS = [
 ];
 
 export function ScheduleIllustration() {
-  return (
-    <svg viewBox="0 0 180 90" className="h-[90px] w-[180px]" aria-hidden>
-      <rect x="4" y="38" width="36" height="10" rx="3" fill="#eeecfd" />
-      <rect x="8" y="41" width="5" height="4" rx="1" fill="#6255e5" />
-      <rect x="44" y="12" width="84" height="74" rx="8" fill="#eeecfd" />
-      <rect x="44" y="12" width="84" height="16" rx="8" fill="#6255e5" />
-      <rect x="62" y="4" width="4" height="14" rx="2" fill="#6255e5" />
-      <rect x="104" y="4" width="4" height="14" rx="2" fill="#6255e5" />
-      {[36, 52, 68].map((y) => (
-        <g key={y}>
-          <rect x="54" y={y} width="62" height="11" rx="3" fill="#fff" />
-          <rect x="57" y={y + 3} width="5" height="5" rx="1" fill="#6255e5" />
-          <rect x="66" y={y + 4} width="40" height="3" rx="1.5" fill="#c8c3f7" />
-        </g>
-      ))}
-      <rect x="118" y="20" width="58" height="12" rx="3" fill="#fff" stroke="#e1defb" />
-      <rect x="121" y="23" width="6" height="6" rx="1.5" fill="#6255e5" />
-      <rect x="131" y="25" width="38" height="3" rx="1.5" fill="#c8c3f7" />
-    </svg>
-  );
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/assets/brand/schedule-placeholder.png" alt="" className="h-[76px] w-[179px]" />;
 }
 
 const TASK_ICON = { video: CirclePlay, questions: ClipboardList, readiness: Target, review: BookOpen };
@@ -46,23 +29,31 @@ export function StudyScheduleCard() {
 
   if (!schedule) {
     return (
-      <Card className="flex flex-col items-center px-6 py-7 text-center">
-        <ScheduleIllustration />
-        <h3 className="mt-4 text-lg font-semibold text-ink-strong">Create Your Personalized NCLEX® Study Schedule</h3>
-        <ul className="mt-4 grid max-w-2xl gap-x-6 gap-y-2 text-left sm:grid-cols-2">
-          {BENEFITS.map((b) => (
-            <li key={b} className="flex items-start gap-2 text-base text-muted">
-              <CircleCheck className="mt-0.5 size-[18px] shrink-0 fill-brand text-white" />
-              {b}
-            </li>
-          ))}
-        </ul>
-        <Button className="mt-6" onClick={() => setOpen(true)}>
-          <SquarePlus className="size-5" />
-          Create Study Schedule
-        </Button>
+      <div className="rounded-xl bg-white shadow-card">
+        <div className="flex flex-col items-center gap-4 px-4 py-6 text-center">
+          <ScheduleIllustration />
+          <h4 className="text-lg leading-[22.5px] font-semibold text-ink">
+            Create Your Personalized NCLEX<sup className="text-[10px]">®</sup> Study Schedule
+          </h4>
+          <div className="flex flex-col items-center gap-2">
+            {[BENEFITS.slice(0, 2), BENEFITS.slice(2)].map((row, i) => (
+              <div key={i} className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+                {row.map((b) => (
+                  <div key={b} className="flex items-center gap-2">
+                    <Icon name="checkCircle" size={16} className="text-brand" />
+                    <p className="text-base leading-5 text-muted">{b}</p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <Button onClick={() => setOpen(true)}>
+            <Icon name="plusSquare" size={20} />
+            <span className="ml-2">Create Study Schedule</span>
+          </Button>
+        </div>
         <CreateScheduleModal open={open} onClose={() => setOpen(false)} />
-      </Card>
+      </div>
     );
   }
 

@@ -2,7 +2,8 @@
 
 import type { Answer, Item } from "@/lib/types";
 import { ChoiceItem } from "./ChoiceItem";
-import { MatrixItem } from "./MatrixItem";
+import { MatrixItem, MatrixMultiItemView } from "./MatrixItem";
+import { DragTopNItemView } from "./DragTopNItem";
 import { DragClozeItemView, DropdownClozeItemView } from "./ClozeItems";
 import { HighlightItemView } from "./HighlightItem";
 import { BowtieItemView } from "./BowtieItem";
@@ -24,5 +25,9 @@ export function ItemView(props: { item: Item; answer: Answer; onChange: (a: Answ
       return <HighlightItemView item={item} {...rest} />;
     case "bowtie":
       return <BowtieItemView item={item} {...rest} />;
+    case "dragTopN":
+      return <DragTopNItemView item={item} {...rest} />;
+    case "matrixMulti":
+      return <MatrixMultiItemView item={item} {...rest} />;
   }
 }

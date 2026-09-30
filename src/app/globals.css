@@ -54,6 +54,8 @@
     background: var(--color-shell);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    /* Figtree runs ~2% wider than proxima-nova; this keeps line wraps identical. */
+    letter-spacing: -0.01em;
   }
   button {
     cursor: pointer;
@@ -93,6 +95,21 @@
   .prose-exam h4 { font-weight: 700; margin: 1.25rem 0 0.25rem; }
 }
 
+/* FAQ answers are HTML from the live site. */
+.faq-answer p { margin: 0 0 18px; }
+.faq-answer p:last-child { margin-bottom: 0; }
+.faq-answer ul, .faq-answer ol { margin: 18px 0; padding-left: 40px; }
+.faq-answer ul { list-style: disc; }
+.faq-answer ol { list-style: decimal; }
+.faq-answer strong, .faq-answer b { font-weight: 700; }
+.faq-answer a { text-decoration: underline; }
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+.animate-slide-in-left { animation: slide-in-left 200ms ease-out; }
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -112,3 +129,45 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in, .animate-pop-in, .animate-slide-in-right { animation: none; }
 }
+
+/* Create Test question-count slider (brand fill + white thumb with brand ring). */
+.range-brand {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.range-brand:disabled { cursor: not-allowed; opacity: 0.6; }
+.range-brand:focus { outline: none; }
+.range-brand::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6255e5 var(--fill, 0%), #ededf0 var(--fill, 0%));
+}
+.range-brand::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6255e5 var(--fill, 0%), #ededf0 var(--fill, 0%));
+}
+.range-brand::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: #6255e5;
+  border: 4px solid #eef1ff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.range-brand::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6255e5;
+  border: 4px solid #eef1ff;
+}
+.range-brand:not(:disabled):hover::-webkit-slider-thumb { transform: scale(1.1); }
+.range-brand:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px #eef1ff; }
+input[type="number"] { -moz-appearance: textfield; }

@@ -1,184 +1,231 @@
+"use client";
+
 import clsx from "clsx";
 import Link from "next/link";
-import { Baby, Bandage, Brain, BriefcaseMedical, ChevronRight, Cross, FileText, HeartPulse, Milk, Pill, SquarePlay, Stethoscope, Target, CirclePlay, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import type { SubjectId } from "@/lib/types";
-import { ProgressBar } from "./primitives";
+import { Icon } from "./Icon";
+import { ProgressBar, UsageBar, UsageText } from "./primitives";
 
-/* Subject icons: the live site uses illustrated PNGs; these are tinted glyphs. */
-const SUBJECT_ICON: Record<SubjectId, { icon: LucideIcon; color: string; bg: string }> = {
-  "adult-health": { icon: HeartPulse, color: "#e0524a", bg: "#fdeceb" },
-  "child-health": { icon: Baby, color: "#e2718a", bg: "#fdedf1" },
-  fundamentals: { icon: Bandage, color: "#e58a5c", bg: "#fdf1ea" },
-  "maternal-and-newborn-health": { icon: Milk, color: "#4b9ee0", bg: "#eaf4fd" },
-  "mental-health": { icon: Brain, color: "#4a4a58", bg: "#efeff3" },
-  pharmacology: { icon: Pill, color: "#d9577a", bg: "#fceaf0" },
-  "management-of-care": { icon: Cross, color: "#e0353a", bg: "#fdeaea" },
-};
+/* eslint-disable @next/next/no-img-element */
 
-export function SubjectIcon({ id, size = 28 }: { id: SubjectId; size?: number }) {
-  const { icon: Icon, color, bg } = SUBJECT_ICON[id];
-  return (
-    <span className="inline-flex shrink-0 items-center justify-center rounded-lg" style={{ width: size, height: size, background: bg }}>
-      <Icon style={{ color, width: size * 0.6, height: size * 0.6 }} strokeWidth={2.2} />
-    </span>
-  );
+export function SubjectIcon({ id, size = 32 }: { id: SubjectId; size?: number }) {
+  return <img src={`/assets/subjects/${id}.png`} alt="" className="shrink-0" style={{ width: size, height: size }} />;
 }
 
-const TYPE_ICON = {
-  cases: { icon: BriefcaseMedical, color: "#e0353a" },
-  standalone: { icon: Stethoscope, color: "#4b9ee0" },
-  readiness: { icon: Target, color: "#e0353a" },
-  videos: { icon: SquarePlay, color: "#e0353a" },
-  sheets: { icon: FileText, color: "#9a9aa6" },
-  course: { icon: CirclePlay, color: "#e0353a" },
+const TYPE_IMG = {
+  cases: "case-studies",
+  standalone: "standalone",
+  readiness: "readiness",
+  videos: "crash-course",
+  sheets: "cheat-sheets",
+  course: "ngn-course",
 } as const;
 
-export function TypeIcon({ kind, size = 28 }: { kind: keyof typeof TYPE_ICON; size?: number }) {
-  const { icon: Icon, color } = TYPE_ICON[kind];
-  return (
-    <span className="inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
-      <Icon style={{ color, width: size * 0.8, height: size * 0.8 }} strokeWidth={2} />
-    </span>
-  );
+export function TypeIcon({ kind, size = 32 }: { kind: keyof typeof TYPE_IMG; size?: number }) {
+  return <img src={`/assets/types/${TYPE_IMG[kind]}.png`} alt="" className="shrink-0" style={{ width: size, height: size }} />;
 }
 
-/* ------------------------------------------------------------------ */
-/* Semi-circle gauge used on Performance and the score report          */
-/* ------------------------------------------------------------------ */
+export interface Usage {
+  used: number;
+  total: number;
+  mastered?: number;
+  reviewing?: number;
+  learning?: number;
+}
 
-export function Gauge({
-  value,
-  target,
-  label,
-  size = 240,
-  caption,
-}: {
-  value: number;
-  target?: number;
-  label: string;
-  size?: number;
-  caption?: ReactNode;
-}) {
-  const stroke = size * 0.1;
-  const r = (size - stroke) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
-  const start = 150; // degrees, 0 = 3 o'clock, clockwise
-  const sweep = 240;
-  const polar = (deg: number) => {
-    const rad = (deg * Math.PI) / 180;
-    return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
-  };
-  const arc = (from: number, to: number) => {
-    const [x1, y1] = polar(from);
-    const [x2, y2] = polar(to);
-    const large = to - from > 180 ? 1 : 0;
-    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
-  };
-  const v = Math.max(0, Math.min(100, value));
-  const tickDeg = target != null ? start + (sweep * target) / 100 : null;
-  const [tx1, ty1] = tickDeg != null ? polar(tickDeg) : [0, 0];
-
+/** Usage bar + "N of M questions used" block. */
+export function UsageBlock({ usage, className }: { usage: Usage; className?: string }) {
   return (
-    <div className="relative mx-auto" style={{ width: size, height: size * 0.82 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="absolute inset-0" aria-hidden>
-        <defs>
-          <linearGradient id="gauge-fill" x1="0" x2="1" y1="1" y2="0">
-            <stop offset="0%" stopColor="#2f6fe4" />
-            <stop offset="100%" stopColor="#6255e5" />
-          </linearGradient>
-        </defs>
-        <path d={arc(start, start + sweep)} stroke="#ebebef" strokeWidth={stroke} fill="none" strokeLinecap="round" />
-        {v > 0 && (
-          <path d={arc(start, start + (sweep * v) / 100)} stroke="url(#gauge-fill)" strokeWidth={stroke} fill="none" strokeLinecap="round" />
-        )}
-        {tickDeg != null && (
-          <line
-            x1={tx1}
-            y1={ty1}
-            x2={cx + (r - stroke * 0.9) * Math.cos((tickDeg * Math.PI) / 180)}
-            y2={cy + (r - stroke * 0.9) * Math.sin((tickDeg * Math.PI) / 180)}
-            stroke="#b7b7c0"
-            strokeWidth={2}
-          />
-        )}
-      </svg>
-      <div className="absolute inset-x-0 flex flex-col items-center" style={{ top: size * 0.3 }}>
-        <span className="text-[15px] font-semibold text-[#2f6fe4]">{caption}</span>
-        <span className="bg-gradient-to-r from-[#2f6fe4] to-brand bg-clip-text font-bold leading-none text-transparent" style={{ fontSize: size * 0.24 }}>
-          {Math.round(value)}%
-        </span>
-        <span className="mt-1 text-[17px] text-muted">{label}</span>
-      </div>
+    <div className={clsx("flex flex-col", className)}>
+      <UsageBar total={usage.total} mastered={usage.mastered} reviewing={usage.reviewing} learning={usage.learning} className="mb-2" />
+      <UsageText used={usage.used} total={usage.total} />
     </div>
   );
 }
 
-export function TargetPill({ children }: { children: ReactNode }) {
+export function LessonsBlock({ done, total, className }: { done: number; total: number; className?: string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-[17px] text-ink shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-      <Target className="size-5 text-[#2f6fe4]" strokeWidth={2.2} />
-      {children}
-    </span>
+    <div className={clsx("flex flex-col", className)}>
+      <ProgressBar value={total ? (done / total) * 100 : 0} className="mb-2" />
+      <UsageText used={done} total={total} unit="lessons completed" />
+    </div>
+  );
+}
+
+/** White gradient card row used on Home (icon, title, bars/subtitle, chevron). Hover: scale(1.01). */
+export function HomeRow({
+  href,
+  icon,
+  title,
+  children,
+  subtitle,
+  trailing,
+  external,
+}: {
+  href: string;
+  icon: ReactNode;
+  title: string;
+  children?: ReactNode;
+  subtitle?: string;
+  trailing?: ReactNode;
+  external?: boolean;
+}) {
+  const cls =
+    "bg-card mb-2 flex items-center rounded-lg px-4 py-3 shadow-card transition-transform duration-100 last:mb-0 hover:scale-[1.01]";
+  const body = (
+    <>
+      {icon}
+      <div className="min-w-0 flex-1 pl-4">
+        <h4 className={clsx("text-lg leading-[22.5px] font-semibold text-ink-strong", (children || subtitle) && "mb-2")}>{title}</h4>
+        {subtitle && <p className="text-base leading-4 text-muted">{subtitle}</p>}
+        {children && <div className="mr-6">{children}</div>}
+      </div>
+      {trailing}
+      <span className="flex size-6 shrink-0 items-center justify-center">
+        <Icon name="chevronRightThin" size={24} className="text-faint" />
+      </span>
+    </>
+  );
+  return external ? (
+    <a href={href} className={cls} target="_blank" rel="noreferrer">
+      {body}
+    </a>
+  ) : (
+    <Link href={href} className={cls}>
+      {body}
+    </Link>
+  );
+}
+
+/**
+ * Numbered list row (Case Studies, Standalone systems, Readiness Exams, Crash Courses).
+ * White card, 16px 24px padding, gray index, title, usage bar, action on the right.
+ */
+export function NumberedRow({
+  number,
+  leading,
+  title,
+  children,
+  action,
+  onClick,
+  href,
+  className,
+  footer,
+}: {
+  number?: number;
+  leading?: ReactNode;
+  title: ReactNode;
+  children?: ReactNode;
+  action?: ReactNode;
+  onClick?: () => void;
+  href?: string;
+  className?: string;
+  footer?: ReactNode;
+}) {
+  const inner = (
+    <div className={clsx("flex px-6 py-4", action ? "items-center" : "items-start")}>
+      {(number != null || leading) && (
+        <div className="flex flex-col items-center justify-between self-stretch">
+          {leading ?? <h4 className="text-lg leading-[22.5px] font-semibold text-faint">{number}</h4>}
+        </div>
+      )}
+      <div className="flex min-w-0 flex-1 items-center">
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-4">
+          <h4 className="mb-2 text-lg leading-[22.5px] font-semibold text-ink-strong">{title}</h4>
+          {children}
+        </div>
+        {action && <div className="flex shrink-0 items-center justify-center gap-2 text-faint">{action}</div>}
+      </div>
+    </div>
+  );
+  const cls = clsx("mb-2 block rounded-lg bg-white shadow-card transition-transform duration-100 hover:scale-[1.01]", (onClick || href) && "cursor-pointer", className);
+  if (href)
+    return (
+      <Link href={href} className={cls}>
+        {inner}
+        {footer}
+      </Link>
+    );
+  return (
+    <div className={cls} onClick={onClick}>
+      {inner}
+      {footer}
+    </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* List rows                                                           */
+/* Semi-circle gauge (Performance + score report)                      */
 /* ------------------------------------------------------------------ */
 
-export function ProgressRow({
-  href,
-  leading,
-  title,
-  used,
-  total,
-  unit = "questions used",
-  subtitle,
-  action,
-  trailing,
-  number,
+/**
+ * Same geometry as the live SVG: arc r=60 centered at (70,70), 10px stroke,
+ * round caps drawn as circles, target tick from r=55 to r=65 and a target
+ * (or check) icon at r=72. Percent + label are SVG text like the original.
+ */
+export function Gauge({
+  value,
+  target,
+  label,
+  color = "#5b8efc",
+  met,
+  height = 199,
 }: {
-  href?: string;
-  leading?: ReactNode;
-  title: string;
-  used?: number;
-  total?: number;
-  unit?: string;
-  subtitle?: string;
-  action?: ReactNode;
-  trailing?: ReactNode;
-  number?: number;
+  value: number;
+  target?: number;
+  label: string;
+  color?: string;
+  met?: boolean;
+  height?: number;
 }) {
-  const body = (
-    <>
-      {number != null && <span className="w-6 shrink-0 text-center text-base text-faint">{number}</span>}
-      {leading}
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-lg font-semibold text-ink-strong">{title}</div>
-        {total != null ? (
-          <>
-            <ProgressBar value={total ? ((used ?? 0) / total) * 100 : 0} className="mt-2.5 max-w-[920px]" />
-            <div className="mt-2 text-base text-muted">
-              <b className="font-semibold text-ink">{used ?? 0}</b> of {total} {unit}
-            </div>
-          </>
-        ) : (
-          subtitle && <div className="mt-1 text-base text-muted">{subtitle}</div>
-        )}
-      </div>
-      {action && <div className="shrink-0">{action}</div>}
-      {trailing}
-      {href && !action && <ChevronRight className="size-5 shrink-0 text-faint" />}
-    </>
+  const f = Math.max(0, Math.min(100, value)) / 100;
+  const pt = (frac: number, r: number) => {
+    const a = Math.PI * (1 - frac);
+    return [70 + r * Math.cos(a), 70 - r * Math.sin(a)] as const;
+  };
+  const [ex, ey] = pt(f, 60);
+  const tf = target != null ? target / 100 : null;
+  const tickColor = met ? "#66AC5C" : "#C8C9CE";
+  return (
+    <svg width="100%" height={height} viewBox="5 -6.16 131 81.16" preserveAspectRatio="none" aria-label={`${Math.round(value)}% ${label}`}>
+      <path d="M 10 70 A 60 60 0 0 1 130 70" stroke="#e5e7ef" strokeWidth="10" fill="none" />
+      <circle cx="10" cy="70" r="5" fill={f > 0 ? color : "#e5e7ef"} />
+      <circle cx="130" cy="70" r="5" fill={f >= 1 ? color : "#e5e7ef"} />
+      {f > 0 && <path d={`M 10 70 A 60 60 0 0 1 ${ex} ${ey}`} stroke={color} strokeWidth="10" fill="none" />}
+      {tf != null && (
+        <>
+          <line x1={pt(tf, 55)[0]} y1={pt(tf, 55)[1]} x2={pt(tf, 65)[0]} y2={pt(tf, 65)[1]} stroke={tickColor} strokeWidth="1" strokeLinecap="round" />
+          <g transform={`translate(${pt(tf, 72)[0] - 5}, ${pt(tf, 72)[1] - 5}) scale(0.42)`} fill={tickColor}>
+            {met ? (
+              <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm4.31 5.56L10.5 13.4 7.7 10.6a1 1 0 0 0-1.4 1.42l3.5 3.5a1 1 0 0 0 1.4 0l6.5-6.5a1 1 0 0 0-1.4-1.46Z" />
+            ) : (
+              <path d="M12 2c1.2 0 2.36.21 3.42.6l-1.19 1.2a8.51 8.51 0 1 0 5.97 5.97l1.2-1.2A10 10 0 1 1 12 2Zm0 4c.52 0 1.02.07 1.5.19v1.57a4.5 4.5 0 1 0 2.74 2.74h1.57A6.01 6.01 0 1 1 12 6Zm2 6a2 2 0 1 1-1.22-1.84l1.72-1.72V5.25c0-.2.08-.39.22-.53l2.5-2.5a.75.75 0 0 1 1.28.53V5.5h2.75a.75.75 0 0 1 .53 1.28l-2.5 2.5a.75.75 0 0 1-.53.22h-3.19l-1.72 1.72c.1.24.16.5.16.78Z" />
+            )}
+          </g>
+        </>
+      )}
+      <text x="70" y="62" textAnchor="middle" fontSize="32" fontWeight="700" fill={color} fontFamily="var(--font-brand), sans-serif">
+        {Math.round(value)}%
+      </text>
+      <text x="70" y="74" textAnchor="middle" fontSize="8" fill="#7a7e9f" fontFamily="var(--font-brand), sans-serif">
+        {label}
+      </text>
+    </svg>
   );
-  const cls = "bg-card flex items-center gap-4 rounded-lg px-6 py-5 shadow-card transition-transform";
-  return href ? (
-    <Link href={href} className={clsx(cls, "hover:-translate-y-0.5 hover:scale-[1.005]")}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls}>{body}</div>
+}
+
+/** Target pill: white (or green when met), radius 256px, 32px icon, 18px text. */
+export function TargetPill({ children, color = "#3b82f6", met }: { children: ReactNode; color?: string; met?: boolean }) {
+  return (
+    <span
+      className={clsx(
+        "inline-flex items-center gap-2 rounded-[256px] border p-1 shadow-[0_1px_4px_rgba(0,0,0,0.1)]",
+        met ? "border-[#66ac5c] bg-[#66ac5c] text-white" : "border-[#ededf0] bg-white text-ink-strong",
+      )}
+    >
+      {met ? <Icon name="targetCheck" size={32} className="text-white" /> : <Icon name="target" size={32} style={{ color }} />}
+      <p className="mr-2 text-lg leading-[18px]">{children}</p>
+    </span>
   );
 }

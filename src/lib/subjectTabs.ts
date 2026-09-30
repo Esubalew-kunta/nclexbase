@@ -1,18 +1,26 @@
-import { subjectById } from "@/data/catalog";
 import type { SubjectId } from "./types";
 
-export type SubjectTab = "cases" | "standalone" | "crash-courses" | "cheat-sheets" | "performance";
+export type SubjectTab = "case-studies" | "standalone" | "videos" | "cheat-sheets" | "performance";
 
-export const SUBJECT_TABS: { id: SubjectTab; label: string }[] = [
-  { id: "cases", label: "Case Studies" },
-  { id: "standalone", label: "Standalone Questions" },
-  { id: "crash-courses", label: "Crash Course Videos" },
-  { id: "cheat-sheets", label: "Cheat Sheets" },
-  { id: "performance", label: "Performance" },
-];
+export const TAB_LABELS: Record<SubjectTab, string> = {
+  "case-studies": "Case Studies",
+  standalone: "Standalone Questions",
+  videos: "Crash Course Videos",
+  "cheat-sheets": "Cheat Sheets",
+  performance: "Performance",
+};
 
-/** Subjects without case studies open on Standalone Questions, as on the live site. */
+/** Tab order per subject, as on the live site (Pharmacology lists Cheat Sheets before Videos). */
+const ORDER: Record<SubjectId, SubjectTab[]> = {
+  "adult-health": ["case-studies", "standalone", "videos", "cheat-sheets", "performance"],
+  "child-health": ["case-studies", "standalone", "videos", "cheat-sheets", "performance"],
+  fundamentals: ["standalone", "videos", "cheat-sheets", "performance"],
+  "maternal-and-newborn-health": ["case-studies", "standalone", "videos", "cheat-sheets", "performance"],
+  "mental-health": ["case-studies", "standalone", "videos", "cheat-sheets", "performance"],
+  pharmacology: ["standalone", "cheat-sheets", "videos", "performance"],
+  "management-of-care": ["standalone", "videos", "cheat-sheets", "performance"],
+};
+
 export function tabsFor(id: SubjectId): SubjectTab[] {
-  const s = subjectById(id);
-  return SUBJECT_TABS.map((t) => t.id).filter((t) => t !== "cases" || s.caseCount > 0);
+  return ORDER[id];
 }
