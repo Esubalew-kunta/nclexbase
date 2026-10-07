@@ -1,11 +1,12 @@
 "use client";
 
+import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { READINESS_EXAMS, READINESS_FAQS } from "@/data/catalog";
 import { useStore } from "@/lib/store";
-import { scoreSession } from "@/lib/scoring";
-import { Button, FaqList, Modal, PageHeader, ProgressBar, UpgradeButton } from "@/components/ui/primitives";
+import { chanceOfPassing, scoreSession } from "@/lib/scoring";
+import { Button, FaqList, Modal, PageHeader, UpgradeButton } from "@/components/ui/primitives";
 import { NumberedRow } from "@/components/ui/visuals";
 
 export default function ReadinessPage() {
@@ -19,20 +20,28 @@ export default function ReadinessPage() {
     <>
       <PageHeader
         trail={[{ label: "Next Gen Readiness Exams" }]}
-        title="Readiness Exams"
+        title="CAT Readiness Exams"
         description="These readiness exams simulate the look, feel, and content of the real Next Gen NCLEX. Use them to gauge your readiness to pass the NCLEX!"
       />
       <div className="mt-4">
         {READINESS_EXAMS.map((e) => {
-          const attempt = sessions.filter((s) => s.kind === "readiness" && s.sourceId === e.id).at(-1);
-          const answered = attempt ? Object.keys(attempt.submitted).length : 0;
+          const attempts = sessions.filter((s) => s.kind === "readiness" && s.sourceId === e.id);
+          const attempt = attempts.at(-1);
           const unlocked = plan === "premium" || e.free;
           const intro = `/nclex/next-gen-readiness-exams/qbanks/${e.id}`;
+          const done = attempt?.status === "ended";
           const open = () => {
             if (!unlocked) return router.push("/nclex/upgrade");
-            if (attempt?.status === "ended") return router.push(`/nclex/previous-tests/review?id=${attempt.id}`);
+            if (done) return router.push(`/nclex/previous-tests/review?id=${attempt!.id}`);
             router.push(attempt ? `/nclex/custom-test?id=${attempt.id}` : intro);
           };
+          const chance = done ? chanceOfPassing(scoreSession(attempt!).percent) : null;
+          const stat = (label: string, value: string, tone?: string) => (
+            <div className="flex flex-col items-center px-4 text-center">
+              <span className="text-sm leading-[14px] text-muted">{label}</span>
+              <span className={clsx("mt-1.5 text-base leading-4 font-semibold", tone ?? "text-ink-strong")}>{value}</span>
+            </div>
+          );
           return (
             <NumberedRow
               key={e.id}
@@ -42,6 +51,24 @@ export default function ReadinessPage() {
               action={
                 !unlocked ? (
                   <UpgradeButton />
+                ) : done ? (
+                  <div className="flex items-center gap-3">
+                    <div className="hidden divide-x divide-[#ededf0] sm:flex">
+                      {stat("Date", new Date(attempt!.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }))}
+                      {stat("Chance", chance!, chance === "Low" ? "text-[#e05e57]" : chance === "Borderline" ? "text-[#d09528]" : "text-[#4c8b43]")}
+                      {stat("Attempt", String(attempts.length))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        setConfirm(attempt!.id);
+                      }}
+                    >
+                      Reset
+                    </Button>
+                    <Button onClick={(ev) => (ev.stopPropagation(), open())}>Review</Button>
+                  </div>
                 ) : attempt ? (
                   <div className="flex items-center gap-2">
                     <Button
@@ -53,30 +80,15 @@ export default function ReadinessPage() {
                     >
                       Reset
                     </Button>
-                    <Button onClick={(ev) => (ev.stopPropagation(), open())}>{attempt.status === "ended" ? "Review" : "Resume"}</Button>
+                    <Button onClick={(ev) => (ev.stopPropagation(), open())}>Resume</Button>
                   </div>
                 ) : (
                   <Button onClick={(ev) => (ev.stopPropagation(), open())} className="min-w-[92px]">
-                    Start
+                    Start Exam
                   </Button>
                 )
               }
-            >
-              <ProgressBar value={(answered / e.questions) * 100} className="mb-2" />
-              <p className="text-base leading-6 text-muted">
-                {attempt?.status === "ended" ? (
-                  <>
-                    Completed · <strong className="font-bold">{scoreSession(attempt).percent}%</strong>
-                  </>
-                ) : attempt ? (
-                  "Paused"
-                ) : (
-                  <>
-                    <strong className="font-bold">0</strong> of {e.questions} questions used
-                  </>
-                )}
-              </p>
-            </NumberedRow>
+            />
           );
         })}
       </div>

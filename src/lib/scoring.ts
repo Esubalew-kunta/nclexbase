@@ -7,7 +7,14 @@ import { itemById } from "./bank";
  *  - +/-: +1 for each correct selection, -1 for each incorrect selection, floor 0 (SATA, highlight).
  */
 export function scoringRule(item: Item): ScoringRule {
-  return item.type === "sata" || item.type === "highlight" || item.type === "matrixMulti" ? "+/-" : "0/1";
+  return item.type === "sata" || item.type === "highlight" || item.type === "highlightText" || item.type === "matrixMulti" ? "+/-" : "0/1";
+}
+
+export type Chance = "Low" | "Borderline" | "High" | "Very High";
+
+/** CAT readiness result from the percent of points earned (practice estimate, not a guarantee). */
+export function chanceOfPassing(percent: number): Chance {
+  return percent < 50 ? "Low" : percent < 60 ? "Borderline" : percent < 70 ? "High" : "Very High";
 }
 
 export function maxPoints(item: Item): number {
@@ -24,7 +31,10 @@ export function maxPoints(item: Item): number {
     case "dropdown":
       return item.blanks.length;
     case "highlight":
+    case "highlightText":
       return item.answers.length;
+    case "fitb":
+      return 1;
     case "bowtie":
       return 5;
     case "dragTopN":
@@ -48,7 +58,10 @@ export function emptyAnswer(item: Item): Answer {
     case "dropdown":
       return { type: "dropdown", blanks: item.blanks.map(() => null) };
     case "highlight":
-      return { type: "highlight", keys: [] };
+    case "highlightText":
+      return { type: item.type, keys: [] };
+    case "fitb":
+      return { type: "fitb", value: "" };
     case "bowtie":
       return { type: "bowtie", condition: null, actions: [], parameters: [] };
     case "dragTopN":
@@ -72,7 +85,10 @@ export function isAnswered(item: Item, a: Answer | undefined): boolean {
     case "dropdown":
       return a.blanks.every((b) => b !== null);
     case "highlight":
+    case "highlightText":
       return a.keys.length > 0;
+    case "fitb":
+      return a.value.trim() !== "";
     case "bowtie":
       return a.condition !== null && a.actions.length === 2 && a.parameters.length === 2;
     case "dragTopN":
@@ -98,6 +114,12 @@ export function scoreItem(item: Item, a: Answer | undefined): Score {
       break;
     case "highlight":
       if (a.type === "highlight") earned = plusMinus(a.keys, item.answers);
+      break;
+    case "highlightText":
+      if (a.type === "highlightText") earned = plusMinus(a.keys, item.answers);
+      break;
+    case "fitb":
+      if (a.type === "fitb") earned = Number(a.value) === Number(item.answer) ? 1 : 0;
       break;
     case "matrix":
       if (a.type === "matrix") earned = a.cells.filter((c, i) => c === item.answers[i]).length;

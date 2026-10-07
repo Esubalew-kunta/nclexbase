@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useState } from "react";
 import { EXPERTS, REVIEW_FAQS, SUBJECTS, subjectById } from "@/data/catalog";
 import { caseForItem, itemById } from "@/lib/bank";
-import { avgPoints, formatDuration, scoreItem, scoreSession } from "@/lib/scoring";
+import { avgPoints, chanceOfPassing, formatDuration, scoreItem, scoreSession } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import { formatFull } from "@/lib/schedule";
 import type { SubjectId, TestSession } from "@/lib/types";
@@ -80,6 +80,94 @@ const chipIcon = {
   list: <Icon name="bites" size={14} />,
 };
 
+/** Ability estimate over the exam: running score on a logit scale with a shrinking confidence band. */
+function AbilityChart({ session }: { session: TestSession }) {
+  const W = 1000;
+  const H = 300;
+  const L = 60;
+  const B = 50;
+  const maxQ = 150;
+  const x = (q: number) => L + ((W - L - 20) * q) / maxQ;
+  const y = (z: number) => 20 + ((H - 20 - B) * (3 - Math.max(-3, Math.min(3, z)))) / 6;
+  let earned = 0;
+  let max = 0;
+  const pts: { q: number; z: number; ci: number }[] = [];
+  session.entries.forEach((e, i) => {
+    const sc = scoreItem(itemById(e.itemId), session.answers[e.itemId]);
+    earned += sc.earned;
+    max += sc.max;
+    if (i + 1 >= 10) {
+      const p = Math.min(0.95, Math.max(0.05, earned / Math.max(1, max)));
+      pts.push({ q: i + 1, z: Math.log(p / (1 - p)), ci: 2.2 / Math.sqrt((i + 1) / 10) });
+    }
+  });
+  const passZ = Math.log(0.6 / 0.4);
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${x(p.q)} ${y(p.z)}`).join(" ");
+  const band = [...pts.map((p) => `${x(p.q)} ${y(p.z + p.ci)}`), ...[...pts].reverse().map((p) => `${x(p.q)} ${y(p.z - p.ci)}`)].join(" L");
+  const last = pts[pts.length - 1];
+  return (
+    <div className="rounded-lg border border-[#ededf0] bg-white p-3">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Ability estimate by question number">
+        <rect x={x(0)} y={20} width={x(10) - x(0)} height={H - 20 - B} fill="#eef3ff" />
+        {pts.length > 0 && <path d={`M${band} Z`} fill="#eef3ff" />}
+        <line x1={L} x2={W - 20} y1={y(passZ)} y2={y(passZ)} stroke="#4c9a44" strokeDasharray="5 4" strokeWidth={2} />
+        {pts.length > 0 && <path d={line} fill="none" stroke="#3b82f6" strokeWidth={2.5} />}
+        {last && <circle cx={x(last.q)} cy={y(last.z)} r={6} fill="#3b82f6" />}
+        {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map((q) => (
+          <text key={q} x={x(q)} y={H - B + 22} textAnchor="middle" fontSize={16} fill="#8a8c97">
+            {q}
+          </text>
+        ))}
+        <text x={W / 2} y={H - 8} textAnchor="middle" fontSize={17} fontWeight={700} fill="#8a8c97">
+          Question #
+        </text>
+        <text transform={`translate(18 ${(H - B) / 2}) rotate(-90)`} textAnchor="middle" fontSize={17} fontWeight={700} fill="#8a8c97">
+          Ability Estimate
+        </text>
+      </svg>
+      <div className="flex flex-wrap justify-center gap-5 text-sm text-ink-strong">
+        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm bg-[#3b82f6]" />Ability Estimate</span>
+        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm bg-[#e6eefc]" />95% Confidence Interval</span>
+        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm bg-[#4c9a44]" />Passing Standard</span>
+      </div>
+    </div>
+  );
+}
+
+function CatSummary({ session, percent, weakest }: { session: TestSession; percent: number; weakest: string[] }) {
+  const chance = chanceOfPassing(percent);
+  const tone = chance === "Low" ? "text-[#e05e57]" : chance === "Borderline" ? "text-[#d09528]" : "text-[#4c8b43]";
+  const n = session.entries.length;
+  const message =
+    chance === "Low" || chance === "Borderline" ? (
+      <>
+        Your exam ended at <b>{n}</b> questions because you were <b>{percent < 50 ? "below" : "close to"} the passing standard</b>. You would have a <b>{chance}</b> chance of passing if you took the NCLEX today. Keep practicing!
+        <br />
+        <br />
+        We recommend reviewing <b>Cheat Sheets</b>, <b>Crash Course videos</b>, and questions from the <b>{weakest.join(" & ")}</b> sections, then taking the next <b>CAT Readiness exam</b> in 1-2 weeks.
+      </>
+    ) : (
+      <>
+        Your exam ended at <b>{n}</b> questions because you were <b>above the passing standard</b>. You would have a <b>{chance}</b> chance of passing if you took the NCLEX today. Great work!
+        <br />
+        <br />
+        Keep your momentum going: review the explanations for anything you missed, then take the next <b>CAT Readiness exam</b> to confirm the pattern.
+      </>
+    );
+  return (
+    <div className="flex flex-col px-6 pt-4 pb-6">
+      <h3 className="mb-4 text-2xl leading-[30px] font-bold text-ink-strong">
+        Chance of Passing: <span className={tone}>{chance}</span>
+      </h3>
+      <div className="relative mb-6">
+        <img src={EXPERTS.emily.photo} alt="" className="absolute top-6 left-0 z-[1] size-12 rounded-full object-cover" />
+        <p className="ml-9 rounded-lg bg-[#eef1ff] py-4 pr-6 pl-12 text-base leading-6 text-ink-strong">{message}</p>
+      </div>
+      <AbilityChart session={session} />
+    </div>
+  );
+}
+
 function ScoreReport({ session }: { session: TestSession }) {
   const router = useRouter();
   const goTo = useStore((s) => s.goTo);
@@ -99,6 +187,8 @@ function ScoreReport({ session }: { session: TestSession }) {
     router.push(`/nclex/custom-test?id=${session.id}&review=1`);
   };
   const allOpen = open.size === stats.subjects.length;
+  const isCat = session.kind === "readiness";
+  const weakest = [...stats.subjects].sort((a, b) => a.earned / Math.max(1, a.max) - b.earned / Math.max(1, b.max)).slice(0, 2).map((x) => subjectById(x.id).name);
   const faster = perQ <= avgPerQ;
   const diff = Math.min(1, Math.abs(perQ - avgPerQ) / Math.max(1, avgPerQ));
 
@@ -112,8 +202,14 @@ function ScoreReport({ session }: { session: TestSession }) {
             <h4 className="mb-2 text-lg leading-[22.5px] font-semibold text-ink">Score Report</h4>
             <div className="flex flex-wrap gap-2">
               <Chip icon={chipIcon.date}>{formatFull(new Date(session.createdAt))}</Chip>
-              <Chip icon={chipIcon.clock}>{session.timed ? "Timed" : "Untimed"}</Chip>
-              <Chip icon={chipIcon.tutor}>{session.tutor ? "Tutored" : "Untutored"}</Chip>
+              {isCat ? (
+                <Chip icon={chipIcon.clock}>{formatDuration(sc.time)} Total Time</Chip>
+              ) : (
+                <>
+                  <Chip icon={chipIcon.clock}>{session.timed ? "Timed" : "Untimed"}</Chip>
+                  <Chip icon={chipIcon.tutor}>{session.tutor ? "Tutored" : "Untutored"}</Chip>
+                </>
+              )}
               <Chip icon={chipIcon.list}>{session.entries.length} Questions</Chip>
             </div>
           </div>
@@ -125,7 +221,8 @@ function ScoreReport({ session }: { session: TestSession }) {
           </div>
         </div>
 
-        <div className="flex flex-col px-6 pt-4 pb-6">
+        {isCat && <CatSummary session={session} percent={sc.percent} weakest={weakest} />}
+        <div className={clsx("flex-col px-6 pt-4 pb-6", isCat ? "hidden" : "flex")}>
           <div className="flex flex-col gap-8 lg:flex-row">
             <div className="flex flex-1 items-center justify-center py-6">
               <div className="relative">
@@ -441,7 +538,8 @@ function buildStats(session: TestSession) {
     row.systems.set(item.system, sys);
     bySubject.set(item.subject, row);
 
-    const caseId = caseForItem(item.id) ? e.caseId : undefined;
+    const cs = caseForItem(item.id);
+    const caseId = cs && !cs.exhibit ? e.caseId : undefined;
     let g = groups.at(-1);
     if (!g || !caseId || g.caseId !== caseId) {
       g = { caseId, subject: item.subject, system: item.system, earned: 0, max: 0, time: 0, rows: [] };

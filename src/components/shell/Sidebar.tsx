@@ -3,92 +3,26 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
 import { SUBJECTS } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
-import { NAV, PRODUCTS, type NavLink } from "./nav";
+import { NAV, type NavLink } from "./nav";
 
 export const normalize = (p: string) => (p.length > 1 ? p.replace(/\/$/, "") : p);
 
 /* eslint-disable @next/next/no-img-element */
 
-/** Logo + "NCLEX Bootcamp ⌄" product switcher. */
-function Brand({ onNavigate }: { onNavigate?: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [section, setSection] = useState<string | null>("⚕️ Nursing");
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
-    window.addEventListener("mousedown", close);
-    return () => window.removeEventListener("mousedown", close);
-  }, [open]);
-
+/** Logo + product name (NCLEX only, no product switcher). */
+function Brand() {
   return (
-    <div ref={ref} className="relative flex h-[72px] p-4">
-      <div className="group flex cursor-pointer items-center" onClick={() => setOpen((o) => !o)}>
+    <div className="flex h-[72px] p-4">
+      <Link href="/nclex" className="flex items-center">
         <img src="/assets/brand/logo-mark.png" alt="" className="mr-2 size-9" />
         <div className="w-[127px]">
           <img src="/assets/brand/logo-word.png" alt="Bootcamp.com" className="h-5 w-[120px]" />
-          <div className="mt-px flex items-center text-sm leading-[14px] whitespace-nowrap text-faint">
-            NCLEX Bootcamp
-            <svg
-              viewBox="0 0 24 24"
-              className={clsx("ml-1 size-3.5 transition-opacity", open ? "rotate-180 opacity-100" : "opacity-0 group-hover:opacity-100")}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-            </svg>
-          </div>
+          <div className="mt-px text-sm leading-[14px] whitespace-nowrap text-faint">NCLEX Bootcamp</div>
         </div>
-      </div>
-
-      {open && (
-        <div className="animate-fade-in absolute top-[72px] right-[15px] left-[15px] z-10 overflow-hidden rounded-lg bg-white shadow-[0_16px_30px_rgba(0,0,0,0.24)]">
-          {PRODUCTS.map((p, i) => {
-            const expanded = section === p.label;
-            return (
-              <div key={p.label} className={clsx("flex flex-col", i < PRODUCTS.length - 1 && "border-b border-[#ededf0]")}>
-                <h3
-                  onClick={() => setSection(expanded ? null : p.label)}
-                  className="flex cursor-pointer items-center justify-between p-4 text-base leading-5 font-semibold text-ink-strong hover:bg-[#f6f6f6]"
-                >
-                  <span>{p.label}</span>
-                  <svg viewBox="0 0 24 24" className={clsx("size-6 text-faint transition-transform", !expanded && "-rotate-90")} fill="none" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </h3>
-                {expanded && (
-                  <div className="bg-[#fafafa]">
-                    {p.items.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.current ? undefined : item.href}
-                        onClick={() => item.current && (setOpen(false), onNavigate?.())}
-                        className={clsx("block cursor-pointer border-t border-[#ededf0] p-4 hover:bg-[#f6f6f6]", item.current && "opacity-[0.48]")}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-base leading-[19px] font-bold text-ink-strong">{item.name}</h4>
-                            <p className={clsx("text-sm leading-[21px] font-bold", item.current ? "text-brand" : "text-muted")}>
-                              {item.current ? "Currently Studying" : "Membership Required"}
-                            </p>
-                          </div>
-                          <Icon name="shield" size={16} className="text-muted" />
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      </Link>
     </div>
   );
 }
@@ -139,7 +73,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="relative h-full">
       <div className={clsx("h-full overflow-y-auto [scrollbar-width:none]", plan === "free" ? "pb-[212px]" : "pb-6")}>
-        <Brand onNavigate={onNavigate} />
+        <Brand />
         <button
           onClick={() => {
             onNavigate?.();
@@ -181,12 +115,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 {section.links.map((link) => (
                   <Item key={link.label} link={link} onNavigate={onNavigate} active={!link.external && !link.action && isActive(link.href)} />
                 ))}
-                {si === NAV.length - 1 && (
-                  <div className="flex h-[42px] items-center gap-0 rounded-lg p-3">
-                    <img src="/assets/brand/app-store.png" alt="Download on the App Store" className="h-8 w-[95px] cursor-pointer" />
-                    <img src="/assets/brand/google-play.png" alt="Get it on Google Play" className="ml-1 h-8 w-[95px] cursor-pointer" />
-                  </div>
-                )}
               </div>
             </div>
           ))}

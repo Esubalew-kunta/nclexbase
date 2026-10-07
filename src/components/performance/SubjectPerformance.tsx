@@ -71,13 +71,13 @@ function Warning() {
   );
 }
 
-function CreateButton() {
+function CreateButton({ subject, system }: { subject: SubjectId; system?: string }) {
   const setUi = useStore((s) => s.setUi);
   return (
     <button
       onClick={(e) => {
         e.stopPropagation();
-        setUi({ createTestOpen: true });
+        setUi({ createTestOpen: true, createTestPreset: { subject, system } });
       }}
       aria-label="Create a test"
       className="ml-auto flex size-8 cursor-pointer items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-[#6765ef]"
@@ -177,7 +177,7 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
                       <UsageCell total={s.perfTotal} {...counts} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <CreateButton />
+                      <CreateButton subject={id} />
                     </td>
                   </tr>
                   {isOpen &&
@@ -203,7 +203,7 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
                             <UsageCell used={v?.used ?? 0} total={sys.total} />
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <CreateButton />
+                            <CreateButton subject={id} system={sys.name} />
                           </td>
                         </tr>
                       );

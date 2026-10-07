@@ -24,16 +24,15 @@ export function QuickActions() {
     { title: "Create Test", subtitle: "Study up to 85 questions at a time", icon: "qaCreateTest", color: "#6255e5", onClick: () => setUi({ createTestOpen: true }) },
     {
       title: "Daily Warmup",
-      subtitle: plan === "free" ? "Upgrade to unlock" : "5 questions to warm up",
+      subtitle: plan === "free" ? "Upgrade to unlock" : "One question emailed daily",
       icon: "shield",
       color: "rgba(255,255,255,.7)",
-      href: plan === "free" ? "/nclex/upgrade" : "/nclex/next-gen-standalone",
+      href: plan === "free" ? "/nclex/upgrade" : "/nclex/daily-warmup",
       locked: plan === "free",
     },
     { title: "Performance", subtitle: "See if you're ready to pass", icon: "qaPerformance", color: "#6366f1", href: "/nclex/performance" },
-    { title: "Readiness Exams", subtitle: "Gauge exam readiness", icon: "qaReadiness", color: "#f43f5e", href: "/nclex/next-gen-readiness-exams" },
+    { title: "CAT Readiness Exams", subtitle: "Gauge exam readiness", icon: "qaReadiness", color: "#f43f5e", href: "/nclex/next-gen-readiness-exams" },
     { title: "Previous Tests", subtitle: "Review past test attempts", icon: "qaPreviousTests", color: "#3b82f6", href: "/nclex/previous-tests" },
-    { title: "Study Group", subtitle: "Join 200k+ fellow students", icon: "qaStudyGroup", color: "#ba3996", href: "https://www.facebook.com/groups/2169829559872032", external: true },
   ];
 
   return (

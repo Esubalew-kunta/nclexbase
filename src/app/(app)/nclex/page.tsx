@@ -62,7 +62,7 @@ export default function HomePage() {
         <HomeRow href="/nclex/next-gen-standalone" icon={<TypeIcon kind="standalone" />} title="Standalone Questions">
           <UsageBlock usage={{ total: TOTALS.standalone, ...progress.standaloneTotal }} />
         </HomeRow>
-        <HomeRow href="/nclex/next-gen-readiness-exams" icon={<TypeIcon kind="readiness" />} title="Readiness Exams">
+        <HomeRow href="/nclex/next-gen-readiness-exams" icon={<TypeIcon kind="readiness" />} title="CAT Readiness Exams">
           <UsageBlock usage={{ total: TOTALS.readiness, used: 0 }} />
         </HomeRow>
       </section>

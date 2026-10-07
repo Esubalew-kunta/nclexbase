@@ -46,7 +46,7 @@ function Info({ tip }: { tip: string }) {
 export function CreateTestModal() {
   const open = useStore((s) => s.createTestOpen);
   const setUi = useStore((s) => s.setUi);
-  return open ? <CreateTestForm onClose={() => setUi({ createTestOpen: false })} /> : null;
+  return open ? <CreateTestForm onClose={() => setUi({ createTestOpen: false, createTestPreset: null })} /> : null;
 }
 
 interface Node {
@@ -65,12 +65,13 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
   const bookmarks = useStore((s) => s.bookmarks);
   const plan = useStore((s) => s.user.plan);
   const createSession = useStore((s) => s.createSession);
+  const preset = useStore((s) => s.createTestPreset);
   const isFree = plan === "free";
 
   const [tutor, setTutor] = useState(true);
   const [timed, setTimed] = useState(false);
   const [pools, setPools] = useState<Set<Pool>>(new Set(["unused"]));
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(() => (!isFree && preset ? new Set([preset.subject]) : new Set()));
   const [count, setCount] = useState(6);
 
   const used = useMemo(() => usedItemIds(sessions), [sessions]);
@@ -88,7 +89,7 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
       label: "Case Studies",
       count: TOTALS.cases,
       locked: isFree,
-      children: CASE_ROWS.map((r) => ({ id: `case:${r.id}`, label: r.title, count: 6, locked: isFree })),
+      children: CASE_ROWS.map((r) => ({ id: `case:${r.id}`, label: r.title, count: r.number <= 2 ? 5 : 6, locked: isFree })),
     },
     ...SUBJECTS.map((s) => ({
       id: s.id,
@@ -100,7 +101,15 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
     })),
   ];
   const leftIds = ["cases", "adult-health", "child-health", "fundamentals"];
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(isFree ? ["free", "free:all"] : nodes.flatMap((n) => [n.id, ...n.children.map((c) => c.id)])));
+  const [selected, setSelected] = useState<Set<string>>(() => {
+    if (isFree) return new Set(["free", "free:all"]);
+    const node = preset && nodes.find((n) => n.id === preset.subject);
+    if (node) {
+      const sys = node.children.filter((c) => c.id === `${node.id}:${preset.system}`);
+      return sys.length ? new Set(sys.map((c) => c.id)) : new Set([node.id, ...node.children.map((c) => c.id)]);
+    }
+    return new Set(nodes.flatMap((n) => [n.id, ...n.children.map((c) => c.id)]));
+  });
 
   const toggleSel = (ids: string[], on: boolean) =>
     setSelected((s) => {

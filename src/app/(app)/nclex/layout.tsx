@@ -1,5 +1,5 @@
 import { Sidebar } from "@/components/shell/Sidebar";
-import { MobileNav, TopBar } from "@/components/shell/TopBar";
+import { MobileNav, TopBar, TopBarFrame } from "@/components/shell/TopBar";
 import { ContactWidget } from "@/components/shell/ContactWidget";
 import { CreateTestModal } from "@/components/test/CreateTestModal";
 
@@ -13,9 +13,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <MobileNav />
       <div className="bg-app-gradient relative h-dvh lg:ml-64 lg:rounded-tl-lg">
-        <div className="absolute inset-x-0 top-0 z-20">
+        <TopBarFrame>
           <TopBar />
-        </div>
+        </TopBarFrame>
         <div id="app-scroll" className="h-dvh overflow-y-auto pt-[72px]">
           <main className="mx-0 px-4 pt-4 pb-20 sm:mx-4 sm:px-8">{children}</main>
         </div>

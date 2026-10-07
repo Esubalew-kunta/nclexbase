@@ -39,6 +39,8 @@ export interface Subject {
 export type ScoringRule = "0/1" | "+/-" | "rationale";
 
 export interface Rationale {
+  /** Explanation is the complete live write-up (incorrect options and takeaways included). */
+  raw?: boolean;
   /** HTML (trusted local mock data). */
   explanation: string;
   incorrect?: { label: string; text: string }[];
@@ -142,7 +144,25 @@ export interface MatrixMultiItem extends ItemBase {
   answers: number[][];
 }
 
+/** Fill in the blank: a single numeric answer (dosage calculations). */
+export interface FitbItem extends ItemBase {
+  type: "fitb";
+  /** Correct answer, compared as a number. */
+  answer: string;
+}
+
+/** Click-to-highlight inside a passage (HTML with `<span class="hl" data-h="n">` segments). */
+export interface HighlightTextItem extends ItemBase {
+  type: "highlightText";
+  /** Passage HTML (including the instruction line). */
+  html: string;
+  /** Keys (data-h values) of the segments that should be highlighted. */
+  answers: string[];
+}
+
 export type Item =
+  | FitbItem
+  | HighlightTextItem
   | McqItem
   | DragTopNItem
   | MatrixMultiItem
@@ -164,7 +184,8 @@ export type Answer =
   | { type: "matrixMulti"; cells: number[][] }
   | { type: "dragTopN"; chosen: number[] }
   | { type: "dragCloze" | "dropdown"; blanks: (number | null)[] }
-  | { type: "highlight"; keys: string[] }
+  | { type: "highlight" | "highlightText"; keys: string[] }
+  | { type: "fitb"; value: string }
   | { type: "bowtie"; condition: number | null; actions: number[]; parameters: number[] };
 
 /* ------------------------------------------------------------------ */
@@ -186,6 +207,8 @@ export interface CaseStudy {
   title: string;
   subject: SubjectId;
   intro: string;
+  /** A single question with an exhibit tab (no "Item x of y" header). */
+  exhibit?: boolean;
   tabs: CaseTab[];
   items: Item[];
 }

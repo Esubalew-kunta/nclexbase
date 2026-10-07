@@ -16,7 +16,7 @@ const INCLUDED = [
   "2,600+ NCLEX® Questions",
   "50 NCLEX® Cases",
   "Crash Course Videos",
-  "4 Readiness Exams",
+  "4 CAT Readiness Exams",
   "140+ Printable Cheat Sheets",
   "Study Schedule Creator",
   "Ask Bootcamp AI™",

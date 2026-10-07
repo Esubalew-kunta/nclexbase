@@ -132,7 +132,7 @@ export function NumberedRow({
       )}
       <div className="flex min-w-0 flex-1 items-center">
         <div className="flex min-w-0 flex-1 flex-col justify-center px-4">
-          <h4 className="mb-2 text-lg leading-[22.5px] font-semibold text-ink-strong">{title}</h4>
+          <h4 className={clsx("text-lg leading-[22.5px] font-semibold text-ink-strong", children ? "mb-2" : "")}>{title}</h4>
           {children}
         </div>
         {action && <div className="flex shrink-0 items-center justify-center gap-2 text-faint">{action}</div>}

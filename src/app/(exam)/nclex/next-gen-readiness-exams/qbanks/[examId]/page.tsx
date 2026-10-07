@@ -10,5 +10,5 @@ export function generateStaticParams() {
 export default async function ReadinessIntroPage({ params }: { params: Promise<{ examId: string }> }) {
   const { examId } = await params;
   const exam = READINESS_EXAMS.find((e) => e.id === examId)!;
-  return <ReadinessIntro id={exam.id} number={exam.number} title={exam.title} questions={exam.questions} minutes={exam.minutes} />;
+  return <ReadinessIntro id={exam.id} number={exam.number} title={exam.title} />;
 }

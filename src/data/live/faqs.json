@@ -29,10 +29,6 @@
    "<p>Yes! We highly recommend you follow our study guide and schedule. Click here to download our study guide:&nbsp;<a href=\"https://docs.google.com/document/d/1ihetD4I9HrBikn4ze1hybsxyHncVUbrVP4wJ_o4SxOQ/edit?usp=drive_link\" target=\"_blank\">NCLEX&nbsp;Bootcamp Study Guide.</a></p><p>You can create a personalized study schedule that will adapt to you and keep you on track to exam day. Click here to create your own study schedule:&nbsp;<a href=\"https://app.bootcamp.com/nclex/study-schedule\" target=\"_blank\">NCLEX&nbsp;Bootcamp Study Schedule Creator.</a></p><p>If you prefer a printed study schedule, you can find those options below:</p><ul><li><a href=\"https://drive.google.com/file/d/1Pz0vYIdODmqxFSbHQ6JGMwsS7_zFnEHy/view?usp=sharing\" target=\"_blank\">1-Month Study Schedule</a></li><li><a href=\"https://drive.google.com/file/d/1kj_0n1eoJ2-KxD1Aj4VhGIroD5rSuh0V/view?usp=sharing\" target=\"_blank\">2-Month Study Schedule</a></li><li><a href=\"https://drive.google.com/file/d/1_pdb97ZXdOE3qGd42V4xAr_uTpeFmTV-/view?usp=sharing\" target=\"_blank\">3-Month Study Schedule</a></li></ul>"
   ],
   [
-   "Where can I read student reviews for NCLEX Bootcamp?",
-   "<p>You can <a href=\"https://bootcamp.com/nclex/student-reviews\" target=\"_blank\">click here to read <strong>real student reviews of NCLEX Bootcamp.</strong></a> See why over 200,000+&nbsp;students trust us to pass the NCLEX®.</p>"
-  ],
-  [
    "Do you offer a payment plan?",
    "<p>Yes! We work with Klarna and Afterpay, which allows you to pay over time with 4 interest-free payments. Click the link below the membership you want to purchase to pay over time. Note:&nbsp;You may need to click \"Pay without Link\" to see the Klarna or Afterpay options.<br></p>"
   ],
@@ -85,28 +81,32 @@
  ],
  "readiness": [
   [
-   "What are NCLEX® Bootcamp Readiness Exams?",
-   "Readiness exams simulate the exact look, feel, and content of the real NCLEX®. At the end of each exam, you’ll get an accurate prediction of how likely you are to pass the NCLEX® and recommendations on how to improve your chances of passing."
+   "What are the NCLEX® Bootcamp CAT Readiness Exams?",
+   "<p>They're practice exams that simulate the real NCLEX experience. They use computerized adaptive testing (CAT), the same method the NCLEX uses to pick questions. Use them to gauge your readiness to pass the NCLEX!</p>"
   ],
   [
-   "How many questions are in each NCLEX® Bootcamp Readiness Exam?",
-   "Readiness exams include 100 unique NGN and traditional questions based on the NCLEX-RN test plan."
+   "How does computerized adaptive testing work?",
+   "<p>The real NCLEX uses a scoring algorithm to pick the next question based on your performance. Answer correctly and the next question tends to be slightly harder; miss one and the next question tends to be slightly easier.</p>"
   ],
   [
-   "How long are the NCLEX® Bootcamp Readiness Exams?",
-   "You will have 3 hours and 20 minutes to complete 100 questions, similar to the pace you should answer questions on the real NCLEX®."
+   "Why did my exam shut off at 85 questions?",
+   "<p>Each exam has at least 85 questions and at most 150, just like the real NCLEX. The exam stops once it can tell with confidence whether you're above or below the passing standard, or when you reach 150. Stopping at 85 doesn't mean you passed or failed. It means the exam had enough information to decide. Your result is shown on the results screen.</p>"
   ],
   [
-   "How accurate are the NCLEX® Bootcamp Readiness Exams?",
-   "<span>We use statistical models to compare your performance against previous students who passed the NCLEX® to determine your readiness level. As shown in <a target=\"_blank\" href=\"https://www.facebook.com/groups/nclexbootcampstudentgroup/posts/2390915884430064/\">our Facebook study group</a>, many students have confirmed the Readiness Exams accurately predicted their NCLEX® results.</span>"
+   "What does my Chance of Passing result mean?",
+   "<p>Your result (Low, Borderline, High, or Very High) is based on how you performed across all the questions you got. One exam is a snapshot, a pattern across several exams is a much better predictor. If you score High or Very High on several exams, that's a strong sign you're ready. This is practice feedback, not a guarantee of your NCLEX result.</p>"
   ],
   [
-   "When should I take my first NCLEX® Bootcamp Readiness Exam?",
-   "We highly recommend taking a readiness exam at the start of your studying to see where your strengths and weaknesses are, and then practicing with the question bank to improve your weaker subjects. Take another readiness exam at the mid-point of your studying, and another one just before the NCLEX® to gauge your readiness."
+   "Are CAT exams harder or easier than the real NCLEX?",
+   "<p>The exams are built to match the real NCLEX's content, format, and difficulty. Since both tests adapt to you, they should feel about equally hard.</p>"
   ],
   [
-   "Can I pause a Readiness Exam and come back to it later?",
-   "Yes, you can pause a Readiness Exam and come back to it later. Just keep in mind that you won't be able to pause on the actual NCLEX®"
+   "When should I take my first CAT Readiness exam?",
+   "<p>Take an exam at the start of your studying to identify strengths and weaknesses. Practice with the question bank, then take another exam midway through your studying and another before the NCLEX to reassess your readiness. If you follow the study schedule, it’ll tell you exactly when to take the exams.</p>"
+  ],
+  [
+   "Can I pause, go back, or change an answer?",
+   "<p>You can pause and resume an exam at any time, but we recommend completing it in one sitting if possible. Once you submit an answer, you cannot go back or change it. The real NCLEX works the same way, and the adaptive system needs your answers to be final to choose your next question.</p>"
   ]
  ],
  "schedule": [

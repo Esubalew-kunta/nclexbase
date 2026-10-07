@@ -497,6 +497,25 @@ export function EndReviewDialog({ session, onCancel, onEnd }: { session: TestSes
   );
 }
 
+/** CAT readiness exam: shown after the last question. */
+export function CompleteDialog({ onView }: { onView: () => void }) {
+  return (
+    <ExamDialog
+      title="Exam Complete"
+      actions={
+        <ExamButton primary onClick={onView}>
+          <b>View Results</b>
+        </ExamButton>
+      }
+    >
+      <div className="flex items-start gap-4 px-5 py-5">
+        <InfoIcon />
+        <p className="text-base leading-6">The simulator has determined your readiness level. Submit your exam to view your results.</p>
+      </div>
+    </ExamDialog>
+  );
+}
+
 export function PauseDialog({ onResume }: { onResume: () => void }) {
   return (
     <ExamDialog

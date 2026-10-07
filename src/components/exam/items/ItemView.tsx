@@ -7,6 +7,7 @@ import { DragTopNItemView } from "./DragTopNItem";
 import { DragClozeItemView, DropdownClozeItemView } from "./ClozeItems";
 import { HighlightItemView } from "./HighlightItem";
 import { BowtieItemView } from "./BowtieItem";
+import { FitbItemView, HighlightTextItemView } from "./TextItems";
 
 export function ItemView(props: { item: Item; answer: Answer; onChange: (a: Answer) => void; locked: boolean; reveal: boolean }) {
   const { item, ...rest } = props;
@@ -25,6 +26,10 @@ export function ItemView(props: { item: Item; answer: Answer; onChange: (a: Answ
       return <HighlightItemView item={item} {...rest} />;
     case "bowtie":
       return <BowtieItemView item={item} {...rest} />;
+    case "fitb":
+      return <FitbItemView item={item} {...rest} />;
+    case "highlightText":
+      return <HighlightTextItemView item={item} {...rest} />;
     case "dragTopN":
       return <DragTopNItemView item={item} {...rest} />;
     case "matrixMulti":

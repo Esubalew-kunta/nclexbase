@@ -13,9 +13,9 @@ import { ItemView } from "./items/ItemView";
 import { Html } from "./items/shared";
 import { Feedback } from "./Feedback";
 import { ScenarioPanel } from "./ScenarioPanel";
-import { Calculator, EndDialog, EndReviewDialog, PauseDialog, SettingsDrawer, TagTip } from "./ExamTools";
+import { Calculator, CompleteDialog, EndDialog, EndReviewDialog, PauseDialog, SettingsDrawer, TagTip } from "./ExamTools";
 
-type Overlay = "drawer" | "end" | "pause" | null;
+type Overlay = "drawer" | "end" | "pause" | "complete" | null;
 
 /**
  * Pearson-style exam screen. Modes:
@@ -35,6 +35,8 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
   const [warnFor, setWarnFor] = useState<string | null>(null);
 
   const isCase = session.kind === "case";
+  /** CAT readiness exam: answers lock in on Next, no going back, no End button. */
+  const isCat = session.kind === "readiness" && !review;
   const total = session.entries.length;
   const index = Math.min(session.current, total - 1);
   const entry = session.entries[index];
@@ -83,6 +85,11 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
   const onSubmit = () => {
     if (!isAnswered(item, current)) return setWarnFor(item.id);
     submit(session.id, item.id);
+    if (isCat) {
+      if (index + 1 >= total) setOverlay("complete");
+      else go(index + 1);
+      return;
+    }
     if (!session.tutor) go(index + 1);
   };
 
@@ -91,8 +98,12 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
     const onKey = (e: KeyboardEvent) => {
       if (!e.altKey) return;
       const k = e.key.toLowerCase();
-      if (k === "n") go(index + 1);
-      else if (k === "p") go(index - 1);
+      if (k === "n") {
+        if (isCat) onSubmit();
+        else go(index + 1);
+      } else if (k === "p") {
+        if (!isCat) go(index - 1);
+      }
       else if (k === "o") setCalcOpen((o) => !o);
       else if (k === "k") toggleMark(session.id, item.id);
       else if (k === "g") setOverlay("drawer");
@@ -126,7 +137,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
           </div>
         </div>
       </div>
-      {!locked && (
+      {!locked && !isCat && (
         <div className="my-4 ml-[26px]">
           <button onClick={onSubmit} className="flex h-[35px] w-[100px] cursor-pointer items-center justify-center bg-exam text-base text-white hover:bg-[#005a8e]">
             <u>S</u>ubmit
@@ -160,7 +171,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
           )}
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <Icon name="examQuestion" size={20} />
-            <span>Question</span> {index + 1} of {total}
+            <span>Question</span> {index + 1}{!isCat && ` of ${total}`}
           </div>
         </div>
       </header>
@@ -216,9 +227,11 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
             </FooterButton>
           ) : (
             <>
-              <FooterButton icon="examEnd" onClick={() => setOverlay("end")} right>
-                End
-              </FooterButton>
+              {!isCat && (
+                <FooterButton icon="examEnd" onClick={() => setOverlay("end")} right>
+                  End
+                </FooterButton>
+              )}
               {!isCase && (
                 <FooterButton pause onClick={() => setOverlay("pause")} right>
                   Pause
@@ -229,13 +242,17 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
         </div>
         <div className="flex items-stretch">
           {showTags && <TagButtons value={tags[item.id]} onChange={(t) => setTag(item.id, tags[item.id] === t ? null : t)} />}
-          <FooterButton icon="examPrev" onClick={() => go(index - 1)} disabled={index === 0}>
-            <u>P</u>revious
-          </FooterButton>
-          <FooterButton icon="examNavigate" onClick={() => setOverlay("drawer")}>
-            Navi<u>g</u>ate
-          </FooterButton>
-          <FooterButton next onClick={() => go(index + 1)} disabled={review && index === total - 1}>
+          {!isCat && (
+            <>
+              <FooterButton icon="examPrev" onClick={() => go(index - 1)} disabled={index === 0}>
+                <u>P</u>revious
+              </FooterButton>
+              <FooterButton icon="examNavigate" onClick={() => setOverlay("drawer")}>
+                Navi<u>g</u>ate
+              </FooterButton>
+            </>
+          )}
+          <FooterButton next onClick={() => (isCat ? onSubmit() : go(index + 1))} disabled={(review && index === total - 1) || (isCat && !isAnswered(item, current))}>
             <u>N</u>ext
           </FooterButton>
         </div>
@@ -251,6 +268,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
           <EndDialog onCancel={() => setOverlay(null)} onEnd={finish} />
         ))}
       {overlay === "pause" && <PauseDialog onResume={() => setOverlay(null)} />}
+      {overlay === "complete" && <CompleteDialog onView={finish} />}
     </div>
   );
 }

@@ -1,21 +1,27 @@
 import { CASES } from "@/data/cases";
 import { STANDALONE } from "@/data/standalone";
+import { READINESS_CASES, READINESS_ITEMS } from "@/data/readiness";
 import type { CaseStudy, Item, SessionEntry, SubjectId } from "./types";
 
 const itemIndex = new Map<string, { item: Item; caseStudy?: CaseStudy }>();
 for (const c of CASES) for (const item of c.items) itemIndex.set(item.id, { item, caseStudy: c });
 for (const item of STANDALONE) itemIndex.set(item.id, { item });
 
+// CAT readiness exam items are looked up by id but kept out of the study bank (Create Test, counts).
+const readinessIndex = new Map<string, { item: Item; caseStudy?: CaseStudy }>();
+for (const item of READINESS_ITEMS) readinessIndex.set(item.id, { item });
+for (const c of READINESS_CASES) for (const item of c.items) readinessIndex.set(item.id, { item, caseStudy: c });
+
 export const ALL_ITEMS: Item[] = [...itemIndex.values()].map((v) => v.item);
 
 export function itemById(id: string): Item {
-  const hit = itemIndex.get(id);
+  const hit = itemIndex.get(id) ?? readinessIndex.get(id);
   if (!hit) throw new Error(`Unknown item ${id}`);
   return hit.item;
 }
 
 export function caseForItem(id: string): CaseStudy | undefined {
-  return itemIndex.get(id)?.caseStudy;
+  return (itemIndex.get(id) ?? readinessIndex.get(id))?.caseStudy;
 }
 
 export function itemsForSubject(subject: SubjectId): Item[] {

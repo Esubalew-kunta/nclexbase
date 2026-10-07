@@ -21,12 +21,13 @@ export function SubjectHub({ id, tab }: { id: SubjectId; tab: SubjectTab }) {
   const progress = useProgress();
   const base = `/nclex/${id}`;
 
-  const action = (e?: React.MouseEvent) => {
+  const action = (system?: string) => (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (plan === "free") router.push("/nclex/upgrade");
-    else setUi({ createTestOpen: true });
+    else setUi({ createTestOpen: true, createTestPreset: { subject: id, system } });
   };
-  const actionButton = plan === "free" ? <UpgradeButton onClick={(e) => e.stopPropagation()} /> : <Button onClick={action}>Create Test</Button>;
+  const actionButton = (system?: string) =>
+    plan === "free" ? <UpgradeButton onClick={(e) => e.stopPropagation()} /> : <Button onClick={action(system)}>Create Test</Button>;
 
   return (
     <>
@@ -44,12 +45,12 @@ export function SubjectHub({ id, tab }: { id: SubjectId; tab: SubjectTab }) {
         <>
           <Banner>The standalone questions below are based on the real Next Gen NCLEX. Practice with these so you&apos;re ready for the real exam.</Banner>
           <h2 className="py-4 text-2xl leading-[30px] font-bold text-white">By Subject</h2>
-          <NumberedRow leading={<SubjectIcon id={id} size={24} />} title={subject.name} onClick={() => action()} action={actionButton}>
+          <NumberedRow leading={<SubjectIcon id={id} size={24} />} title={subject.name} onClick={() => action()()} action={actionButton()}>
             <UsageBlock className="lg:max-w-[630px]" usage={{ total: subject.standaloneCount, ...progress.standaloneFor(id) }} />
           </NumberedRow>
           <h2 className="py-4 text-2xl leading-[30px] font-bold text-white">By System</h2>
           {subject.systems.map((sys, i) => (
-            <NumberedRow key={sys.name} number={i + 1} title={sys.name} onClick={() => action()} action={actionButton}>
+            <NumberedRow key={sys.name} number={i + 1} title={sys.name} onClick={() => action(sys.name)()} action={actionButton(sys.name)}>
               <UsageBlock className="lg:max-w-[630px]" usage={{ total: sys.count, used: progress.bySystem.get(`${id}::${sys.name}`)?.used ?? 0 }} />
             </NumberedRow>
           ))}

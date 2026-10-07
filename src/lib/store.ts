@@ -2,9 +2,10 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Answer, MasteryTag, Pool, SessionEntry, TestSession } from "./types";
+import type { Answer, MasteryTag, Pool, SessionEntry, SubjectId, TestSession } from "./types";
 import { scoreItem } from "./scoring";
 import { itemById } from "./bank";
+import { EMPTY_EDITS, type CustomAssignment, type ScheduleEdits, type SpeedKey, type Tone } from "./schedule";
 
 export interface ExamSettings {
   textSize: number;
@@ -23,6 +24,16 @@ export interface Schedule {
   /** Specific dates off (ISO), from the days-off calendar. */
   offDates?: string[];
   createdAt: string;
+  /** Study speed scales assignment durations (custom assignments are unaffected). */
+  speed?: SpeedKey;
+}
+
+/** Study schedule calendar preferences (Settings modal + view dropdown). */
+export interface SchedulePrefs {
+  view: "day" | "week" | "full";
+  weekStart: 0 | 1;
+  compact: boolean;
+  hideCompleted: boolean;
 }
 
 interface PersistedState {
@@ -31,6 +42,10 @@ interface PersistedState {
   tags: Record<string, MasteryTag>;
   bookmarks: Record<string, boolean>;
   schedule: Schedule | null;
+  /** Daily Warmup (pro): one question emailed every day. Front-end only for now; sending needs the backend. */
+  warmup: { enabled: boolean; email: string };
+  scheduleEdits: ScheduleEdits;
+  schedulePrefs: SchedulePrefs;
   streak: { count: number; lastDay: string };
   examSettings: ExamSettings;
   flags: Record<string, boolean>;
@@ -42,6 +57,8 @@ interface PersistedState {
 interface UiState {
   hydrated: boolean;
   createTestOpen: boolean;
+  /** Pre-checks a subject (and optionally one system) when Create Test is opened from a subject row. */
+  createTestPreset: { subject: SubjectId; system?: string } | null;
   mobileNavOpen: boolean;
   contactOpen: boolean;
 }
@@ -68,6 +85,16 @@ interface Actions {
   setTag: (itemId: string, tag: MasteryTag | null) => void;
   toggleBookmark: (itemId: string) => void;
   setSchedule: (s: Schedule | null) => void;
+  setSchedulePrefs: (patch: Partial<SchedulePrefs>) => void;
+  toggleAssignment: (id: string) => void;
+  patchAssignment: (id: string, patch: { date?: string; tone?: Tone; minutes?: number }) => void;
+  addCustomAssignment: (a: CustomAssignment) => void;
+  patchCustomAssignment: (id: string, patch: Partial<CustomAssignment>) => void;
+  deleteAssignment: (id: string) => void;
+  restoreAssignment: (id: string) => void;
+  /** Move not-yet-done assignments to new dates (Rebalance). */
+  applyRebalance: (dates: Record<string, string>) => void;
+  setWarmup: (patch: Partial<{ enabled: boolean; email: string }>) => void;
   setExamSettings: (patch: Partial<ExamSettings>) => void;
   setFlag: (key: string, on: boolean) => void;
   touchStreak: () => void;
@@ -89,6 +116,9 @@ const initial: PersistedState = {
   tags: {},
   bookmarks: {},
   schedule: null,
+  warmup: { enabled: false, email: "" },
+  scheduleEdits: EMPTY_EDITS,
+  schedulePrefs: { view: "day", weekStart: 0, compact: true, hideCompleted: false },
   streak: { count: 1, lastDay: today() },
   examSettings: {
     textSize: 16,
@@ -113,6 +143,7 @@ export const useStore = create<Store>()(
       ...initial,
       hydrated: false,
       createTestOpen: false,
+      createTestPreset: null,
       mobileNavOpen: false,
       contactOpen: false,
 
@@ -196,7 +227,29 @@ export const useStore = create<Store>()(
         }),
 
       toggleBookmark: (itemId) => set((s) => ({ bookmarks: { ...s.bookmarks, [itemId]: !s.bookmarks[itemId] } })),
-      setSchedule: (schedule) => set({ schedule }),
+      // A new (or cleared) schedule starts with a clean slate of edits.
+      setSchedule: (schedule) => set((s) => ({ schedule, scheduleEdits: schedule && s.schedule ? s.scheduleEdits : EMPTY_EDITS })),
+      setSchedulePrefs: (patch) => set((s) => ({ schedulePrefs: { ...s.schedulePrefs, ...patch } })),
+      toggleAssignment: (id) => set((s) => ({ scheduleEdits: { ...s.scheduleEdits, done: { ...s.scheduleEdits.done, [id]: !s.scheduleEdits.done[id] } } })),
+      patchAssignment: (id, patch) =>
+        set((s) => ({ scheduleEdits: { ...s.scheduleEdits, overrides: { ...s.scheduleEdits.overrides, [id]: { ...s.scheduleEdits.overrides[id], ...patch } } } })),
+      addCustomAssignment: (a) => set((s) => ({ scheduleEdits: { ...s.scheduleEdits, custom: [...s.scheduleEdits.custom, a] } })),
+      patchCustomAssignment: (id, patch) =>
+        set((s) => ({ scheduleEdits: { ...s.scheduleEdits, custom: s.scheduleEdits.custom.map((c) => (c.id === id ? { ...c, ...patch } : c)) } })),
+      deleteAssignment: (id) => set((s) => ({ scheduleEdits: { ...s.scheduleEdits, deleted: { ...s.scheduleEdits.deleted, [id]: true } } })),
+      restoreAssignment: (id) =>
+        set((s) => {
+          const deleted = { ...s.scheduleEdits.deleted };
+          delete deleted[id];
+          return { scheduleEdits: { ...s.scheduleEdits, deleted } };
+        }),
+      applyRebalance: (dates) =>
+        set((s) => {
+          const overrides = { ...s.scheduleEdits.overrides };
+          for (const [id, date] of Object.entries(dates)) overrides[id] = { ...overrides[id], date };
+          return { scheduleEdits: { ...s.scheduleEdits, overrides } };
+        }),
+      setWarmup: (patch) => set((s) => ({ warmup: { ...s.warmup, ...patch } })),
       setExamSettings: (patch) => set((s) => ({ examSettings: { ...s.examSettings, ...patch } })),
       setFlag: (key, on) => set((s) => ({ flags: { ...s.flags, [key]: on } })),
 
@@ -211,7 +264,7 @@ export const useStore = create<Store>()(
       resetProgress: () => set({ sessions: [], tags: {}, bookmarks: {} }),
       resetAll: () => {
         useStore.persist.clearStorage();
-        set({ ...initial, streak: { count: 1, lastDay: today() }, createTestOpen: false, mobileNavOpen: false, contactOpen: false });
+        set({ ...initial, streak: { count: 1, lastDay: today() }, createTestOpen: false, createTestPreset: null, mobileNavOpen: false, contactOpen: false });
       },
       setSidebarSubjectsOpen: (sidebarSubjectsOpen) => set({ sidebarSubjectsOpen }),
       deleteSession: (id) => set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id) })),
@@ -225,7 +278,7 @@ export const useStore = create<Store>()(
       // Deep-merge settings so fields added later (e.g. examSettings.timer) get defaults.
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<PersistedState>;
-        return { ...current, ...p, examSettings: { ...current.examSettings, ...(p.examSettings ?? {}) }, user: { ...current.user, ...(p.user ?? {}) } };
+        return { ...current, ...p, warmup: { ...current.warmup, ...(p.warmup ?? {}) }, schedulePrefs: { ...current.schedulePrefs, ...(p.schedulePrefs ?? {}) }, scheduleEdits: { ...current.scheduleEdits, ...(p.scheduleEdits ?? {}) }, examSettings: { ...current.examSettings, ...(p.examSettings ?? {}) }, user: { ...current.user, ...(p.user ?? {}) } };
       },
       partialize: (s): PersistedState => ({
         user: s.user,
@@ -233,6 +286,9 @@ export const useStore = create<Store>()(
         tags: s.tags,
         bookmarks: s.bookmarks,
         schedule: s.schedule,
+        warmup: s.warmup,
+        scheduleEdits: s.scheduleEdits,
+        schedulePrefs: s.schedulePrefs,
         streak: s.streak,
         examSettings: s.examSettings,
         flags: s.flags,

@@ -4,19 +4,20 @@ import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { X } from "lucide-react";
-import { buildEntries } from "@/lib/bank";
+import { readinessEntries, readinessEntriesShuffled } from "@/data/readiness";
 import { useStore } from "@/lib/store";
 
-const SECONDS_PER_QUESTION = 120; // 200 minutes / 100 questions, as on the real exam.
+const EXAM_SECONDS = 5 * 3600;
 
-export function ReadinessIntro({ id: examId, number, title, questions, minutes }: { id: string; number: number; title: string; questions: number; minutes: number }) {
+export function ReadinessIntro({ id: examId, number, title }: { id: string; number: number; title: string }) {
   const router = useRouter();
   const createSession = useStore((s) => s.createSession);
   const [restrictions, setRestrictions] = useState(true);
   const [accommodation, setAccommodation] = useState<1 | 1.5 | 2>(1);
+  void title;
 
   const start = () => {
-    const entries = buildEntries({ subjects: "all", exclude: new Set(), count: questions, seed: number });
+    const entries = number === 1 ? readinessEntries() : readinessEntriesShuffled(number);
     const id = createSession({
       kind: "readiness",
       title,
@@ -24,14 +25,13 @@ export function ReadinessIntro({ id: examId, number, title, questions, minutes }
       tutor: false,
       timed: true,
       pool: "unused",
-      timeLimit: Math.round(entries.length * SECONDS_PER_QUESTION * accommodation),
+      timeLimit: Math.round(EXAM_SECONDS * accommodation),
       sourceId: examId,
     });
     useStore.getState().setExamSettings({ restrictions });
     router.replace(`/nclex/custom-test?id=${id}`);
   };
 
-  const hours = Math.floor(minutes / 60);
   return (
     <div className="flex h-dvh flex-col bg-white font-exam text-[#222]">
       <header className="flex h-[42px] shrink-0 items-center bg-exam px-2">
@@ -41,13 +41,13 @@ export function ReadinessIntro({ id: examId, number, title, questions, minutes }
       </header>
       <main className="flex flex-1 items-center justify-center overflow-y-auto p-6">
         <div className="w-full max-w-[1100px]">
-          <h1 className="text-center text-xl font-bold">Welcome to NCLEX Bootcamp {title}</h1>
+          <h1 className="text-center text-xl font-bold">Welcome to NCLEX Bootcamp CAT Exam</h1>
           <p className="mt-6">Please read the following before starting:</p>
           <ol className="mt-1 list-decimal pl-6">
-            <li>
-              You will have {hours} hours {minutes % 60} minutes to answer {questions} questions, similar to the real NCLEX.
-            </li>
-            <li>Your score report will appear after finishing the exam.</li>
+            <li>You will have 5 hours to complete the exam. You may pause and resume the exam as needed.</li>
+            <li>The exam has a minimum of 85 questions and a max of 150.</li>
+            <li>Once you submit an answer, you cannot go back or change your response.</li>
+            <li>The exam will end once the simulator has determined your readiness level.</li>
           </ol>
           <p className="mt-4">Good Luck!</p>
 
@@ -60,13 +60,12 @@ export function ReadinessIntro({ id: examId, number, title, questions, minutes }
 
           <div className="mt-6 flex flex-col items-center gap-2">
             <button onClick={start} className="rounded-sm bg-exam px-5 py-1.5 text-white hover:bg-[#005a8e]">
-              Start Readiness Exam
+              Start CAT Exam
             </button>
             <button onClick={() => router.push("/nclex/next-gen-readiness-exams")} className="rounded-sm border border-[#ccc] bg-[#f4f4f4] px-4 py-1 hover:bg-[#eaeaea]">
               Cancel
             </button>
           </div>
-          <p className="mt-6 text-center text-sm text-[#888]">Prototype note: the exam draws from the authored sample bank, with time scaled to 2 minutes per question.</p>
         </div>
       </main>
       <footer className="h-10 shrink-0 bg-exam" />

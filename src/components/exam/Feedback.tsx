@@ -32,6 +32,7 @@ export function Feedback({ item, answer, seconds }: { item: Item; answer: Answer
 
       <section>
         <SectionHead icon={FileText}>Explanation</SectionHead>
+        {!item.rationale.raw && (
         <div className="relative mb-6 flex aspect-video items-center justify-center overflow-hidden rounded bg-gradient-to-br from-[#0f2a44] to-[#1b4f7a] text-white">
           <div className="text-center">
             <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-white/15 backdrop-blur">
@@ -41,6 +42,7 @@ export function Feedback({ item, answer, seconds }: { item: Item; answer: Answer
           </div>
           <span className="absolute bottom-2 left-3 text-xs text-white/60">Video explanations are placeholders in this prototype.</span>
         </div>
+        )}
         <div className="prose-exam leading-7">
           <Html html={item.rationale.explanation} />
           {item.rationale.incorrect && (
@@ -55,15 +57,19 @@ export function Feedback({ item, answer, seconds }: { item: Item; answer: Answer
               ))}
             </>
           )}
-          <h4>Key Takeaway:</h4>
-          <ul>
-            {item.rationale.takeaway.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
-          <p>
-            <b>Version</b> 2026
-          </p>
+          {!item.rationale.raw && (
+            <>
+              <h4>Key Takeaway:</h4>
+              <ul>
+                {item.rationale.takeaway.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+              <p>
+                <b>Version</b> 2026
+              </p>
+            </>
+          )}
         </div>
         <button className="text-[15px] text-[#555] underline">View Sources</button>
         <dl className="mt-5 grid grid-cols-3 gap-4 text-[15px]">

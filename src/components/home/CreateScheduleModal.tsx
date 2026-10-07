@@ -3,16 +3,16 @@
 import clsx from "clsx";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
-import { formatLong, parseDate, toISODate } from "@/lib/schedule";
+import { addDays, dailyHours, formatLong, parseDate, rebalanceDates, toISODate } from "@/lib/schedule";
 import { Icon } from "@/components/ui/Icon";
 import { Modal } from "@/components/ui/primitives";
 
-/** Rough total content hours in the proven plan; hours/day = this / study days. */
-const PLAN_HOURS = 110;
+/** Default exam date shown when creating a schedule: about three months out, like the live site. */
+const DEFAULT_WEEKS = 13;
 
-export function CreateScheduleModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function CreateScheduleModal({ open, onClose, mode }: { open: boolean; onClose: () => void; mode?: "create" | "rebalance" }) {
   // Mount the form only while open so it re-reads the saved schedule each time.
-  return open ? <ScheduleForm onClose={onClose} /> : null;
+  return open ? <ScheduleForm onClose={onClose} mode={mode} /> : null;
 }
 
 const calIcon = (
@@ -30,6 +30,11 @@ const rocket = (
   </svg>
 );
 
+const refresh = (
+  <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 11a8 8 0 0 0-14.5-4.2L4 9M4 4v5h5M4 13a8 8 0 0 0 14.5 4.2L20 15m0 5v-5h-5" />
+  </svg>
+);
 const target = <Icon name="target" size={20} />;
 const sun = (
   <svg viewBox="0 0 24 24" className="size-5" fill="currentColor">
@@ -40,37 +45,55 @@ const sun = (
   </svg>
 );
 
-function ScheduleForm({ onClose }: { onClose: () => void }) {
+function ScheduleForm({ onClose, mode }: { onClose: () => void; mode?: "create" | "rebalance" }) {
   const existing = useStore((s) => s.schedule);
+  const edits = useStore((s) => s.scheduleEdits);
   const setSchedule = useStore((s) => s.setSchedule);
+  const applyRebalance = useStore((s) => s.applyRebalance);
+  const rebalance = mode === "rebalance" && Boolean(existing);
   const today = toISODate(new Date());
-  const [start, setStart] = useState(existing?.start ?? today);
-  const [exam, setExam] = useState<string>(existing?.exam ?? "");
+  const [start, setStart] = useState(rebalance ? today : (existing?.start ?? today));
+  const [exam, setExam] = useState<string>(existing?.exam ?? (existing ? "" : toISODate(addDays(parseDate(today), DEFAULT_WEEKS * 7 + 2))));
   const [noDate, setNoDate] = useState(existing ? existing.exam === null : false);
   const [offDates, setOffDates] = useState<string[]>(existing?.offDates ?? []);
   const [picker, setPicker] = useState<"start" | "exam" | "off" | null>(null);
 
   const hasExam = Boolean(exam) && !noDate;
   const ready = Boolean(start && (noDate || (exam && exam > start)));
-  const studyDays = hasExam ? Math.max(1, Math.round((parseDate(exam).getTime() - parseDate(start).getTime()) / 864e5) - offDates.length) : 0;
-  const hours = hasExam ? Math.max(1, Math.round(PLAN_HOURS / studyDays)) : 0;
-  const tone = hours <= 6 ? "good" : hours <= 9 ? "warn" : "bad";
+  const draft = { start: rebalance ? existing!.start : start, exam: noDate ? null : exam || null, daysOff: [] as number[], offDates, createdAt: "", speed: existing?.speed };
+  const rawHours = hasExam ? dailyHours(draft, rebalance ? edits : undefined, rebalance ? start : undefined) : 0;
+  const hours = Math.max(1, Math.ceil(rawHours));
+  const lessThanOne = hasExam && rawHours < 1;
+  const tone = lessThanOne ? "bad" : hours <= 6 ? "good" : hours <= 9 ? "warn" : "bad";
   const toneStyle = {
     good: { c: "#4c8b43", bg: "rgba(234,245,234,0.5)", chip: "#eaf5ea", b: "rgba(76,139,67,0.5)", msg: "That's a great start!" },
     warn: { c: "#b7791f", bg: "rgba(255,253,233,0.6)", chip: "#fffde9", b: "rgba(208,149,40,0.5)", msg: "That's a busy schedule. You've got this!" },
-    bad: { c: "#c33c35", bg: "rgba(252,236,238,0.6)", chip: "#fcecee", b: "rgba(195,60,53,0.5)", msg: "Consider a later exam date to lighten your load." },
+    bad: {
+      c: "#c33c35",
+      bg: "rgba(252,236,238,0.6)",
+      chip: "#fcecee",
+      b: "rgba(195,60,53,0.5)",
+      msg: lessThanOne ? "We recommend moving your exam date to an earlier time." : "Consider a later exam date to lighten your load.",
+    },
   }[tone];
 
   const create = () => {
-    setSchedule({ start, exam: noDate ? null : exam, daysOff: [], offDates, createdAt: new Date().toISOString() });
+    if (rebalance) {
+      // Keep what's done; spread everything else from the chosen date up to the exam.
+      const next = { ...existing!, exam: noDate ? null : exam, offDates };
+      setSchedule(next);
+      applyRebalance(rebalanceDates(next, edits, start));
+    } else {
+      setSchedule({ start, exam: noDate ? null : exam, daysOff: [], offDates, createdAt: new Date().toISOString(), speed: existing?.speed });
+    }
     onClose();
   };
 
   return (
-    <Modal open onClose={onClose} title={existing ? "Edit Study Schedule" : "Create Study Schedule"} width={858} allowOverflow>
+    <Modal open onClose={onClose} title={rebalance ? "Rebalance Study Schedule" : existing ? "Edit Study Schedule" : "Create Study Schedule"} width={858} allowOverflow>
       <div className="grid md:grid-cols-2">
         <div className="px-6 md:border-r md:border-[#ededf0]">
-          <Field icon={rocket} title="Start Date" hint="Your study schedule will begin on this date.">
+          <Field icon={rebalance ? refresh : rocket} title={rebalance ? "Rebalance Start Date" : "Start Date"} hint={rebalance ? "Your study schedule will resume on this date." : "Your study schedule will begin on this date."}>
             <DateField value={start} placeholder="Select a date" open={picker === "start"} onOpen={() => setPicker("start")} onClose={() => setPicker(null)}>
               <Calendar
                 mode="single"
@@ -129,9 +152,10 @@ function ScheduleForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex flex-col rounded-br-lg bg-[#fafafa] px-6 py-6">
-          <h3 className="text-lg font-semibold text-ink-strong">Your Schedule</h3>
+          <h3 className="text-lg font-semibold text-ink-strong">{rebalance ? "Your Rebalanced Schedule" : "Your Schedule"}</h3>
+          {rebalance && <p className="mt-2 text-base leading-6 text-muted">Rebalancing distributes all your uncompleted assignments evenly up to your exam date.</p>}
           <div className="mt-4 rounded-lg border border-[#ededf0] bg-white p-4">
-            <TimelinePoint icon={rocket} title={formatLong(parseDate(start))} sub="Start Date" />
+            <TimelinePoint icon={rebalance ? refresh : rocket} title={formatLong(parseDate(start))} sub={rebalance ? "Rebalance Start Date" : "Start Date"} />
             <div className="ml-[19px] border-l-2 border-dotted border-brand/60 py-8 pl-7">
               {hasExam ? (
                 <div className="flex items-start rounded-lg border p-3" style={{ background: toneStyle.bg, borderColor: toneStyle.b, color: toneStyle.c }}>
@@ -141,7 +165,7 @@ function ScheduleForm({ onClose }: { onClose: () => void }) {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-base leading-6 font-bold">About {hours} hours daily</p>
+                    <p className="text-base leading-6 font-bold">{lessThanOne ? "Less than 1 hour daily" : `About ${hours} hour${hours > 1 ? "s" : ""} daily`}</p>
                     <p className="text-base leading-[20.8px]">{toneStyle.msg}</p>
                   </div>
                 </div>
@@ -159,7 +183,7 @@ function ScheduleForm({ onClose }: { onClose: () => void }) {
               disabled={!ready}
               className="flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-[64px] bg-brand text-lg font-semibold text-white shadow-[0_2px_0_0_#4a3ac8] transition-[background,transform] duration-[50ms] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:bg-[#ededf0] disabled:text-muted disabled:shadow-none"
             >
-              {existing ? "Update Study Schedule" : "Create Study Schedule"}
+              {rebalance ? "Rebalance" : existing ? "Update Study Schedule" : "Create Study Schedule"}
               <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>

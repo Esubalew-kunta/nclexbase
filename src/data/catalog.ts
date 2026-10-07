@@ -3,6 +3,7 @@ import systemsJson from "./live/systems.json";
 import videosJson from "./live/videos.json";
 import sheetsJson from "./live/sheets.json";
 import faqsJson from "./live/faqs.json";
+import sheetChipsJson from "./live/sheetChips.json";
 
 /*
  * Catalog data captured from app.bootcamp.com/nclex (free account, 2026-09-30).
@@ -84,7 +85,7 @@ export const subjectById = (id: SubjectId) => SUBJECTS.find((s) => s.id === id)!
 export const TOTALS = {
   cases: 300,
   standalone: 1280,
-  readiness: 400,
+  readiness: 600,
   lessons: 0,
   freeQuestions: 36,
   performanceQuestions: 1580,
@@ -111,9 +112,11 @@ export const LESSONS: Record<SubjectId, Lesson[]> = Object.fromEntries(base.map(
 export const READINESS_EXAMS = [1, 2, 3, 4].map((n) => ({
   id: `readiness-exam-${n}`,
   number: n,
-  title: `Readiness Exam ${n}`,
-  questions: 100,
-  minutes: 200,
+  title: `CAT Readiness Exam ${n}`,
+  /** Adaptive: at least 85 questions, at most 150, 5 hours. */
+  questions: 150,
+  minQuestions: 85,
+  minutes: 300,
   free: n === 1,
 }));
 
@@ -131,7 +134,10 @@ export interface CheatSheet {
   title: string;
   subject: SubjectId;
   free: boolean;
+  /** Tags used by the all-subjects system filter. */
   systems: string[];
+  /** Tags used by the per-subject filter chips. */
+  subjectSystems: string[];
 }
 
 export const CHEAT_SHEETS = sheetsJson as CheatSheet[];
@@ -146,16 +152,13 @@ export const CHEAT_SHEET_SUBJECT_ORDER: SubjectId[] = [
   "pharmacology",
 ];
 
-export const CHEAT_SHEET_SYSTEMS = [
-  "Cardiovascular",
-  "Endocrine",
-  "Gastrointestinal",
-  "Immune/Infectious Disease",
-  "Musculoskeletal",
-  "Neurologic",
-  "Respiratory",
-  "Urinary & Renal",
-];
+const SHEET_CHIPS = sheetChipsJson as { subjectChips: Record<string, string[]>; globalChips: string[] };
+
+/** System chips on the all-subjects Cheat Sheets page. */
+export const CHEAT_SHEET_SYSTEMS = SHEET_CHIPS.globalChips;
+
+/** System chips on each subject's Cheat Sheets tab (differ per subject on the live site). */
+export const CHEAT_SHEET_SUBJECT_SYSTEMS = SHEET_CHIPS.subjectChips as Record<SubjectId, string[]>;
 
 /* ------------------------------------------------------------------ */
 /* FAQs (answers are HTML from the live site)                          */

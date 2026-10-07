@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
 import { SearchBox } from "./SearchBox";
@@ -23,6 +24,33 @@ export function UserAvatar({ size = 42 }: { size?: number }) {
         </span>
       </span>
     </span>
+  );
+}
+
+/**
+ * Wraps the top bar. Once the page scrolls under it, it gets the panel gradient as a
+ * solid backdrop (aligned to the panel so there is no visible seam) instead of letting
+ * content show through behind the buttons.
+ */
+export function TopBarFrame({ children }: { children: React.ReactNode }) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const el = document.getElementById("app-scroll");
+    if (!el) return;
+    const onScroll = () => setScrolled(el.scrollTop > 0);
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <div className="absolute inset-x-0 top-0 z-20">
+      <div
+        aria-hidden
+        style={{ backgroundSize: "100% 100dvh" }}
+        className={`bg-app-gradient pointer-events-none absolute inset-x-0 top-0 h-[72px] transition-opacity duration-200 lg:rounded-tl-lg ${scrolled ? "opacity-100 shadow-[0_2px_8px_rgba(0,0,0,0.12)]" : "opacity-0"}`}
+      />
+      <div className="relative">{children}</div>
+    </div>
   );
 }
 

@@ -5,6 +5,9 @@
   "free": true,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
@@ -12,6 +15,9 @@
   "subject": "adult-health",
   "free": true,
   "systems": [
+   "Endocrine"
+  ],
+  "subjectSystems": [
    "Endocrine"
   ]
  },
@@ -21,13 +27,19 @@
   "free": true,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Respiratory"
   ]
  },
  {
   "title": "Growth & Development",
   "subject": "child-health",
   "free": true,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Growth & Development"
+  ]
  },
  {
   "title": "Infection Control",
@@ -35,37 +47,55 @@
   "free": true,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Safety & Infection Control"
   ]
  },
  {
   "title": "Prioritization",
   "subject": "management-of-care",
   "free": true,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Management Concepts"
+  ]
  },
  {
   "title": "Preeclampsia",
   "subject": "maternal-and-newborn-health",
   "free": true,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Antepartum"
+  ]
  },
  {
   "title": "Preterm Labor & Delivery",
   "subject": "maternal-and-newborn-health",
   "free": true,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Labor & Delivery"
+  ]
  },
  {
   "title": "Depression & Suicide",
   "subject": "mental-health",
   "free": true,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Mood & Personality Disorders"
+  ]
  },
  {
   "title": "Therapeutic Communication",
   "subject": "mental-health",
   "free": true,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Foundations & Therapeutic Communication"
+  ]
  },
  {
   "title": "Analgesics",
@@ -73,13 +103,19 @@
   "free": true,
   "systems": [
    "Neurologic"
+  ],
+  "subjectSystems": [
+   "Neurologic"
   ]
  },
  {
   "title": "Acute & Concerning Skin Conditions",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Integumentary"
+  ]
  },
  {
   "title": "Acute Kidney Injury & Chronic Kidney Disease",
@@ -87,19 +123,28 @@
   "free": false,
   "systems": [
    "Urinary & Renal"
+  ],
+  "subjectSystems": [
+   "Urinary & Renal"
   ]
  },
  {
   "title": "Anemia & Leukemia",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Hematologic"
+  ]
  },
  {
   "title": "Appendicitis, Diverticulitis, & Bowel Obstruction",
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Gastrointestinal"
+  ],
+  "subjectSystems": [
    "Gastrointestinal"
   ]
  },
@@ -109,6 +154,9 @@
   "free": false,
   "systems": [
    "Musculoskeletal"
+  ],
+  "subjectSystems": [
+   "Musculoskeletal"
   ]
  },
  {
@@ -116,6 +164,9 @@
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Urinary & Renal"
+  ],
+  "subjectSystems": [
    "Urinary & Renal"
   ]
  },
@@ -125,19 +176,26 @@
   "free": false,
   "systems": [
    "Neurologic"
+  ],
+  "subjectSystems": [
+   "Neurologic"
   ]
  },
  {
   "title": "Burns & Inhalation Injury",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": []
  },
  {
   "title": "Cancer",
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Gastrointestinal"
+  ],
+  "subjectSystems": [
    "Gastrointestinal"
   ]
  },
@@ -147,6 +205,9 @@
   "free": false,
   "systems": [
    "Gastrointestinal"
+  ],
+  "subjectSystems": [
+   "Gastrointestinal"
   ]
  },
  {
@@ -155,19 +216,26 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Respiratory"
   ]
  },
  {
   "title": "Coronary Artery Disease & Myocardial Infarction",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": []
  },
  {
   "title": "Cranial Nerves, Bell Palsy, & Trigeminal Neuralgia",
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Neurologic"
+  ],
+  "subjectSystems": [
    "Neurologic"
   ]
  },
@@ -177,6 +245,9 @@
   "free": false,
   "systems": [
    "Endocrine"
+  ],
+  "subjectSystems": [
+   "Endocrine"
   ]
  },
  {
@@ -184,6 +255,9 @@
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Cardiovascular"
+  ],
+  "subjectSystems": [
    "Cardiovascular"
   ]
  },
@@ -193,19 +267,28 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
   "title": "Eye Conditions",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Visual & Auditory"
+  ]
  },
  {
   "title": "Fractures",
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Musculoskeletal"
+  ],
+  "subjectSystems": [
    "Musculoskeletal"
   ]
  },
@@ -215,6 +298,9 @@
   "free": false,
   "systems": [
    "Gastrointestinal"
+  ],
+  "subjectSystems": [
+   "Gastrointestinal"
   ]
  },
  {
@@ -223,13 +309,19 @@
   "free": false,
   "systems": [
    "Immune/Infectious Disease"
+  ],
+  "subjectSystems": [
+   "Immune/Infectious Disease"
   ]
  },
  {
   "title": "Hearing Loss & Vertigo",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Visual & Auditory"
+  ]
  },
  {
   "title": "Heart Failure",
@@ -237,19 +329,28 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
   "title": "Hemodynamics & Vasoactive Medications",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Critical Care"
+  ]
  },
  {
   "title": "Hepatitis, Cirrhosis, & Esophageal Varices",
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Gastrointestinal"
+  ],
+  "subjectSystems": [
    "Gastrointestinal"
   ]
  },
@@ -259,6 +360,9 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
@@ -266,6 +370,9 @@
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Gastrointestinal"
+  ],
+  "subjectSystems": [
    "Gastrointestinal"
   ]
  },
@@ -275,19 +382,29 @@
   "free": false,
   "systems": [
    "Immune/Infectious Disease"
+  ],
+  "subjectSystems": [
+   "Immune/Infectious Disease"
   ]
  },
  {
   "title": "Lymphoma & Myeloma",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Hematologic"
+  ]
  },
  {
   "title": "Mechanical Ventilation & ARDS",
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Respiratory"
+  ],
+  "subjectSystems": [
+   "Critical Care",
    "Respiratory"
   ]
  },
@@ -297,6 +414,9 @@
   "free": false,
   "systems": [
    "Urinary & Renal"
+  ],
+  "subjectSystems": [
+   "Urinary & Renal"
   ]
  },
  {
@@ -305,19 +425,28 @@
   "free": false,
   "systems": [
    "Neurologic"
+  ],
+  "subjectSystems": [
+   "Neurologic"
   ]
  },
  {
   "title": "Organ & Bone Marrow Transplant",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Hematologic"
+  ]
  },
  {
   "title": "Orthopedic Surgeries",
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Musculoskeletal"
+  ],
+  "subjectSystems": [
    "Musculoskeletal"
   ]
  },
@@ -327,6 +456,9 @@
   "free": false,
   "systems": [
    "Neurologic"
+  ],
+  "subjectSystems": [
+   "Neurologic"
   ]
  },
  {
@@ -334,6 +466,9 @@
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Immune/Infectious Disease"
+  ],
+  "subjectSystems": [
    "Immune/Infectious Disease"
   ]
  },
@@ -343,13 +478,19 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Respiratory"
   ]
  },
  {
   "title": "Reproductive Conditions",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Reproductive"
+  ]
  },
  {
   "title": "Seizures",
@@ -357,19 +498,28 @@
   "free": false,
   "systems": [
    "Neurologic"
+  ],
+  "subjectSystems": [
+   "Neurologic"
   ]
  },
  {
   "title": "Shock & Sepsis",
   "subject": "adult-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Critical Care"
+  ]
  },
  {
   "title": "Spinal Cord Injury & Spinal Surgeries",
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Neurologic"
+  ],
+  "subjectSystems": [
    "Neurologic"
   ]
  },
@@ -379,6 +529,9 @@
   "free": false,
   "systems": [
    "Neurologic"
+  ],
+  "subjectSystems": [
+   "Neurologic"
   ]
  },
  {
@@ -386,6 +539,9 @@
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Endocrine"
+  ],
+  "subjectSystems": [
    "Endocrine"
   ]
  },
@@ -395,6 +551,9 @@
   "free": false,
   "systems": [
    "Endocrine"
+  ],
+  "subjectSystems": [
+   "Endocrine"
   ]
  },
  {
@@ -402,6 +561,9 @@
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Respiratory"
+  ],
+  "subjectSystems": [
    "Respiratory"
   ]
  },
@@ -411,6 +573,9 @@
   "free": false,
   "systems": [
    "Urinary & Renal"
+  ],
+  "subjectSystems": [
+   "Urinary & Renal"
   ]
  },
  {
@@ -418,6 +583,9 @@
   "subject": "adult-health",
   "free": false,
   "systems": [
+   "Cardiovascular"
+  ],
+  "subjectSystems": [
    "Cardiovascular"
   ]
  },
@@ -427,19 +595,28 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
   "title": "Bites, Stings, & Irritants",
   "subject": "child-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Integumentary"
+  ]
  },
  {
   "title": "Childhood Musculoskeletal Conditions",
   "subject": "child-health",
   "free": false,
   "systems": [
+   "Musculoskeletal"
+  ],
+  "subjectSystems": [
    "Musculoskeletal"
   ]
  },
@@ -449,19 +626,28 @@
   "free": false,
   "systems": [
    "Gastrointestinal"
+  ],
+  "subjectSystems": [
+   "Gastrointestinal"
   ]
  },
  {
   "title": "Common Skin Conditions",
   "subject": "child-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Integumentary"
+  ]
  },
  {
   "title": "Congenital Heart Defects",
   "subject": "child-health",
   "free": false,
   "systems": [
+   "Cardiovascular"
+  ],
+  "subjectSystems": [
    "Cardiovascular"
   ]
  },
@@ -471,6 +657,9 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Respiratory"
   ]
  },
  {
@@ -479,13 +668,19 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Respiratory"
   ]
  },
  {
   "title": "Developmental Theories & Play",
   "subject": "child-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Growth & Development"
+  ]
  },
  {
   "title": "Glomerulonephritis, Nephrotic Syndrome, & Nephroblastoma",
@@ -493,25 +688,37 @@
   "free": false,
   "systems": [
    "Urinary & Renal"
+  ],
+  "subjectSystems": [
+   "Urinary & Renal"
   ]
  },
  {
   "title": "Hemophilia",
   "subject": "child-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Hematologic"
+  ]
  },
  {
   "title": "Infant & Child Safety",
   "subject": "child-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Growth & Development"
+  ]
  },
  {
   "title": "Infectious Diseases of Childhood",
   "subject": "child-health",
   "free": false,
   "systems": [
+   "Immune/Infectious Disease"
+  ],
+  "subjectSystems": [
    "Immune/Infectious Disease"
   ]
  },
@@ -521,6 +728,9 @@
   "free": false,
   "systems": [
    "Neurologic"
+  ],
+  "subjectSystems": [
+   "Neurologic"
   ]
  },
  {
@@ -528,6 +738,9 @@
   "subject": "child-health",
   "free": false,
   "systems": [
+   "Neurologic"
+  ],
+  "subjectSystems": [
    "Neurologic"
   ]
  },
@@ -537,19 +750,28 @@
   "free": false,
   "systems": [
    "Gastrointestinal"
+  ],
+  "subjectSystems": [
+   "Gastrointestinal"
   ]
  },
  {
   "title": "Otitis Media, Conjunctivitis, & Strabismus",
   "subject": "child-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Visual & Auditory"
+  ]
  },
  {
   "title": "Pyloric Stenosis, Intussusception, & Hirschsprung Disease",
   "subject": "child-health",
   "free": false,
   "systems": [
+   "Gastrointestinal"
+  ],
+  "subjectSystems": [
    "Gastrointestinal"
   ]
  },
@@ -559,6 +781,9 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Respiratory"
   ]
  },
  {
@@ -567,13 +792,19 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
   "title": "Sickle Cell Disease",
   "subject": "child-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Hematologic"
+  ]
  },
  {
   "title": "Acid-Base Imbalances",
@@ -581,6 +812,9 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Fluid, Electrolytes, and Acid-Base Balance"
   ]
  },
  {
@@ -589,19 +823,28 @@
   "free": false,
   "systems": [
    "Gastrointestinal"
+  ],
+  "subjectSystems": [
+   "Gastrointestinal"
   ]
  },
  {
   "title": "Fluid & Electrolyte Imbalances",
   "subject": "fundamentals",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Fluid, Electrolytes, and Acid-Base Balance"
+  ]
  },
  {
   "title": "IV Therapy & Transfusions",
   "subject": "fundamentals",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Fluid, Electrolytes, and Acid-Base Balance"
+  ]
  },
  {
   "title": "Intracranial Regulation",
@@ -609,19 +852,26 @@
   "free": false,
   "systems": [
    "Neurologic"
-  ]
+  ],
+  "subjectSystems": []
  },
  {
   "title": "Mobility & Positioning",
   "subject": "fundamentals",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Basic Care & Comfort"
+  ]
  },
  {
   "title": "Nutrition",
   "subject": "fundamentals",
   "free": false,
   "systems": [
+   "Gastrointestinal"
+  ],
+  "subjectSystems": [
    "Gastrointestinal"
   ]
  },
@@ -631,6 +881,9 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Basic Care & Comfort"
   ]
  },
  {
@@ -639,19 +892,28 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Safety & Infection Control"
   ]
  },
  {
   "title": "Perioperative Care",
   "subject": "fundamentals",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Safety & Infection Control"
+  ]
  },
  {
   "title": "Safety",
   "subject": "fundamentals",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Multisystem"
+  ]
  },
  {
   "title": "Urinary Elimination",
@@ -659,91 +921,136 @@
   "free": false,
   "systems": [
    "Urinary & Renal"
+  ],
+  "subjectSystems": [
+   "Urinary & Renal"
   ]
  },
  {
   "title": "Wounds & Hygiene",
   "subject": "fundamentals",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Basic Care & Comfort"
+  ]
  },
  {
   "title": "Delegation & Assignment",
   "subject": "management-of-care",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Assignment & Delegation"
+  ]
  },
  {
   "title": "Ethics",
   "subject": "management-of-care",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Management Concepts"
+  ]
  },
  {
   "title": "Legal",
   "subject": "management-of-care",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Management Concepts"
+  ]
  },
  {
   "title": "Management Principles",
   "subject": "management-of-care",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Management Concepts"
+  ]
  },
  {
   "title": "Antepartum Assessment & Discomforts of Pregnancy",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Antepartum"
+  ]
  },
  {
   "title": "Chorioamnionitis & Neonatal Sepsis",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Labor & Delivery"
+  ]
  },
  {
   "title": "Ectopic & Molar Pregnancy",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Antepartum"
+  ]
  },
  {
   "title": "Fetal Monitoring",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Labor & Delivery"
+  ]
  },
  {
   "title": "Gestational Diabetes",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Antepartum"
+  ]
  },
  {
   "title": "Hyperbilirubinemia & Hemolytic Disease of the Newborn",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Newborn"
+  ]
  },
  {
   "title": "Labor Emergencies",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Labor & Delivery"
+  ]
  },
  {
   "title": "Neonatal Abstinence Syndrome & Fetal Alcohol Syndrome",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Newborn"
+  ]
  },
  {
   "title": "Newborn Care",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Newborn"
+  ]
  },
  {
   "title": "Newborn Respiratory Complications",
@@ -751,109 +1058,164 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Newborn"
   ]
  },
  {
   "title": "OB Medications",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Postpartum",
+   "Reproductive"
+  ]
  },
  {
   "title": "Placenta Previa & Placental Abruption",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Antepartum"
+  ]
  },
  {
   "title": "Postpartum Care",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Postpartum"
+  ]
  },
  {
   "title": "Postpartum Hemorrhage (PPH)",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Postpartum"
+  ]
  },
  {
   "title": "Process of Labor & OB Procedures",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Labor & Delivery"
+  ]
  },
  {
   "title": "Spontaneous Abortion, Incompetent Cervix, & Intrauterine Fetal Demise",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Antepartum"
+  ]
  },
  {
   "title": "TORCH Infections",
   "subject": "maternal-and-newborn-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Antepartum"
+  ]
  },
  {
   "title": "ADHD & Autism",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Cognitive & Developmental Disorders"
+  ]
  },
  {
   "title": "Addiction & Substance Use Disorders",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Anxiety Disorders, Trauma, and Addiction"
+  ]
  },
  {
   "title": "Aggression, Abuse, & Assault",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Foundations & Therapeutic Communication"
+  ]
  },
  {
   "title": "Anxiety & OCD",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Anxiety Disorders, Trauma, and Addiction"
+  ]
  },
  {
   "title": "Bipolar Disorders",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Mood & Personality Disorders"
+  ]
  },
  {
   "title": "Dementia & Delirium",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Cognitive & Developmental Disorders"
+  ]
  },
  {
   "title": "Eating Disorders",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Anxiety Disorders, Trauma, and Addiction"
+  ]
  },
  {
   "title": "Personality Disorders",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Mood & Personality Disorders"
+  ]
  },
  {
   "title": "Schizophrenia",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Cognitive & Developmental Disorders"
+  ]
  },
  {
   "title": "Trauma, Stress, & Coping",
   "subject": "mental-health",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Anxiety Disorders, Trauma, and Addiction"
+  ]
  },
  {
   "title": "Acid-Controlling Medications",
@@ -861,13 +1223,19 @@
   "free": false,
   "systems": [
    "Gastrointestinal"
+  ],
+  "subjectSystems": [
+   "Gastrointestinal"
   ]
  },
  {
   "title": "Antibiotics",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Immune"
+  ]
  },
  {
   "title": "Anticoagulants & Antiplatelets",
@@ -875,25 +1243,35 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
   "title": "Antidepressants",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Psychiatric"
+  ]
  },
  {
   "title": "Antidysrhythmics",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": []
  },
  {
   "title": "Antiepileptic Medications",
   "subject": "pharmacology",
   "free": false,
   "systems": [
+   "Neurologic"
+  ],
+  "subjectSystems": [
    "Neurologic"
   ]
  },
@@ -903,19 +1281,28 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
   "title": "Antipsychotics",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Psychiatric"
+  ]
  },
  {
   "title": "Anxiolytics and Sedative-Hypnotics",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Psychiatric"
+  ]
  },
  {
   "title": "Asthma & COPD Medications",
@@ -923,19 +1310,28 @@
   "free": false,
   "systems": [
    "Respiratory"
+  ],
+  "subjectSystems": [
+   "Respiratory"
   ]
  },
  {
   "title": "Chemotherapy & Hematologic Medications",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Hematologic / Oncologic"
+  ]
  },
  {
   "title": "Cold, Flu, & Allergy Medications",
   "subject": "pharmacology",
   "free": false,
   "systems": [
+   "Respiratory"
+  ],
+  "subjectSystems": [
    "Respiratory"
   ]
  },
@@ -945,6 +1341,9 @@
   "free": false,
   "systems": [
    "Endocrine"
+  ],
+  "subjectSystems": [
+   "Endocrine"
   ]
  },
  {
@@ -952,6 +1351,9 @@
   "subject": "pharmacology",
   "free": false,
   "systems": [
+   "Endocrine"
+  ],
+  "subjectSystems": [
    "Endocrine"
   ]
  },
@@ -961,13 +1363,19 @@
   "free": false,
   "systems": [
    "Cardiovascular"
+  ],
+  "subjectSystems": [
+   "Cardiovascular"
   ]
  },
  {
   "title": "Dosage Calculation",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Medication Administration"
+  ]
  },
  {
   "title": "GI Medications",
@@ -975,31 +1383,47 @@
   "free": false,
   "systems": [
    "Gastrointestinal"
+  ],
+  "subjectSystems": [
+   "Gastrointestinal"
   ]
  },
  {
   "title": "Integumentary Medications",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Integumentary"
+  ]
  },
  {
   "title": "Male & Female Reproductive Medications",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Reproductive"
+  ]
  },
  {
   "title": "Medication Administration",
   "subject": "pharmacology",
   "free": false,
-  "systems": []
+  "systems": [],
+  "subjectSystems": [
+   "Integumentary",
+   "Medication Administration"
+  ]
  },
  {
   "title": "Musculoskeletal Medications",
   "subject": "pharmacology",
   "free": false,
   "systems": [
+   "Musculoskeletal"
+  ],
+  "subjectSystems": [
    "Musculoskeletal"
   ]
  }

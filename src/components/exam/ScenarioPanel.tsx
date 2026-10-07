@@ -28,18 +28,22 @@ export function ScenarioPanel({
   const active = tabs[activeIndex];
   return (
     <div>
-      <div className="pt-6 pb-4">
-        {showBanner && (
+      <div className={clsx("pt-6", caseStudy.exhibit ? "pb-2" : "pb-4")}>
+        {!caseStudy.exhibit && showBanner && (
           <div className="mb-6 bg-[#eee] px-2.5 py-2">
             The following scenario applies to the next <b>{caseStudy.items.length}</b> items.
           </div>
         )}
-        <p>
-          <strong>
-            Item {index + 1} of {caseStudy.items.length}
-          </strong>
-        </p>
-        <p>{caseStudy.intro}</p>
+        {!caseStudy.exhibit && (
+          <>
+            <p>
+              <strong>
+                Item {index + 1} of {caseStudy.items.length}
+              </strong>
+            </p>
+            <p>{caseStudy.intro}</p>
+          </>
+        )}
       </div>
 
       <div role="tablist" className="flex">

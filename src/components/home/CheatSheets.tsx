@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CHEAT_SHEET_SUBJECT_ORDER, CHEAT_SHEET_SYSTEMS, CHEAT_SHEETS, subjectById, type CheatSheet } from "@/data/catalog";
+import { CHEAT_SHEET_SUBJECT_ORDER, CHEAT_SHEET_SUBJECT_SYSTEMS, CHEAT_SHEET_SYSTEMS, CHEAT_SHEETS, subjectById, type CheatSheet } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import type { SubjectId } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
@@ -84,14 +84,16 @@ export function CheatSheetList({ sheets }: { sheets: CheatSheet[] }) {
 /** Full Cheat Sheets page body: subject rail on the left, search + system chips + list on the right. */
 export function CheatSheetBrowser({ subject: fixedSubject }: { subject?: SubjectId }) {
   const [subject, setSubject] = useState<SubjectId | "all">(fixedSubject ?? "all");
-  const [system, setSystem] = useState("All Systems");
+  const allLabel = fixedSubject ? `All ${subjectById(fixedSubject).name}` : "All Systems";
+  const chips = fixedSubject ? CHEAT_SHEET_SUBJECT_SYSTEMS[fixedSubject] : CHEAT_SHEET_SYSTEMS;
+  const [system, setSystem] = useState(allLabel);
   const [q, setQ] = useState("");
   const term = q.trim().toLowerCase();
 
   const list = CHEAT_SHEETS.filter(
     (c) =>
       (subject === "all" || c.subject === subject) &&
-      (system === "All Systems" || c.systems.includes(system)) &&
+      (system === allLabel || (fixedSubject ? c.subjectSystems : c.systems).includes(system)) &&
       (!term || c.title.toLowerCase().includes(term)),
   ).sort((a, b) => Number(b.free) - Number(a.free));
 
@@ -129,7 +131,7 @@ export function CheatSheetBrowser({ subject: fixedSubject }: { subject?: Subject
           />
         </div>
         <div className="mb-6 flex flex-wrap gap-2">
-          {["All Systems", ...CHEAT_SHEET_SYSTEMS].map((s) => (
+          {[allLabel, ...chips].map((s) => (
             <div
               key={s}
               onClick={() => setSystem(s)}
