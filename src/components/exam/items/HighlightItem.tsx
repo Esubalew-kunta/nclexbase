@@ -13,18 +13,18 @@ export function HighlightItemView({ item, answer, onChange, locked, reveal }: It
 
   return (
     <div>
-      <table className="w-full max-w-[680px] border-collapse border border-[#d0d0d0]">
+      <table className="w-full max-w-[680px] border-collapse border border-line">
         <thead>
-          <tr className="bg-[#e8f1fb]">
-            <th className="w-[140px] border border-[#d0d0d0] px-2 py-1.5 text-left font-bold">{item.headers[0]}</th>
-            <th className="border border-[#d0d0d0] px-2 py-1.5 text-left font-bold">{item.headers[1]}</th>
+          <tr className="bg-primary-light">
+            <th className="w-[140px] border border-line px-2 py-1.5 text-left font-bold">{item.headers[0]}</th>
+            <th className="border border-line px-2 py-1.5 text-left font-bold">{item.headers[1]}</th>
           </tr>
         </thead>
         <tbody>
           {item.rows.map((row, r) => (
-            <tr key={r} className={r % 2 === 0 ? "bg-[#f2f2f2]" : "bg-white"}>
-              <td className="border border-[#d0d0d0] px-2 py-1.5 align-top font-bold">{row.label}</td>
-              <td className="border border-[#d0d0d0] px-2 py-1.5">
+            <tr key={r} className={r % 2 === 0 ? "bg-background" : "bg-white"}>
+              <td className="border border-line px-2 py-1.5 align-top font-bold">{row.label}</td>
+              <td className="border border-line px-2 py-1.5">
                 {row.segments.map((seg, s) => {
                   const key = `${r}-${s}`;
                   const on = keys.includes(key);
@@ -39,9 +39,9 @@ export function HighlightItemView({ item, answer, onChange, locked, reveal }: It
                         className={clsx(
                           "rounded-sm px-0.5 text-left disabled:cursor-default",
                           on && !reveal && "bg-[#ffe95c]",
-                          reveal && on && isAnswer && "bg-[#c8ecc3]",
-                          reveal && on && !isAnswer && "bg-[#f8c9c6] line-through decoration-[#d0312d]",
-                          reveal && !on && isAnswer && "outline-2 outline-[#2e9d3a] outline-dashed",
+                          reveal && on && isAnswer && "bg-success/20",
+                          reveal && on && !isAnswer && "bg-error/15 line-through decoration-error",
+                          reveal && !on && isAnswer && "outline-2 outline-success outline-dashed",
                           !locked && !on && "hover:bg-[#fff6b8]",
                         )}
                       >
@@ -56,10 +56,10 @@ export function HighlightItemView({ item, answer, onChange, locked, reveal }: It
         </tbody>
       </table>
       {reveal && (
-        <p className="mt-3 flex flex-wrap gap-4 text-sm text-[#555]">
-          <span><span className="mr-1 inline-block size-3 bg-[#c8ecc3]" />Correctly highlighted</span>
-          <span><span className="mr-1 inline-block size-3 bg-[#f8c9c6]" />Incorrectly highlighted</span>
-          <span><span className="mr-1 inline-block size-3 outline-2 outline-[#2e9d3a] outline-dashed" />Missed</span>
+        <p className="mt-3 flex flex-wrap gap-4 text-sm text-muted">
+          <span><span className="mr-1 inline-block size-3 bg-success/20" />Correctly highlighted</span>
+          <span><span className="mr-1 inline-block size-3 bg-error/15" />Incorrectly highlighted</span>
+          <span><span className="mr-1 inline-block size-3 outline-2 outline-success outline-dashed" />Missed</span>
         </p>
       )}
     </div>

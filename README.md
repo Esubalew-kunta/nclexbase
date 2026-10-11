@@ -30,16 +30,24 @@ The repo includes `render.yaml`, so use **New → Blueprint** and pick this repo
 ## Stack
 
 - Next.js 16 (App Router, `output: "export"`), React 19, TypeScript
-- Tailwind CSS v4. Design tokens are in `src/app/globals.css`, extracted from the live app.
+- Tailwind CSS v4. NCLEXBase brand tokens (deep teal `primary`, warm `gold` accent, `exam-ink` black for exam content, state colors) are in `src/app/globals.css`; `src/lib/brand.ts` mirrors them for SVG and inline styles. Logo artwork is in `public/assets/brand/nclexbase-*.png`, rendered by `src/components/ui/Logo.tsx`.
 - Zustand with `persist` for local state (tests, tags, schedule, settings)
 - lucide-react icons, Figtree font (a stand-in for Adobe's proxima-nova)
+
+## Admin
+
+`/admin` is a static admin that controls the student app: content (questions, cases, memory tricks, cheat sheets,
+lessons, FAQs, QOTD), structure (subjects, systems, tabs), experience (home, navigation, announcement, plans, targets)
+and people (users, institution codes, support inbox). Edits are saved in this browser (localStorage, PDFs in
+IndexedDB) on top of the seed data, and every student page reads through `src/lib/content`. Prototype sign-in:
+`admin@nclexbase.com` / `admin123`. Details: [docs/ADMIN_PLAN.md](docs/ADMIN_PLAN.md).
 
 ## Structure
 
 ```
 src/
   app/
-    (app)/nclex/…            App shell pages: sidebar + gradient layout
+    (app)/nclex/…            App shell pages: white sidebar + off-white layout
       page.tsx               Home dashboard
       [subject]/[tab]/       Subject hubs (cases, standalone, videos, sheets, performance)
       next-gen-cases/        Case study list
@@ -59,7 +67,7 @@ src/
     home/        Dashboard sections, lists, schedule, courses, cheat sheets
     test/        Create Test modal
     exam/        ExamScreen, ScenarioPanel, tools (calculator, settings, dialogs),
-                 Feedback (tutor explanation + Ask Bootcamp AI), items/* renderers
+                 Feedback (tutor explanation + Ask NCLEXBase AI), items/* renderers
     performance/ Subject and time tables shared by Performance and the score report
   data/          Catalog numbers mirrored from the live site + original mock questions
   lib/           types, store, scoring (NGN rules), bank, schedule, hooks, features
@@ -73,7 +81,7 @@ Routes mirror the live URLs (`/nclex/next-gen-cases`, `/nclex/previous-tests/rev
 - **Exam screen.** Case tabs, timer, calculator, settings drawer (text size, question list), mark for review, navigator, pause, and end.
 - **All Next Gen NCLEX item types.** Multiple choice, select all that apply, select N, matrix, drag-and-drop cloze, dropdown cloze, highlight, and bowtie.
 - **NGN scoring.** 0/1 and +/- rules with partial credit.
-- **Tutor mode.** Per-option marks, score card, explanation, linked video and cheat sheet, the Ask Bootcamp AI box (answers are simulated from the explanation), and mastery tags.
+- **Tutor mode.** Per-option marks, score card, explanation, linked video and cheat sheet, the Ask NCLEXBase AI box (answers are simulated from the explanation), and mastery tags.
 - **Score report.** Gauge, you vs. average, subject/system breakdown, time management, question breakdown with jump-to-review.
 - **Performance.** Pass Targets, subject performance, and time management, all computed from local attempts.
 - **Study Schedule.** The creator modal generates a day-by-day plan with days off and readiness exams.

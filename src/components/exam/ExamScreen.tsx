@@ -9,6 +9,8 @@ import { emptyAnswer, formatClock, isAnswered } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import type { MasteryTag, TestSession } from "@/lib/types";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { LogoMark, LogoStacked } from "@/components/ui/Logo";
+import { BRAND, SITE_NAME } from "@/lib/brand";
 import { ItemView } from "./items/ItemView";
 import { Html } from "./items/shared";
 import { Feedback } from "./Feedback";
@@ -128,7 +130,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
       )}
       <div className="flex">
         <svg viewBox="0 0 14 24" className="mr-3 h-6 w-3.5 shrink-0" aria-hidden>
-          <path d="M1 5 13 12 1 19 4.5 12Z" fill="#1076c2" />
+          <path d="M1 5 13 12 1 19 4.5 12Z" fill={BRAND.primary} />
         </svg>
         <div className="min-w-0 flex-1">
           <Html html={item.stem} className="block leading-6" />
@@ -139,11 +141,11 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
       </div>
       {!locked && !isCat && (
         <div className="my-4 ml-[26px]">
-          <button onClick={onSubmit} className="flex h-[35px] w-[100px] cursor-pointer items-center justify-center bg-exam text-base text-white hover:bg-[#005a8e]">
+          <button onClick={onSubmit} className="flex h-[35px] w-[100px] cursor-pointer items-center justify-center rounded-sm bg-primary text-base text-white hover:bg-primary-hover">
             <u>S</u>ubmit
           </button>
           {warnFor === item.id && (
-            <p className="mt-2 text-sm text-[#b3261e]" role="alert">
+            <p className="mt-2 text-sm text-error" role="alert">
               Please complete your response before submitting.
             </p>
           )}
@@ -155,12 +157,13 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
   );
 
   return (
-    <div className="flex h-dvh flex-col bg-white font-exam tracking-normal text-ink">
+    <div className="flex h-dvh flex-col bg-white font-exam tracking-normal text-exam-ink">
       {/* Header */}
-      <header className="flex h-[42px] shrink-0 items-center justify-between bg-exam p-3 text-base text-white">
+      <header className="flex h-[42px] shrink-0 items-center justify-between bg-primary p-3 text-base text-white">
         <div className="flex min-w-0 flex-1 items-center truncate">{title}</div>
-        <div className="hidden flex-1 justify-center text-center sm:flex">
-          <span>Bootcamp.com</span>
+        <div className="hidden flex-1 items-center justify-center gap-2 text-center sm:flex">
+          <LogoMark size={22} />
+          <span>{SITE_NAME}</span>
         </div>
         <div className="flex flex-1 items-center justify-end gap-4">
           {!review && showTimer && (
@@ -177,7 +180,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
       </header>
 
       {/* Toolbar */}
-      <div className="flex h-[29px] shrink-0 items-center justify-between bg-exam-tool px-3 py-1 text-base text-white">
+      <div className="flex h-[29px] shrink-0 items-center justify-between border-b-2 border-gold bg-info px-3 py-1 text-base text-white">
         <ToolbarButton icon="examCalc" iconSize={15} onClick={() => setCalcOpen((o) => !o)}>
           Calculat<u>o</u>r
         </ToolbarButton>
@@ -208,7 +211,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
               />
               <div className="h-[72px]" />
             </div>
-            <div className="hidden w-px shrink-0 bg-[#e0e0e0] md:block" />
+            <div className="hidden w-px shrink-0 bg-line md:block" />
             <div className="min-w-0 flex-1 px-4 pt-6 md:overflow-y-auto md:px-6">{itemBlock}</div>
           </div>
         ) : (
@@ -219,7 +222,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
       </main>
 
       {/* Footer */}
-      <footer className="relative flex h-10 shrink-0 items-stretch justify-between bg-exam text-white">
+      <footer className="relative flex h-10 shrink-0 items-stretch justify-between bg-primary text-white">
         <div className="flex items-stretch">
           {review ? (
             <FooterButton icon="examEnd" onClick={() => router.push(`/nclex/previous-tests/review?id=${session.id}`)} right>
@@ -289,8 +292,8 @@ function ToolbarButton({
   className?: string;
 }) {
   return (
-    <button onClick={onClick} className={clsx("group flex cursor-pointer items-center gap-1.5 hover:text-[#ffff00]", active && "text-[#ffff00]", className)}>
-      <Icon name={icon} size={iconSize} className="[&_path]:transition-colors group-hover:[&_path]:stroke-[#ffff00]" />
+    <button onClick={onClick} className={clsx("group flex cursor-pointer items-center gap-1.5 hover:text-gold", active && "text-gold", className)}>
+      <Icon name={icon} size={iconSize} className="[&_path]:transition-colors group-hover:[&_path]:stroke-gold" />
       <span>{children}</span>
     </button>
   );
@@ -318,7 +321,7 @@ function FooterButton({
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        "flex cursor-pointer items-center gap-1 px-2 py-2.5 text-xl hover:text-[#ffff00] disabled:cursor-default disabled:hover:text-white",
+        "flex cursor-pointer items-center gap-1 px-2 py-2.5 text-xl hover:text-gold disabled:cursor-default disabled:opacity-50 disabled:hover:text-white",
         right ? "border-r border-white" : "border-l border-white",
       )}
     >
@@ -336,9 +339,9 @@ function FooterButton({
 }
 
 const TAGS: { id: MasteryTag; label: string; cls: string }[] = [
-  { id: "learning", label: "Learning", cls: "bg-[#e05e57] hover:bg-[#c33c35]" },
-  { id: "reviewing", label: "Reviewing", cls: "bg-[#f3d456] hover:bg-[#d09528]" },
-  { id: "mastered", label: "Mastered", cls: "bg-[#66ac5c] hover:bg-[#4c8b43]" },
+  { id: "learning", label: "Learning", cls: "bg-error text-white hover:bg-error" },
+  { id: "reviewing", label: "Reviewing", cls: "bg-warning text-ink hover:bg-warning" },
+  { id: "mastered", label: "Mastered", cls: "bg-success text-white hover:bg-success" },
 ];
 
 function TagButtons({ value, onChange }: { value?: MasteryTag; onChange: (t: MasteryTag) => void }) {
@@ -351,7 +354,7 @@ function TagButtons({ value, onChange }: { value?: MasteryTag; onChange: (t: Mas
           aria-pressed={value === t.id}
           title={`Tag as ${t.label}`}
           className={clsx(
-            "flex cursor-pointer items-center gap-1.5 border-l border-white px-3 text-xl text-white transition-colors",
+            "flex cursor-pointer items-center gap-1.5 border-l border-white px-3 text-xl transition-colors",
             t.cls,
             value === t.id && "shadow-[inset_0_0_0_2px_#fff]",
           )}
@@ -371,17 +374,18 @@ function TagButtons({ value, onChange }: { value?: MasteryTag; onChange: (t: Mas
 
 export function ExamLoading() {
   return (
-    <div className="flex h-dvh items-center justify-center bg-brand-dark">
-      <span className="size-8 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-label="Loading" />
+    <div className="flex h-dvh items-center justify-center bg-background">
+      <span className="size-8 animate-spin rounded-full border-2 border-primary/25 border-t-primary" aria-label="Loading" />
     </div>
   );
 }
 
 export function ExamNotFound() {
   return (
-    <div className="bg-app-gradient flex h-dvh flex-col items-center justify-center gap-4 text-white">
-      <p className="text-lg">This test could not be found in this browser.</p>
-      <Link href="/nclex" className="rounded-full bg-white px-5 py-2 font-semibold text-brand">
+    <div className="flex h-dvh flex-col items-center justify-center gap-6 bg-background px-4 text-ink">
+      <LogoStacked width={180} />
+      <p className="text-lg text-muted">This test could not be found in this browser.</p>
+      <Link href="/nclex" className="rounded-full bg-primary px-5 py-2 font-semibold text-white hover:bg-primary-hover">
         Back to Home
       </Link>
     </div>

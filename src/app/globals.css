@@ -1,57 +1,54 @@
 @import "tailwindcss";
 
 /*
- * Design tokens extracted from app.bootcamp.com (see research/INVENTORY.md §2).
- * App theme = dark shell + purple gradient. Exam theme = Pearson VUE look-alike.
+ * NCLEXBase.com brand tokens. Tailwind name -> brand role:
+ *   primary (#0E5A5C) / primary-hover / primary-light: deep teal, its hover, pale teal surfaces
+ *   gold: premium accent only (logo, Pro badges, upgrade actions, thin accent lines)
+ *   background / surface: page background / cards, forms, modals
+ *   exam-ink: question stems, answers, rationales. ink: interface text. muted: secondary text
+ *   faint: disabled text and placeholders. line: borders and dividers
+ *   success / warning / error / info: state colors
  */
 @theme {
   --font-sans: var(--font-brand), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-exam: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  --color-shell: #151a1e;
-  --color-shell-2: #202529;
-  --color-shell-3: #2a3035;
+  --color-primary: #0e5a5c;
+  --color-primary-hover: #094448;
+  --color-primary-light: #e8f2f2;
+  --color-gold: #c9a34e;
 
-  --color-brand: #6255e5;
-  --color-brand-light: #776cfe;
-  --color-brand-mid: #6b60e5;
-  --color-brand-dark: #4a3ac8;
-  --color-brand-tint: #eeecfd;
+  --color-background: #f8fafa;
+  --color-surface: #ffffff;
 
-  --color-ink: #252e33;
-  --color-ink-strong: #2f3037;
-  --color-muted: #85868e;
-  --color-faint: #c8c9ce;
-  --color-line: #ececef;
-  --color-track: #f2f2f2;
+  --color-exam-ink: #000000;
+  --color-ink: #111111;
+  --color-muted: #647779;
+  --color-faint: #9aabac;
+  --color-line: #d9e3e3;
 
-  --color-good: #54964b;
-  --color-good-light: #7bcc6f;
-  --color-warn: #d09528;
-  --color-warn-light: #f9d95b;
-  --color-bad: #c43c35;
-  --color-bad-light: #f96a62;
+  --color-success: #2e7d5b;
+  --color-warning: #d89b2b;
+  --color-error: #b42318;
+  --color-info: #2f6f73;
 
-  --color-exam: #006daa;
-  --color-exam-tool: #80aee1;
-  --color-exam-tab: #e9e9e9;
-  --color-exam-panel: #eeeeee;
-
-  --shadow-card: 0 8px 20px 0 rgba(0, 0, 0, 0.12);
-  --shadow-press: 0 2px 0 0 #4a3ac8;
-  --shadow-press-gray: 0 2px 0 0 #d6d6da;
-  --shadow-track: inset 0 2px 6px 0 rgba(0, 0, 0, 0.07);
+  --shadow-card: 0 1px 2px 0 rgba(14, 90, 92, 0.06), 0 4px 14px 0 rgba(14, 90, 92, 0.07);
+  --shadow-press: 0 2px 0 0 #094448;
+  --shadow-premium: 0 2px 0 0 #a8843a;
 
   --radius-card: 8px;
 }
 
 @layer base {
+  :focus-visible {
+    outline-color: var(--color-primary);
+  }
   html {
-    background: var(--color-shell);
+    background: var(--color-background);
     -webkit-font-smoothing: antialiased;
   }
   body {
-    background: var(--color-shell);
+    background: var(--color-background);
     color: var(--color-ink);
     font-family: var(--font-sans);
     /* Figtree runs ~2% wider than proxima-nova; this keeps line wraps identical. */
@@ -66,28 +63,8 @@
 }
 
 @layer components {
-  .bg-app-gradient {
-    background:
-      linear-gradient(121.4deg, rgba(14, 20, 24, 0) 0%, rgba(14, 20, 23, 0.4) 100%),
-      linear-gradient(180deg, #776cfe 0%, #6b60e5 50%, #4a3ac8 100%);
-  }
-  .bg-card {
-    background: linear-gradient(180deg, #fff 0%, #fff 50.68%, #f5f5f5 100%);
-  }
-  .bg-grad-good {
-    background: linear-gradient(180deg, #7bcc6f 0%, #66ac5c 48.96%, #54964b 100%);
-  }
-  .bg-grad-warn {
-    background: linear-gradient(180deg, #f9d95b 0%, #f3d456 49.48%, #d09528 100%);
-  }
-  .bg-grad-bad {
-    background: linear-gradient(180deg, #f96a62 5.47%, #e05e57 51.56%, #c43c35 100%);
-  }
-  .bg-grad-brand {
-    background: linear-gradient(180deg, #776cfe 0%, #6b60e5 50%, #4a3ac8 100%);
-  }
-
   /* Rich text used in rationales and question stems (trusted local mock data). */
+  .prose-exam { color: var(--color-exam-ink); }
   .prose-exam p { margin: 0 0 1rem; }
   .prose-exam ul { list-style: disc; padding-left: 1.5rem; margin: 0 0 1rem; }
   .prose-exam li { margin-bottom: 0.25rem; }
@@ -130,7 +107,7 @@
   .animate-fade-in, .animate-pop-in, .animate-slide-in-right { animation: none; }
 }
 
-/* Create Test question-count slider (brand fill + white thumb with brand ring). */
+/* Create Test question-count slider (teal fill + teal thumb with pale teal ring). */
 .range-brand {
   -webkit-appearance: none;
   appearance: none;
@@ -143,12 +120,12 @@
 .range-brand::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #6255e5 var(--fill, 0%), #ededf0 var(--fill, 0%));
+  background: linear-gradient(90deg, var(--color-primary) var(--fill, 0%), var(--color-line) var(--fill, 0%));
 }
 .range-brand::-moz-range-track {
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #6255e5 var(--fill, 0%), #ededf0 var(--fill, 0%));
+  background: linear-gradient(90deg, var(--color-primary) var(--fill, 0%), var(--color-line) var(--fill, 0%));
 }
 .range-brand::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -156,8 +133,8 @@
   height: 20px;
   margin-top: -8px;
   border-radius: 50%;
-  background: #6255e5;
-  border: 4px solid #eef1ff;
+  background: var(--color-primary);
+  border: 4px solid var(--color-primary-light);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: transform 0.15s, box-shadow 0.15s;
 }
@@ -165,9 +142,9 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #6255e5;
-  border: 4px solid #eef1ff;
+  background: var(--color-primary);
+  border: 4px solid var(--color-primary-light);
 }
 .range-brand:not(:disabled):hover::-webkit-slider-thumb { transform: scale(1.1); }
-.range-brand:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px #eef1ff; }
+.range-brand:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--color-primary-light); }
 input[type="number"] { -moz-appearance: textfield; }

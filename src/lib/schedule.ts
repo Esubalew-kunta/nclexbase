@@ -1,4 +1,4 @@
-import { CASE_ROWS } from "@/data/cases";
+import { getCaseRows } from "@/lib/content";
 import type { Schedule } from "./store";
 
 /* ------------------------------------------------------------------ */
@@ -158,7 +158,7 @@ export function generatePlan(s: Schedule): Assignment[] {
 
   const cases = interleave(
     ["adult-health", "child-health", "mental-health", "maternal-and-newborn-health"].map((sub) =>
-      CASE_ROWS.filter((r) => r.subject === sub).map<Draft>((r) => ({ id: `case-${r.number}`, title: r.title, minutes: 30, href: `/nclex/next-gen-cases/qbanks/${r.id}`, tone: "lav" })),
+      getCaseRows().filter((r) => r.subject === sub).map<Draft>((r) => ({ id: `case-${r.number}`, title: r.title, minutes: 30, href: `/nclex/next-gen-cases/qbanks/${r.id}`, tone: "lav" })),
     ),
   );
   const blockCount = Math.max(6, Math.round(days.length * 0.45));

@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type { Answer, MasteryTag, Pool, SessionEntry, SubjectId, TestSession } from "./types";
 import { scoreItem } from "./scoring";
 import { itemById } from "./bank";
+import { getConfig } from "./content";
 import { EMPTY_EDITS, type CustomAssignment, type ScheduleEdits, type SpeedKey, type Tone } from "./schedule";
 
 export interface ExamSettings {
@@ -37,7 +38,8 @@ export interface SchedulePrefs {
 }
 
 interface PersistedState {
-  user: { name: string; email: string; plan: "free" | "premium" };
+  /** `signedIn`: prototype session (see lib/demo.ts); student pages send signed-out visitors to /auth/signin. */
+  user: { name: string; email: string; plan: "free" | "premium"; signedIn?: boolean; redeemed?: { code: string; institution: string; at: string } };
   sessions: TestSession[];
   tags: Record<string, MasteryTag>;
   bookmarks: Record<string, boolean>;
@@ -111,7 +113,7 @@ export type Store = PersistedState & UiState & Actions;
 const today = () => new Date().toISOString().slice(0, 10);
 
 const initial: PersistedState = {
-  user: { name: "", email: "student@example.com", plan: "free" },
+  user: { name: "", email: "student@example.com", plan: "free", signedIn: false },
   sessions: [],
   tags: {},
   bookmarks: {},
@@ -278,7 +280,9 @@ export const useStore = create<Store>()(
       // Deep-merge settings so fields added later (e.g. examSettings.timer) get defaults.
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<PersistedState>;
-        return { ...current, ...p, warmup: { ...current.warmup, ...(p.warmup ?? {}) }, schedulePrefs: { ...current.schedulePrefs, ...(p.schedulePrefs ?? {}) }, scheduleEdits: { ...current.scheduleEdits, ...(p.scheduleEdits ?? {}) }, examSettings: { ...current.examSettings, ...(p.examSettings ?? {}) }, user: { ...current.user, ...(p.user ?? {}) } };
+        // A brand-new student starts with the exam defaults set in Admin > Settings.
+        if (!p.examSettings) current = { ...current, examSettings: { ...current.examSettings, ...getConfig().exam.defaults } };
+        return { ...current, ...p, warmup: { ...current.warmup, ...(p.warmup ?? {}) }, schedulePrefs: { ...current.schedulePrefs, ...(p.schedulePrefs ?? {}) }, scheduleEdits: { ...current.scheduleEdits, ...(p.scheduleEdits ?? {}) }, examSettings: { ...current.examSettings, ...(p.examSettings ?? {}) }, user: { ...current.user, ...(p.user ?? {}), signedIn: p.user ? (p.user.signedIn ?? true) : false } };
       },
       partialize: (s): PersistedState => ({
         user: s.user,

@@ -1,31 +1,35 @@
-import { CASES } from "@/data/cases";
-import { STANDALONE } from "@/data/standalone";
 import { READINESS_CASES, READINESS_ITEMS } from "@/data/readiness";
+import { getBank } from "@/lib/content";
 import type { CaseStudy, Item, SessionEntry, SubjectId } from "./types";
 
-const itemIndex = new Map<string, { item: Item; caseStudy?: CaseStudy }>();
-for (const c of CASES) for (const item of c.items) itemIndex.set(item.id, { item, caseStudy: c });
-for (const item of STANDALONE) itemIndex.set(item.id, { item });
+/*
+ * Question bank lookups. Content comes from the repository (seed + admin edits), so
+ * edits made in /admin show up in new tests. Lookups by id also find archived and
+ * readiness items, so saved test sessions keep working after content changes.
+ */
 
-// CAT readiness exam items are looked up by id but kept out of the study bank (Create Test, counts).
-const readinessIndex = new Map<string, { item: Item; caseStudy?: CaseStudy }>();
-for (const item of READINESS_ITEMS) readinessIndex.set(item.id, { item });
-for (const c of READINESS_CASES) for (const item of c.items) readinessIndex.set(item.id, { item, caseStudy: c });
+const readinessFallback = new Map<string, Item>(READINESS_ITEMS.map((i) => [i.id, i]));
+const readinessCaseFallback = new Map<string, CaseStudy>();
+for (const c of READINESS_CASES) for (const i of c.items) readinessCaseFallback.set(i.id, c);
 
-export const ALL_ITEMS: Item[] = [...itemIndex.values()].map((v) => v.item);
+/** Published items students can study (standalone + published case studies). */
+export function studyItems(): Item[] {
+  const bank = getBank();
+  return [...bank.cases.flatMap((c) => c.items), ...bank.standalone];
+}
 
 export function itemById(id: string): Item {
-  const hit = itemIndex.get(id) ?? readinessIndex.get(id);
+  const hit = getBank().byId.get(id) ?? readinessFallback.get(id);
   if (!hit) throw new Error(`Unknown item ${id}`);
-  return hit.item;
+  return hit;
 }
 
 export function caseForItem(id: string): CaseStudy | undefined {
-  return (itemIndex.get(id) ?? readinessIndex.get(id))?.caseStudy;
+  return getBank().caseOf.get(id) ?? readinessCaseFallback.get(id);
 }
 
 export function itemsForSubject(subject: SubjectId): Item[] {
-  return ALL_ITEMS.filter((i) => i.subject === subject);
+  return studyItems().filter((i) => i.subject === subject);
 }
 
 export function entriesForCase(c: CaseStudy): SessionEntry[] {
@@ -50,11 +54,12 @@ export function buildEntries(opts: {
 
   const rand = mulberry32(opts.seed ?? Date.now());
   const groups: SessionEntry[][] = [];
-  for (const c of CASES) {
+  const bank = getBank();
+  for (const c of bank.cases) {
     const items = c.items.filter(allowed);
     if (items.length) groups.push(items.map((i) => ({ itemId: i.id, caseId: c.id })));
   }
-  for (const i of STANDALONE) if (allowed(i)) groups.push([{ itemId: i.id }]);
+  for (const i of bank.standalone) if (allowed(i)) groups.push([{ itemId: i.id }]);
 
   shuffle(groups, rand);
   const out: SessionEntry[] = [];

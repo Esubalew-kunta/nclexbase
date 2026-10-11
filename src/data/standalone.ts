@@ -24,7 +24,7 @@ export const STANDALONE: Item[] = [
     id: "s-pharm-2",
     type: "sata",
     subject: "pharmacology",
-    system: "Anti-Infectives",
+    system: "Immune",
     topic: "Vancomycin",
     stem: "A client is receiving IV vancomycin. Which findings should the nurse report to the provider? <b>Select all that apply.</b>",
     options: [
@@ -47,7 +47,7 @@ export const STANDALONE: Item[] = [
     id: "s-fund-1",
     type: "mcq",
     subject: "fundamentals",
-    system: "Mobility",
+    system: "Basic Care and Comfort",
     topic: "Assistive Devices",
     stem: "A client with left-sided weakness is learning to walk with a cane. Which instruction should the nurse give?",
     options: [
@@ -68,7 +68,7 @@ export const STANDALONE: Item[] = [
     id: "s-fund-2",
     type: "sata",
     subject: "fundamentals",
-    system: "Infection Control",
+    system: "Safety and Infection Control",
     topic: "Contact Precautions",
     stem: "The nurse is caring for a client with <i>Clostridioides difficile</i> infection. Which actions are appropriate? <b>Select all that apply.</b>",
     options: [
@@ -91,7 +91,7 @@ export const STANDALONE: Item[] = [
     id: "s-mh-1",
     type: "mcq",
     subject: "mental-health",
-    system: "Mood Disorders",
+    system: "Mood and Personality Disorders",
     topic: "Lithium",
     stem: "A client taking lithium reports vomiting, diarrhea, and a coarse hand tremor. The lithium level is 2.1 mEq/L. What is the nurse's <b>priority</b> action?",
     options: [
@@ -112,7 +112,7 @@ export const STANDALONE: Item[] = [
     id: "s-mh-2",
     type: "matrix",
     subject: "mental-health",
-    system: "Therapeutic Communication",
+    system: "Foundations and Therapeutic Communication",
     topic: "Therapeutic Communication",
     stem: "A client says, “I don't think I can keep going like this.” For each nurse response, click to specify whether it is <b>therapeutic</b> or <b>nontherapeutic</b>.",
     rowHeader: "Nurse Response",
@@ -136,7 +136,7 @@ export const STANDALONE: Item[] = [
     id: "s-moc-1",
     type: "mcq",
     subject: "management-of-care",
-    system: "Delegation",
+    system: "Assignment and Delegation",
     topic: "Delegation",
     stem: "Which task can the RN delegate to an unlicensed assistive personnel (UAP)?",
     options: [
@@ -239,7 +239,7 @@ export const STANDALONE: Item[] = [
     id: "s-mat-1",
     type: "mcq",
     subject: "maternal-and-newborn-health",
-    system: "Intrapartum",
+    system: "Labor & Delivery",
     topic: "Fetal Heart Monitoring",
     stem: "The nurse notes recurrent late decelerations on the fetal monitor of a client in labor receiving oxytocin. What is the nurse's <b>first</b> action?",
     options: [

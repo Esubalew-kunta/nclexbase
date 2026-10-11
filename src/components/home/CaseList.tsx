@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CASE_ROWS } from "@/data/cases";
+import { useCaseRows } from "@/lib/content";
 import { resolveCase, useStartCase } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import { Button, Modal, UpgradeButton } from "@/components/ui/primitives";
@@ -16,12 +16,12 @@ export function CaseList({ subject }: { subject?: string }) {
   const deleteSession = useStore((s) => s.deleteSession);
   const start = useStartCase();
   const [confirm, setConfirm] = useState<{ id: string; title: string } | null>(null);
-  const rows = subject ? CASE_ROWS.filter((r) => r.subject === subject) : CASE_ROWS;
+  const rows = useCaseRows(subject);
 
   return (
     <div className="mt-4 flex flex-col">
       {rows.map((row, i) => {
-        const unlocked = plan === "premium" || row.free;
+        const unlocked = plan === "premium" || row.access === "free";
         const session = sessions.find((s) => s.kind === "case" && s.sourceId === row.id);
         const authored = resolveCase(row.id, row.subject);
         const counts = session
@@ -90,7 +90,7 @@ export function CaseList({ subject }: { subject?: string }) {
         title="Reset Case Study"
         width={480}
         footer={
-          <div className="flex justify-end gap-2 border-t border-[#ededf0] px-6 py-4">
+          <div className="flex justify-end gap-2 border-t border-line px-6 py-4">
             <Button variant="outline" onClick={() => setConfirm(null)}>
               Cancel
             </Button>

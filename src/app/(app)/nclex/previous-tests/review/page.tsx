@@ -4,16 +4,19 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useState } from "react";
-import { EXPERTS, REVIEW_FAQS, SUBJECTS, subjectById } from "@/data/catalog";
+import { EXPERTS, SUBJECTS, subjectById } from "@/data/catalog";
 import { caseForItem, itemById } from "@/lib/bank";
 import { avgPoints, chanceOfPassing, formatDuration, scoreItem, scoreSession } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import { formatFull } from "@/lib/schedule";
+import { subjectName } from "@/lib/content";
+import { BRAND } from "@/lib/brand";
 import type { SubjectId, TestSession } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
-import { Button, FaqList, PageHeader } from "@/components/ui/primitives";
+import { Button, PageHeader } from "@/components/ui/primitives";
 import { SubjectIcon } from "@/components/ui/visuals";
 import { ExpandAllToggle, ScoreCell, SectionHeading, SortArrows, TimeManagementTable, WarningInline } from "@/components/performance/SubjectPerformance";
+import { PlacedFaqs } from "@/components/ui/PlacedFaqs";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -26,13 +29,13 @@ function Report() {
     return (
       <>
         <PageHeader trail={[{ label: "Previous Tests", href: "/nclex/previous-tests" }, { label: "Not found" }]} title="Test not found" />
-        <p className="text-white/80">This test is not saved in this browser.</p>
+        <p className="text-muted">This test is not saved in this browser.</p>
       </>
     );
   return <ScoreReport session={session} />;
 }
 
-/** 270° ring like the live canvas gauge: gray track, blue value arc, average tick. */
+/** 270° ring like the live canvas gauge: pale track, teal value arc, average tick. */
 function RingGauge({ value, avg }: { value: number; avg: number }) {
   const r = 112;
   const cx = 133;
@@ -53,20 +56,20 @@ function RingGauge({ value, avg }: { value: number; avg: number }) {
     <svg width="266" height="242" viewBox="0 0 266 242" aria-hidden>
       <defs>
         <linearGradient id="ring" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#3b82f6" />
-          <stop offset="1" stopColor="#6255e5" />
+          <stop offset="0" stopColor={BRAND.info} />
+          <stop offset="1" stopColor={BRAND.primary} />
         </linearGradient>
       </defs>
-      <path d={arc(start, start + sweep)} stroke="#ededf0" strokeWidth="22" fill="none" strokeLinecap="round" />
+      <path d={arc(start, start + sweep)} stroke={BRAND.primaryLight} strokeWidth="22" fill="none" strokeLinecap="round" />
       {v > 0 && <path d={arc(start, start + (sweep * v) / 100)} stroke="url(#ring)" strokeWidth="22" fill="none" strokeLinecap="round" />}
-      <line x1={a1} y1={b1} x2={a2} y2={b2} stroke="#c8c9ce" strokeWidth="3" />
+      <line x1={a1} y1={b1} x2={a2} y2={b2} stroke={BRAND.gold} strokeWidth="3" />
     </svg>
   );
 }
 
 function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <p className="flex items-center justify-center gap-1 rounded-lg border border-[#ededf0] px-2 py-1 text-sm leading-[14px] text-ink-strong">
+    <p className="flex items-center justify-center gap-1 rounded-lg border border-line px-2 py-1 text-sm leading-[14px] text-ink">
       {icon}
       {children}
     </p>
@@ -106,29 +109,29 @@ function AbilityChart({ session }: { session: TestSession }) {
   const band = [...pts.map((p) => `${x(p.q)} ${y(p.z + p.ci)}`), ...[...pts].reverse().map((p) => `${x(p.q)} ${y(p.z - p.ci)}`)].join(" L");
   const last = pts[pts.length - 1];
   return (
-    <div className="rounded-lg border border-[#ededf0] bg-white p-3">
+    <div className="rounded-lg border border-line bg-white p-3">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Ability estimate by question number">
-        <rect x={x(0)} y={20} width={x(10) - x(0)} height={H - 20 - B} fill="#eef3ff" />
-        {pts.length > 0 && <path d={`M${band} Z`} fill="#eef3ff" />}
-        <line x1={L} x2={W - 20} y1={y(passZ)} y2={y(passZ)} stroke="#4c9a44" strokeDasharray="5 4" strokeWidth={2} />
-        {pts.length > 0 && <path d={line} fill="none" stroke="#3b82f6" strokeWidth={2.5} />}
-        {last && <circle cx={x(last.q)} cy={y(last.z)} r={6} fill="#3b82f6" />}
+        <rect x={x(0)} y={20} width={x(10) - x(0)} height={H - 20 - B} fill={BRAND.primaryLight} />
+        {pts.length > 0 && <path d={`M${band} Z`} fill={BRAND.primaryLight} />}
+        <line x1={L} x2={W - 20} y1={y(passZ)} y2={y(passZ)} stroke={BRAND.success} strokeDasharray="5 4" strokeWidth={2} />
+        {pts.length > 0 && <path d={line} fill="none" stroke={BRAND.primary} strokeWidth={2.5} />}
+        {last && <circle cx={x(last.q)} cy={y(last.z)} r={6} fill={BRAND.primary} />}
         {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map((q) => (
-          <text key={q} x={x(q)} y={H - B + 22} textAnchor="middle" fontSize={16} fill="#8a8c97">
+          <text key={q} x={x(q)} y={H - B + 22} textAnchor="middle" fontSize={16} fill={BRAND.muted}>
             {q}
           </text>
         ))}
-        <text x={W / 2} y={H - 8} textAnchor="middle" fontSize={17} fontWeight={700} fill="#8a8c97">
+        <text x={W / 2} y={H - 8} textAnchor="middle" fontSize={17} fontWeight={700} fill={BRAND.muted}>
           Question #
         </text>
-        <text transform={`translate(18 ${(H - B) / 2}) rotate(-90)`} textAnchor="middle" fontSize={17} fontWeight={700} fill="#8a8c97">
+        <text transform={`translate(18 ${(H - B) / 2}) rotate(-90)`} textAnchor="middle" fontSize={17} fontWeight={700} fill={BRAND.muted}>
           Ability Estimate
         </text>
       </svg>
-      <div className="flex flex-wrap justify-center gap-5 text-sm text-ink-strong">
-        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm bg-[#3b82f6]" />Ability Estimate</span>
-        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm bg-[#e6eefc]" />95% Confidence Interval</span>
-        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm bg-[#4c9a44]" />Passing Standard</span>
+      <div className="flex flex-wrap justify-center gap-5 text-sm text-ink">
+        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm bg-primary" />Ability Estimate</span>
+        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm border border-line bg-primary-light" />95% Confidence Interval</span>
+        <span className="flex items-center gap-1.5"><i className="size-3 rounded-sm bg-success" />Passing Standard</span>
       </div>
     </div>
   );
@@ -136,7 +139,7 @@ function AbilityChart({ session }: { session: TestSession }) {
 
 function CatSummary({ session, percent, weakest }: { session: TestSession; percent: number; weakest: string[] }) {
   const chance = chanceOfPassing(percent);
-  const tone = chance === "Low" ? "text-[#e05e57]" : chance === "Borderline" ? "text-[#d09528]" : "text-[#4c8b43]";
+  const tone = chance === "Low" ? "text-error" : chance === "Borderline" ? "text-warning" : "text-success";
   const n = session.entries.length;
   const message =
     chance === "Low" || chance === "Borderline" ? (
@@ -156,12 +159,12 @@ function CatSummary({ session, percent, weakest }: { session: TestSession; perce
     );
   return (
     <div className="flex flex-col px-6 pt-4 pb-6">
-      <h3 className="mb-4 text-2xl leading-[30px] font-bold text-ink-strong">
+      <h3 className="mb-4 text-2xl leading-[30px] font-bold text-ink">
         Chance of Passing: <span className={tone}>{chance}</span>
       </h3>
       <div className="relative mb-6">
         <img src={EXPERTS.emily.photo} alt="" className="absolute top-6 left-0 z-[1] size-12 rounded-full object-cover" />
-        <p className="ml-9 rounded-lg bg-[#eef1ff] py-4 pr-6 pl-12 text-base leading-6 text-ink-strong">{message}</p>
+        <p className="ml-9 rounded-lg bg-primary-light py-4 pr-6 pl-12 text-base leading-6 text-ink">{message}</p>
       </div>
       <AbilityChart session={session} />
     </div>
@@ -188,7 +191,7 @@ function ScoreReport({ session }: { session: TestSession }) {
   };
   const allOpen = open.size === stats.subjects.length;
   const isCat = session.kind === "readiness";
-  const weakest = [...stats.subjects].sort((a, b) => a.earned / Math.max(1, a.max) - b.earned / Math.max(1, b.max)).slice(0, 2).map((x) => subjectById(x.id).name);
+  const weakest = [...stats.subjects].sort((a, b) => a.earned / Math.max(1, a.max) - b.earned / Math.max(1, b.max)).slice(0, 2).map((x) => subjectName(x.id));
   const faster = perQ <= avgPerQ;
   const diff = Math.min(1, Math.abs(perQ - avgPerQ) / Math.max(1, avgPerQ));
 
@@ -197,7 +200,7 @@ function ScoreReport({ session }: { session: TestSession }) {
       <PageHeader trail={[{ label: "Previous Tests", href: "/nclex/previous-tests" }, { label: session.title }]} title={session.title} />
 
       <div className="mb-8 rounded-lg bg-white shadow-card">
-        <div className="sticky top-0 z-[5] flex flex-wrap gap-4 rounded-t-lg border-b border-[#ededf0] bg-white px-6 py-4">
+        <div className="sticky top-0 z-[5] flex flex-wrap gap-4 rounded-t-lg border-b border-line bg-white px-6 py-4">
           <div className="flex flex-col">
             <h4 className="mb-2 text-lg leading-[22.5px] font-semibold text-ink">Score Report</h4>
             <div className="flex flex-wrap gap-2">
@@ -228,17 +231,17 @@ function ScoreReport({ session }: { session: TestSession }) {
               <div className="relative">
                 <RingGauge value={sc.percent} avg={avgPct} />
                 <div className="absolute top-1/2 left-1/2 w-[140px] -translate-x-1/2 -translate-y-[42%] text-center">
-                  <p className="text-lg leading-[18px] font-bold text-[#3b82f6]">Your Score</p>
-                  <div className="my-2 text-[64px] leading-[64px] font-bold tracking-[-1px] text-[#3b82f6]">{sc.percent}%</div>
+                  <p className="text-lg leading-[18px] font-bold text-primary">Your Score</p>
+                  <div className="my-2 text-[64px] leading-[64px] font-bold tracking-[-1px] text-primary">{sc.percent}%</div>
                   <p className="text-lg leading-[18px] text-muted">Average: {avgPct} %</p>
                 </div>
               </div>
             </div>
             <div className="flex flex-1 items-center">
-              <div className="w-full overflow-auto rounded-lg border border-[#ededf0]">
-                <table className="w-full text-ink-strong">
+              <div className="w-full overflow-auto rounded-lg border border-line">
+                <table className="w-full text-ink">
                   <tbody>
-                    <tr className="border-b border-[#ededf0] bg-[#fafafa] text-base leading-4 font-semibold">
+                    <tr className="border-b border-line bg-background text-base leading-4 font-semibold">
                       <td className="w-1/2 px-6" />
                       <td className="p-4">You</td>
                       <td className="p-4 text-muted">Average</td>
@@ -249,7 +252,7 @@ function ScoreReport({ session }: { session: TestSession }) {
                       ["Time Per Question", formatDuration(perQ), formatDuration(avgPerQ)],
                       ["Total Time", formatDuration(sc.time), formatDuration(stats.avgTime)],
                     ].map(([k, you, avg], i, a) => (
-                      <tr key={k} className={clsx("bg-white text-base leading-4", i < a.length - 1 && "border-b border-[#ededf0]")}>
+                      <tr key={k} className={clsx("bg-white text-base leading-4", i < a.length - 1 && "border-b border-line")}>
                         <td className="h-12 px-6">{k}</td>
                         <td className="p-4">{you}</td>
                         <td className="p-4 text-muted">{avg}</td>
@@ -262,7 +265,7 @@ function ScoreReport({ session }: { session: TestSession }) {
           </div>
           <div className="relative mt-6">
             <img src={EXPERTS.emily.photo} alt="" className="absolute top-1/2 left-0 size-12 -translate-y-1/2 rounded-full object-cover" />
-            <p className="ml-9 rounded-lg bg-[#e0e6ff] py-3 pr-6 pl-8 text-base leading-6 text-ink-strong">{message}</p>
+            <p className="ml-9 rounded-lg bg-primary-light py-3 pr-6 pl-8 text-base leading-6 text-ink">{message}</p>
           </div>
         </div>
       </div>
@@ -278,19 +281,19 @@ function ScoreReport({ session }: { session: TestSession }) {
         action={<ExpandAllToggle allOpen={allOpen} onClick={() => setOpen(allOpen ? new Set() : new Set(stats.subjects.map((s) => s.id)))} />}
       />
       <div className="mb-6 overflow-auto rounded-lg bg-white shadow-card">
-        <table className="w-full min-w-[720px] text-ink-strong">
+        <table className="w-full min-w-[720px] text-ink">
           <tbody>
-            <tr className="border-b border-[#ededf0] bg-[#fafafa] text-base leading-4 font-semibold text-muted">
+            <tr className="border-b border-line bg-background text-base leading-4 font-semibold text-muted">
               <td className="w-14 py-4 pr-4 pl-6" />
-              <td className="p-4 text-ink-strong">Subject</td>
+              <td className="p-4 text-ink">Subject</td>
               <td className="p-4">
-                <span className="inline-flex items-center text-ink-strong">
+                <span className="inline-flex items-center text-ink">
                   Correct / Total Pts
                   <SortArrows />
                 </span>
               </td>
               <td className="p-4">
-                <span className="inline-flex items-center text-ink-strong">
+                <span className="inline-flex items-center text-ink">
                   Score
                   <SortArrows />
                 </span>
@@ -304,7 +307,7 @@ function ScoreReport({ session }: { session: TestSession }) {
               return (
                 <Fragment key={s.id}>
                   <tr
-                    className="group cursor-pointer border-b border-[#ededf0] bg-white shadow-[inset_3px_0_0_0_#ededf0] hover:bg-[#f6f6f6]"
+                    className="group cursor-pointer border-b border-line bg-white shadow-[inset_3px_0_0_0_var(--color-line)] hover:bg-primary-light"
                     onClick={() =>
                       setOpen((o) => {
                         const n = new Set(o);
@@ -316,17 +319,17 @@ function ScoreReport({ session }: { session: TestSession }) {
                   >
                     <td className="py-4 pr-4 pl-6">
                       {isOpen ? (
-                        <svg viewBox="0 0 48 48" className="size-4 text-faint" fill="currentColor">
+                        <svg viewBox="0 0 48 48" className="size-4 text-primary" fill="currentColor">
                           <path d="M6 23.5c0-.83.67-1.5 1.5-1.5h33a1.5 1.5 0 0 1 0 3h-33A1.5 1.5 0 0 1 6 23.5Z" />
                         </svg>
                       ) : (
-                        <Icon name="plus" size={16} className="text-faint" />
+                        <Icon name="plus" size={16} className="text-primary" />
                       )}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <SubjectIcon id={s.id} size={20} />
-                        <p className="text-base leading-4 group-hover:text-brand">{subjectById(s.id).name}</p>
+                        <p className="text-base leading-4 group-hover:text-primary">{subjectName(s.id)}</p>
                         {pct < s.avg && <WarningInline />}
                       </div>
                     </td>
@@ -341,7 +344,7 @@ function ScoreReport({ session }: { session: TestSession }) {
                       <Link
                         href={`/nclex/${s.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="ml-auto flex size-8 items-center justify-center rounded-full bg-brand text-white hover:bg-[#6765ef]"
+                        className="ml-auto flex size-8 items-center justify-center rounded-full bg-primary text-white hover:bg-primary-hover"
                       >
                         <Icon name="chevronRight" size={16} />
                       </Link>
@@ -351,7 +354,7 @@ function ScoreReport({ session }: { session: TestSession }) {
                     s.systems.map((sys) => {
                       const sp = sys.max ? Math.round((sys.earned / sys.max) * 100) : 0;
                       return (
-                        <tr key={sys.name} className="border-b border-[#ededf0] bg-[#fafafa] shadow-[inset_3px_0_0_0_#ededf0]">
+                        <tr key={sys.name} className="border-b border-line bg-background shadow-[inset_3px_0_0_0_var(--color-line)]">
                           <td />
                           <td className="p-4">
                             <p className="ml-7 text-base leading-4">{sys.name}</p>
@@ -378,12 +381,12 @@ function ScoreReport({ session }: { session: TestSession }) {
       <div className="mb-6 flex flex-col gap-4 lg:flex-row">
         <div className="flex shrink-0 flex-col items-center justify-center rounded-lg bg-white px-6 py-8 text-center shadow-card lg:w-[346px]">
           <div className="mb-4 flex h-7 w-[216px] items-center justify-center overflow-hidden">
-            <div className="flex h-7 w-[107px] justify-end py-1">{faster && <div className="bg-grad-good h-5" style={{ width: Math.max(8, diff * 107) }} />}</div>
+            <div className="flex h-7 w-[107px] justify-end py-1">{faster && <div className="bg-success h-5" style={{ width: Math.max(8, diff * 107) }} />}</div>
             <div className="h-7 w-[3px] bg-faint" />
-            <div className="h-7 w-[107px] py-1">{!faster && <div className="bg-grad-bad h-5" style={{ width: Math.max(8, diff * 107) }} />}</div>
+            <div className="h-7 w-[107px] py-1">{!faster && <div className="bg-error h-5" style={{ width: Math.max(8, diff * 107) }} />}</div>
           </div>
-          <p className="text-lg leading-[18px] font-bold text-brand">Your Time Per Question</p>
-          <span className="text-[64px] leading-[80px] font-bold tracking-[-1px] text-brand">{formatDuration(perQ)}</span>
+          <p className="text-lg leading-[18px] font-bold text-primary">Your Time Per Question</p>
+          <span className="text-[64px] leading-[80px] font-bold tracking-[-1px] text-primary">{formatDuration(perQ)}</span>
           <p className="text-lg leading-[18px] text-muted">Average: {formatDuration(avgPerQ)}</p>
         </div>
         <div className="min-w-0 flex-1 overflow-hidden rounded-lg shadow-card">
@@ -394,24 +397,24 @@ function ScoreReport({ session }: { session: TestSession }) {
         </div>
       </div>
 
-      <h2 className="text-2xl leading-[30px] font-bold text-white">Question Breakdown</h2>
-      <p className="mt-1 mb-4 text-base leading-6 text-white/70">Click any question to jump directly to it.</p>
+      <h2 className="text-2xl leading-[30px] font-bold text-ink">Question Breakdown</h2>
+      <p className="mt-1 mb-4 text-base leading-6 text-muted">Click any question to jump directly to it.</p>
       <div className="mb-6 overflow-auto rounded-lg bg-white shadow-card">
-        <table className="w-full min-w-[760px] text-ink-strong">
+        <table className="w-full min-w-[760px] text-ink">
           <tbody>
-            <tr className="border-b border-[#ededf0] bg-[#fafafa] text-base leading-4 font-semibold text-muted">
+            <tr className="border-b border-line bg-background text-base leading-4 font-semibold text-muted">
               <td className="w-[60px] py-4 pr-4 pl-6" />
-              <td className="p-4 text-ink-strong">Question</td>
-              <td className="p-4 text-ink-strong">Subject</td>
-              <td className="p-4 text-ink-strong">System</td>
+              <td className="p-4 text-ink">Question</td>
+              <td className="p-4 text-ink">Subject</td>
+              <td className="p-4 text-ink">System</td>
               <td className="p-4">
-                <span className="inline-flex items-center text-ink-strong">
+                <span className="inline-flex items-center text-ink">
                   Correct / Total Pts
                   <SortArrows />
                 </span>
               </td>
               <td className="p-4">
-                <span className="inline-flex items-center text-ink-strong">
+                <span className="inline-flex items-center text-ink">
                   Time
                   <SortArrows />
                 </span>
@@ -424,7 +427,7 @@ function ScoreReport({ session }: { session: TestSession }) {
                 <Fragment key={g.caseId ?? g.rows[0].index}>
                   {g.caseId && (
                     <tr
-                      className="cursor-pointer border-b border-[#ededf0] bg-white shadow-[inset_3px_0_0_0_#ededf0] hover:bg-[#f6f6f6]"
+                      className="cursor-pointer border-b border-line bg-white shadow-[inset_3px_0_0_0_var(--color-line)] hover:bg-primary-light"
                       onClick={() =>
                         setOpenCases((o) => {
                           const n = new Set(o);
@@ -436,15 +439,15 @@ function ScoreReport({ session }: { session: TestSession }) {
                     >
                       <td className="py-4 pr-4 pl-6">
                         {caseOpen ? (
-                          <svg viewBox="0 0 48 48" className="size-4 text-faint" fill="currentColor">
+                          <svg viewBox="0 0 48 48" className="size-4 text-primary" fill="currentColor">
                             <path d="M6 23.5c0-.83.67-1.5 1.5-1.5h33a1.5 1.5 0 0 1 0 3h-33A1.5 1.5 0 0 1 6 23.5Z" />
                           </svg>
                         ) : (
-                          <Icon name="plus" size={16} className="text-faint" />
+                          <Icon name="plus" size={16} className="text-primary" />
                         )}
                       </td>
                       <td className="p-4 text-base leading-4">Case Study</td>
-                      <td className="p-4 text-base leading-4">{subjectById(g.subject).name}</td>
+                      <td className="p-4 text-base leading-4">{subjectName(g.subject)}</td>
                       <td className="p-4 text-base leading-4">{g.system}</td>
                       <td className="p-4 text-base leading-4">
                         {g.earned} / {g.max}
@@ -458,7 +461,7 @@ function ScoreReport({ session }: { session: TestSession }) {
                       <tr
                         key={r.index}
                         onClick={() => review(r.index)}
-                        className={clsx("cursor-pointer border-b border-[#ededf0] last:border-0 hover:bg-[#f6f6f6]", g.caseId ? "bg-[#fafafa] shadow-[inset_3px_0_0_0_#ededf0]" : "bg-white")}
+                        className={clsx("cursor-pointer border-b border-line last:border-0 hover:bg-primary-light", g.caseId ? "bg-background shadow-[inset_3px_0_0_0_var(--color-line)]" : "bg-white")}
                       >
                         <td className="py-4 pr-4 pl-6">
                           <StatusIcon earned={r.earned} max={r.max} />
@@ -466,14 +469,14 @@ function ScoreReport({ session }: { session: TestSession }) {
                         <td className="p-4 text-base leading-4">
                           <span className="mr-2">{r.index + 1}</span>
                         </td>
-                        <td className="p-4 text-base leading-4 text-muted">{subjectById(r.subject).name}</td>
+                        <td className="p-4 text-base leading-4 text-muted">{subjectName(r.subject)}</td>
                         <td className="p-4 text-base leading-4 text-muted">{r.system}</td>
                         <td className="p-4 text-base leading-4">
                           {r.earned} / {r.max}
                         </td>
                         <td className="p-4 text-base leading-4">{formatDuration(r.time)}</td>
                         <td className="p-4 text-right">
-                          <Icon name="chevronRight" size={20} className="ml-auto text-faint" />
+                          <Icon name="chevronRight" size={20} className="ml-auto text-primary" />
                         </td>
                       </tr>
                     ))}
@@ -484,7 +487,7 @@ function ScoreReport({ session }: { session: TestSession }) {
         </table>
       </div>
 
-      <FaqList items={REVIEW_FAQS} />
+      <PlacedFaqs placement="review" />
     </>
   );
 }
@@ -492,18 +495,18 @@ function ScoreReport({ session }: { session: TestSession }) {
 function StatusIcon({ earned, max }: { earned: number; max: number }) {
   if (earned >= max)
     return (
-      <svg viewBox="0 0 24 24" className="size-5 text-[#66ac5c]" fill="currentColor">
+      <svg viewBox="0 0 24 24" className="size-5 text-success" fill="currentColor">
         <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm4.3 6.6-5.8 5.8-2.8-2.8a1 1 0 1 0-1.4 1.4l3.5 3.5a1 1 0 0 0 1.4 0l6.5-6.5a1 1 0 1 0-1.4-1.4Z" />
       </svg>
     );
   if (earned > 0)
     return (
-      <svg viewBox="0 0 24 24" className="size-5 text-[#f3d456]" fill="currentColor">
+      <svg viewBox="0 0 24 24" className="size-5 text-warning" fill="currentColor">
         <path d="M2.03 11.25a10 10 0 0 1 19.94 0H22V12a10 10 0 0 1-20 0v-.75h.03ZM12 20.5a8.5 8.5 0 0 0 8.47-7.75H3.53A8.5 8.5 0 0 0 12 20.5Z" />
       </svg>
     );
   return (
-    <svg viewBox="0 0 48 48" className="size-5 text-[#e05e57]" fill="currentColor">
+    <svg viewBox="0 0 48 48" className="size-5 text-error" fill="currentColor">
       <path d="M24 6.5a17.5 17.5 0 1 0 0 35 17.5 17.5 0 0 0 0-35ZM4 24a20 20 0 1 1 40 0 20 20 0 0 1-40 0Z" />
     </svg>
   );

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/shell/Providers";
@@ -11,8 +11,13 @@ const brand = Figtree({
 });
 
 export const metadata: Metadata = {
-  title: "NCLEX Bootcamp",
-  description: "Static frontend clone of NCLEX Bootcamp for redesign experiments.",
+  title: { default: "NCLEXBase.com", template: "%s | NCLEXBase.com" },
+  description: "NCLEXBase.com: NCLEX preparation for nurses and nursing students. Next Gen case studies, practice questions, readiness exams, and cheat sheets.",
+  applicationName: "NCLEXBase.com",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0E5A5C",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

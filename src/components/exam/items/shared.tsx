@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { BRAND } from "@/lib/brand";
 import type { Answer, Item } from "@/lib/types";
 
 export interface ItemProps<T extends Item> {
@@ -17,11 +18,11 @@ export function Mark({ correct, show, className }: { correct: boolean; show: boo
     <span className={clsx("inline-flex w-6 shrink-0 justify-center", className)} aria-hidden={!show}>
       {show &&
         (correct ? (
-          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="#2e9d3a" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke={BRAND.success} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
             <path d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         ) : (
-          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="#e02424" strokeWidth={2.5} strokeLinecap="round">
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke={BRAND.error} strokeWidth={2.5} strokeLinecap="round">
             <path d="M6 6l12 12M18 6 6 18" />
           </svg>
         ))}
@@ -50,7 +51,7 @@ export function NativeInput({
       disabled={disabled}
       onChange={() => onChange?.()}
       aria-label={label}
-      className="mx-2 size-5 shrink-0 cursor-pointer align-middle disabled:cursor-default"
+      className="mx-2 size-5 shrink-0 cursor-pointer align-middle accent-primary disabled:cursor-default"
     />
   );
 }
@@ -62,5 +63,5 @@ export function Html({ html, className }: { html: string; className?: string }) 
 
 /** Live matrix table cell styling. */
 export const tableCls = "border-collapse text-center text-base leading-6";
-export const thCls = "border border-[#ddd] bg-[#e8f2ff] p-[5px] font-bold text-black";
-export const tdCls = "border border-[#ddd] p-[5px]";
+export const thCls = "border border-line bg-primary-light p-[5px] font-bold text-exam-ink";
+export const tdCls = "border border-line p-[5px]";

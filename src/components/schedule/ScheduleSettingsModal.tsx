@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { useState, type ReactNode } from "react";
+import { PRINT_CSS } from "@/lib/brand";
 import { useStore, type SchedulePrefs } from "@/lib/store";
 import { formatLong, formatMinutes, parseDate, resolveAssignments, SPEEDS, type SpeedKey } from "@/lib/schedule";
 import { Modal } from "@/components/ui/primitives";
@@ -17,7 +18,7 @@ function Seg({ on, onClick, children, className }: { on: boolean; onClick: () =>
       onClick={onClick}
       className={clsx(
         "cursor-pointer rounded-lg border px-5 py-3 text-base text-ink transition-colors",
-        on ? "border-brand font-semibold text-ink-strong shadow-[0_0_0_1px_var(--color-brand)]" : "border-[#ededf0] hover:bg-[#f6f6f6]",
+        on ? "border-primary font-semibold text-ink shadow-[0_0_0_1px_var(--color-brand)]" : "border-line hover:bg-primary-light",
         className,
       )}
     >
@@ -30,9 +31,9 @@ function Preview({ on, onClick, title, children }: { on: boolean; onClick: () =>
   return (
     <button
       onClick={onClick}
-      className={clsx("flex-1 cursor-pointer rounded-lg border p-3 text-left transition-colors", on ? "border-brand shadow-[0_0_0_1px_var(--color-brand)]" : "border-[#ededf0] hover:bg-[#fafafa]")}
+      className={clsx("flex-1 cursor-pointer rounded-lg border p-3 text-left transition-colors", on ? "border-primary shadow-[0_0_0_1px_var(--color-brand)]" : "border-line hover:bg-primary-light")}
     >
-      <p className={clsx("mb-3 text-center text-base text-ink", on && "font-bold text-ink-strong")}>{title}</p>
+      <p className={clsx("mb-3 text-center text-base text-ink", on && "font-bold text-ink")}>{title}</p>
       {children}
     </button>
   );
@@ -66,7 +67,7 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
       .sort(([x], [y]) => (x < y ? -1 : 1))
       .map(([d, list]) => `<h3>${formatLong(parseDate(d))}</h3><ul>${list.map((t) => `<li>${t}</li>`).join("")}</ul>`)
       .join("");
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>NCLEX Study Schedule</title><style>body{font-family:Arial,sans-serif;max-width:720px;margin:32px auto;color:#1f2937}h1{color:#5f4de0}h3{margin:18px 0 4px;font-size:15px}li{margin:2px 0}</style></head><body><h1>NCLEX Study Schedule</h1>${rows}</body></html>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>NCLEX Study Schedule | NCLEXBase.com</title><style>${PRINT_CSS}</style></head><body><header class="brand"><h1>NCLEX Study Schedule</h1><span>NCLEXBase.com</span></header>${rows}</body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     const a = document.createElement("a");
     a.href = url;
@@ -89,18 +90,18 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
       width={500}
       bodyClassName="px-6 pb-4"
       footer={
-        <div className="border-t border-[#ededf0] bg-white px-6 py-4">
+        <div className="border-t border-line bg-white px-6 py-4">
           <button
             onClick={save}
-            className="flex h-14 w-full cursor-pointer items-center justify-center rounded-[64px] bg-brand text-lg font-semibold text-white shadow-[0_2px_0_0_#4a3ac8] transition-[background,transform] duration-[50ms] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none"
+            className="flex h-14 w-full cursor-pointer items-center justify-center rounded-[64px] bg-primary text-lg font-semibold text-white shadow-press transition-[background,transform] duration-[50ms] hover:bg-primary-hover active:translate-y-[2px] active:shadow-none"
           >
             Save
           </button>
         </div>
       }
     >
-      <section className="border-b border-[#ededf0] py-4">
-        <h4 className="mb-3 text-lg font-semibold text-ink-strong">Start week on</h4>
+      <section className="border-b border-line py-4">
+        <h4 className="mb-3 text-lg font-semibold text-ink">Start week on</h4>
         <div className="flex gap-2">
           <Seg on={weekStart === 0} onClick={() => setWeekStart(0)}>
             Sunday
@@ -111,32 +112,32 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
         </div>
       </section>
 
-      <section className="border-b border-[#ededf0] py-4">
-        <h4 className="mb-3 text-lg font-semibold text-ink-strong">Assignment View</h4>
+      <section className="border-b border-line py-4">
+        <h4 className="mb-3 text-lg font-semibold text-ink">Assignment View</h4>
         <div className="flex gap-3">
           <Preview on={!compact} onClick={() => setCompact(false)} title="Standard">
-            <div className="rounded-md border border-[#dcd8ff] bg-[#eeecff] p-2 text-sm text-[#4b3fd0]">
+            <div className="rounded-md border border-primary/25 bg-primary-light p-2 text-sm text-primary">
               <p className="leading-4">35 Adult Health Standalone Questions</p>
               <p className="mt-1 text-right text-xs">1h 15m</p>
             </div>
           </Preview>
           <Preview on={compact} onClick={() => setCompact(true)} title="Compact">
-            <div className="truncate rounded-md border border-[#dcd8ff] bg-[#eeecff] p-2 text-sm text-[#4b3fd0]">35 Adult Health Standalo...</div>
+            <div className="truncate rounded-md border border-primary/25 bg-primary-light p-2 text-sm text-primary">35 Adult Health Standalo...</div>
           </Preview>
         </div>
       </section>
 
-      <section className="border-b border-[#ededf0] py-4">
-        <h4 className="mb-3 text-lg font-semibold text-ink-strong">Completed Assignments</h4>
+      <section className="border-b border-line py-4">
+        <h4 className="mb-3 text-lg font-semibold text-ink">Completed Assignments</h4>
         <div className="flex gap-3">
           <Preview on={!hideCompleted} onClick={() => setHideCompleted(false)} title="Show">
-            <div className="rounded-md border border-[#ededf0] p-2 text-xs text-muted">
+            <div className="rounded-md border border-line p-2 text-xs text-muted">
               <p className="mb-1 text-ink">1</p>
               <p className="line-through">35 Adult Health Standalone Questions</p>
             </div>
           </Preview>
           <Preview on={hideCompleted} onClick={() => setHideCompleted(true)} title="Hide">
-            <div className="rounded-md border border-[#ededf0] p-2 text-xs text-muted">
+            <div className="rounded-md border border-line p-2 text-xs text-muted">
               <p className="mb-5 text-ink">1</p>
               <p>Show 1 completed</p>
             </div>
@@ -144,8 +145,8 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
         </div>
       </section>
 
-      <section className="border-b border-[#ededf0] py-4">
-        <h4 className="mb-3 text-lg font-semibold text-ink-strong">Study Speed</h4>
+      <section className="border-b border-line py-4">
+        <h4 className="mb-3 text-lg font-semibold text-ink">Study Speed</h4>
         <div className="flex flex-wrap gap-2">
           {SPEEDS.map((s) => (
             <Seg key={s.key} on={speed === s.key} onClick={() => setSpeed(s.key)} className="px-4 py-2.5">
@@ -156,18 +157,18 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
         <p className="mt-3 text-base text-muted">{blurb} Does not affect custom assignments.</p>
       </section>
 
-      <section className="border-b border-[#ededf0] py-4">
-        <h4 className="text-lg font-semibold text-ink-strong">PDF Study Schedules</h4>
+      <section className="border-b border-line py-4">
+        <h4 className="text-lg font-semibold text-ink">PDF Study Schedules</h4>
         <p className="mt-1 mb-3 text-base text-muted">Looking for a PDF / printable alternative? Click the button below.</p>
-        <button onClick={download} className="h-10 cursor-pointer rounded-full border border-[#ededf0] px-5 text-base text-ink hover:bg-[#f6f6f6]">
+        <button onClick={download} className="h-10 cursor-pointer rounded-full border border-line px-5 text-base text-ink hover:bg-primary-light">
           Download Study Schedule (PDF)
         </button>
       </section>
 
       <section className="py-4">
-        <h4 className="text-lg font-semibold text-ink-strong">Reset Schedule</h4>
+        <h4 className="text-lg font-semibold text-ink">Reset Schedule</h4>
         <p className="mt-1 mb-3 text-base text-muted">Reset your schedule to clear all completed assignments and create a new schedule.</p>
-        <button onClick={reset} className="h-10 cursor-pointer rounded-full border border-[#f8cfcf] px-5 text-base text-[#c33c35] hover:bg-[#fdf3f3]">
+        <button onClick={reset} className="h-10 cursor-pointer rounded-full border border-error/40 px-5 text-base text-error hover:bg-error/5">
           Reset Schedule
         </button>
       </section>

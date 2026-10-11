@@ -2,6 +2,8 @@
 
 import clsx from "clsx";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BRAND } from "@/lib/brand";
+import { useConfig } from "@/lib/content";
 import { useStore } from "@/lib/store";
 import { addDays, dailyHours, formatLong, parseDate, rebalanceDates, toISODate } from "@/lib/schedule";
 import { Icon } from "@/components/ui/Icon";
@@ -64,16 +66,18 @@ function ScheduleForm({ onClose, mode }: { onClose: () => void; mode?: "create" 
   const rawHours = hasExam ? dailyHours(draft, rebalance ? edits : undefined, rebalance ? start : undefined) : 0;
   const hours = Math.max(1, Math.ceil(rawHours));
   const lessThanOne = hasExam && rawHours < 1;
-  const tone = lessThanOne ? "bad" : hours <= 6 ? "good" : hours <= 9 ? "warn" : "bad";
+  // Hour tiers and messages: Admin > Study Schedule rules.
+  const rules = useConfig().schedule;
+  const tone = lessThanOne ? "bad" : hours <= rules.goodMaxHours ? "good" : hours <= rules.busyMaxHours ? "warn" : "bad";
   const toneStyle = {
-    good: { c: "#4c8b43", bg: "rgba(234,245,234,0.5)", chip: "#eaf5ea", b: "rgba(76,139,67,0.5)", msg: "That's a great start!" },
-    warn: { c: "#b7791f", bg: "rgba(255,253,233,0.6)", chip: "#fffde9", b: "rgba(208,149,40,0.5)", msg: "That's a busy schedule. You've got this!" },
+    good: { c: BRAND.success, bg: "rgba(46,125,91,0.06)", chip: "rgba(46,125,91,0.12)", b: "rgba(46,125,91,0.5)", msg: rules.goodMessage },
+    warn: { c: BRAND.ink, bg: "rgba(216,155,43,0.08)", chip: "rgba(216,155,43,0.2)", b: "rgba(216,155,43,0.6)", msg: rules.busyMessage },
     bad: {
-      c: "#c33c35",
-      bg: "rgba(252,236,238,0.6)",
-      chip: "#fcecee",
-      b: "rgba(195,60,53,0.5)",
-      msg: lessThanOne ? "We recommend moving your exam date to an earlier time." : "Consider a later exam date to lighten your load.",
+      c: BRAND.error,
+      bg: "rgba(180,35,24,0.05)",
+      chip: "rgba(180,35,24,0.1)",
+      b: "rgba(180,35,24,0.5)",
+      msg: lessThanOne ? "We recommend moving your exam date to an earlier time." : rules.heavyMessage,
     },
   }[tone];
 
@@ -92,7 +96,7 @@ function ScheduleForm({ onClose, mode }: { onClose: () => void; mode?: "create" 
   return (
     <Modal open onClose={onClose} title={rebalance ? "Rebalance Study Schedule" : existing ? "Edit Study Schedule" : "Create Study Schedule"} width={858} allowOverflow>
       <div className="grid md:grid-cols-2">
-        <div className="px-6 md:border-r md:border-[#ededf0]">
+        <div className="px-6 md:border-r md:border-line">
           <Field icon={rebalance ? refresh : rocket} title={rebalance ? "Rebalance Start Date" : "Start Date"} hint={rebalance ? "Your study schedule will resume on this date." : "Your study schedule will begin on this date."}>
             <DateField value={start} placeholder="Select a date" open={picker === "start"} onOpen={() => setPicker("start")} onClose={() => setPicker(null)}>
               <Calendar
@@ -120,8 +124,8 @@ function ScheduleForm({ onClose, mode }: { onClose: () => void; mode?: "create" 
                 }}
               />
             </DateField>
-            <label className="mt-3 flex cursor-pointer items-center gap-2 text-base text-ink-strong">
-              <input type="radio" checked={noDate} onChange={() => setNoDate(true)} onClick={() => noDate && setNoDate(false)} className="size-[18px] accent-brand" />
+            <label className="mt-3 flex cursor-pointer items-center gap-2 text-base text-ink">
+              <input type="radio" checked={noDate} onChange={() => setNoDate(true)} onClick={() => noDate && setNoDate(false)} className="size-[18px] accent-primary" />
               I don&apos;t have an exam date yet.
             </label>
           </Field>
@@ -151,12 +155,12 @@ function ScheduleForm({ onClose, mode }: { onClose: () => void; mode?: "create" 
           </Field>
         </div>
 
-        <div className="flex flex-col rounded-br-lg bg-[#fafafa] px-6 py-6">
-          <h3 className="text-lg font-semibold text-ink-strong">{rebalance ? "Your Rebalanced Schedule" : "Your Schedule"}</h3>
+        <div className="flex flex-col rounded-br-lg bg-background px-6 py-6">
+          <h3 className="text-lg font-semibold text-ink">{rebalance ? "Your Rebalanced Schedule" : "Your Schedule"}</h3>
           {rebalance && <p className="mt-2 text-base leading-6 text-muted">Rebalancing distributes all your uncompleted assignments evenly up to your exam date.</p>}
-          <div className="mt-4 rounded-lg border border-[#ededf0] bg-white p-4">
+          <div className="mt-4 rounded-lg border border-line bg-white p-4">
             <TimelinePoint icon={rebalance ? refresh : rocket} title={formatLong(parseDate(start))} sub={rebalance ? "Rebalance Start Date" : "Start Date"} />
-            <div className="ml-[19px] border-l-2 border-dotted border-brand/60 py-8 pl-7">
+            <div className="ml-[19px] border-l-2 border-dotted border-primary/60 py-8 pl-7">
               {hasExam ? (
                 <div className="flex items-start rounded-lg border p-3" style={{ background: toneStyle.bg, borderColor: toneStyle.b, color: toneStyle.c }}>
                   <div className="mr-3 flex size-10 shrink-0 items-center justify-center rounded-lg" style={{ background: toneStyle.chip }}>
@@ -170,7 +174,7 @@ function ScheduleForm({ onClose, mode }: { onClose: () => void; mode?: "create" 
                   </div>
                 </div>
               ) : (
-                <div className="rounded-lg border border-[#ededf0] px-3 py-2.5 text-base text-muted">
+                <div className="rounded-lg border border-line px-3 py-2.5 text-base text-muted">
                   {noDate ? "We'll build an 8-week plan. Add your exam date anytime." : "Choose an exam date to see your Study Schedule timeline."}
                 </div>
               )}
@@ -181,7 +185,7 @@ function ScheduleForm({ onClose, mode }: { onClose: () => void; mode?: "create" 
             <button
               onClick={create}
               disabled={!ready}
-              className="flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-[64px] bg-brand text-lg font-semibold text-white shadow-[0_2px_0_0_#4a3ac8] transition-[background,transform] duration-[50ms] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:bg-[#ededf0] disabled:text-muted disabled:shadow-none"
+              className="flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-[64px] bg-primary text-lg font-semibold text-white shadow-press transition-[background,transform] duration-[50ms] hover:bg-primary-hover active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:bg-line disabled:text-muted disabled:shadow-none"
             >
               {rebalance ? "Rebalance" : existing ? "Update Study Schedule" : "Create Study Schedule"}
               <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -198,9 +202,9 @@ function ScheduleForm({ onClose, mode }: { onClose: () => void; mode?: "create" 
 
 function Field({ icon, title, hint, children, last }: { icon: ReactNode; title: string; hint: string; children: ReactNode; last?: boolean }) {
   return (
-    <section className={clsx("py-6", !last && "border-b border-[#ededf0]")}>
-      <h4 className="flex items-center gap-2 text-lg font-semibold text-ink-strong">
-        <span className="text-brand">{icon}</span>
+    <section className={clsx("py-6", !last && "border-b border-line")}>
+      <h4 className="flex items-center gap-2 text-lg font-semibold text-ink">
+        <span className="text-primary">{icon}</span>
         {title}
       </h4>
       <p className="mt-1 mb-4 text-base text-muted">{hint}</p>
@@ -245,12 +249,12 @@ function DateField({
         onClick={() => (open ? onClose() : onOpen())}
         className={clsx(
           "flex h-11 w-full cursor-pointer items-center justify-between rounded-lg border px-4 text-left text-base transition-colors",
-          disabled ? "cursor-not-allowed border-[#ededf0] bg-[#f6f6f6] text-muted" : open ? "border-faint bg-white" : "border-[#ededf0] bg-white hover:border-faint",
-          label ? "text-ink-strong" : "text-muted",
+          disabled ? "cursor-not-allowed border-line bg-background text-muted" : open ? "border-faint bg-white" : "border-line bg-white hover:border-faint",
+          label ? "text-ink" : "text-muted",
         )}
       >
         {label || placeholder}
-        {!disabled && <span className="text-ink-strong">{calIcon}</span>}
+        {!disabled && <span className="text-ink">{calIcon}</span>}
       </button>
       {open && <div className="animate-fade-in absolute top-[calc(100%+4px)] left-0 z-20 w-[374px] max-w-[calc(100vw-48px)] rounded-xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.16)]">{children}</div>}
     </div>
@@ -304,12 +308,12 @@ function Calendar({
         <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month" className="cursor-pointer text-muted hover:text-ink">
           <Icon name="arrowLeft" size={20} />
         </button>
-        <span className="text-base leading-5 font-bold text-ink-strong">{month.toLocaleString("en-US", { month: "short", year: "numeric" })}</span>
+        <span className="text-base leading-5 font-bold text-ink">{month.toLocaleString("en-US", { month: "short", year: "numeric" })}</span>
         <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month" className="cursor-pointer text-muted hover:text-ink">
           <Icon name="arrowRight" size={20} />
         </button>
       </div>
-      {mode === "multi" && <p className="mb-3 text-center text-sm text-ink-strong">Tip: Click a weekday (e.g., SUN) to mark all Sundays off!</p>}
+      {mode === "multi" && <p className="mb-3 text-center text-sm text-ink">Tip: Click a weekday (e.g., SUN) to mark all Sundays off!</p>}
       <div className="mb-3 grid grid-cols-7 gap-2">
         {DAYS.map((d, i) => (
           <p
@@ -317,7 +321,7 @@ function Calendar({
             onClick={() => toggleWeekday(i)}
             className={clsx(
               "flex h-[30px] items-center justify-center rounded-full text-xs leading-3 font-bold uppercase",
-              mode === "multi" ? "cursor-pointer bg-[#eef1ff] text-brand hover:bg-[#e0e6ff]" : "text-faint",
+              mode === "multi" ? "cursor-pointer bg-primary-light text-primary hover:bg-primary-light" : "text-faint",
             )}
           >
             {d}
@@ -338,8 +342,8 @@ function Calendar({
                   className={clsx(
                     "flex h-[30px] items-center justify-center rounded-full text-base leading-4",
                     !ok && "text-faint",
-                    ok && !on && (mode === "multi" ? "cursor-pointer bg-[#eef1ff] text-brand hover:bg-[#e0e6ff]" : "cursor-pointer text-ink-strong hover:bg-[#f6f6f6]"),
-                    on && "cursor-pointer bg-brand text-white",
+                    ok && !on && (mode === "multi" ? "cursor-pointer bg-primary-light text-primary hover:bg-primary-light" : "cursor-pointer text-ink hover:bg-primary-light"),
+                    on && "cursor-pointer bg-primary text-white",
                   )}
                 >
                   {d.getDate()}
@@ -350,12 +354,12 @@ function Calendar({
         ))}
       </div>
       <div className="mt-3 flex gap-2">
-        <button onClick={onCancel} className="flex h-[34px] flex-1 cursor-pointer items-center justify-center rounded-[64px] border border-[#ededf0] bg-white text-sm text-ink-strong hover:bg-[#fafafa]">
+        <button onClick={onCancel} className="flex h-[34px] flex-1 cursor-pointer items-center justify-center rounded-[64px] border border-line bg-white text-sm text-ink hover:bg-primary-light">
           Cancel
         </button>
         <button
           onClick={() => onConfirm(picked)}
-          className="flex h-[34px] flex-1 cursor-pointer items-center justify-center rounded-[64px] bg-brand text-sm text-white shadow-[0_2px_0_0_#4a3ac8] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none"
+          className="flex h-[34px] flex-1 cursor-pointer items-center justify-center rounded-[64px] bg-primary text-sm text-white shadow-press hover:bg-primary-hover active:translate-y-[2px] active:shadow-none"
         >
           Confirm
         </button>
@@ -367,9 +371,9 @@ function Calendar({
 function TimelinePoint({ icon, title, sub }: { icon: ReactNode; title: string; sub: string }) {
   return (
     <div className="flex items-center">
-      <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef1ff] text-brand">{icon}</span>
+      <span className="flex size-10 items-center justify-center rounded-lg bg-primary-light text-primary">{icon}</span>
       <div className="ml-2">
-        <p className="text-base leading-6 font-bold text-ink-strong">{title}</p>
+        <p className="text-base leading-6 font-bold text-ink">{title}</p>
         <p className="mt-0.5 text-base leading-4 text-muted">{sub}</p>
       </div>
     </div>

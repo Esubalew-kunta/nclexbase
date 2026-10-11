@@ -3,11 +3,12 @@
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { READINESS_EXAMS, READINESS_FAQS } from "@/data/catalog";
+import { useReadinessExams } from "@/lib/content";
 import { useStore } from "@/lib/store";
 import { chanceOfPassing, scoreSession } from "@/lib/scoring";
-import { Button, FaqList, Modal, PageHeader, UpgradeButton } from "@/components/ui/primitives";
+import { Button, Modal, PageHeader, UpgradeButton } from "@/components/ui/primitives";
 import { NumberedRow } from "@/components/ui/visuals";
+import { PlacedFaqs } from "@/components/ui/PlacedFaqs";
 
 export default function ReadinessPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function ReadinessPage() {
   const sessions = useStore((s) => s.sessions);
   const deleteSession = useStore((s) => s.deleteSession);
   const [confirm, setConfirm] = useState<string | null>(null);
+  const exams = useReadinessExams();
 
   return (
     <>
@@ -24,10 +26,10 @@ export default function ReadinessPage() {
         description="These readiness exams simulate the look, feel, and content of the real Next Gen NCLEX. Use them to gauge your readiness to pass the NCLEX!"
       />
       <div className="mt-4">
-        {READINESS_EXAMS.map((e) => {
+        {exams.map((e) => {
           const attempts = sessions.filter((s) => s.kind === "readiness" && s.sourceId === e.id);
           const attempt = attempts.at(-1);
-          const unlocked = plan === "premium" || e.free;
+          const unlocked = plan === "premium" || e.access === "free";
           const intro = `/nclex/next-gen-readiness-exams/qbanks/${e.id}`;
           const done = attempt?.status === "ended";
           const open = () => {
@@ -39,7 +41,7 @@ export default function ReadinessPage() {
           const stat = (label: string, value: string, tone?: string) => (
             <div className="flex flex-col items-center px-4 text-center">
               <span className="text-sm leading-[14px] text-muted">{label}</span>
-              <span className={clsx("mt-1.5 text-base leading-4 font-semibold", tone ?? "text-ink-strong")}>{value}</span>
+              <span className={clsx("mt-1.5 text-base leading-4 font-semibold", tone ?? "text-ink")}>{value}</span>
             </div>
           );
           return (
@@ -53,9 +55,9 @@ export default function ReadinessPage() {
                   <UpgradeButton />
                 ) : done ? (
                   <div className="flex items-center gap-3">
-                    <div className="hidden divide-x divide-[#ededf0] sm:flex">
+                    <div className="hidden divide-x divide-line sm:flex">
                       {stat("Date", new Date(attempt!.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }))}
-                      {stat("Chance", chance!, chance === "Low" ? "text-[#e05e57]" : chance === "Borderline" ? "text-[#d09528]" : "text-[#4c8b43]")}
+                      {stat("Chance", chance!, chance === "Low" ? "text-error" : chance === "Borderline" ? "text-warning" : "text-success")}
                       {stat("Attempt", String(attempts.length))}
                     </div>
                     <Button
@@ -92,7 +94,7 @@ export default function ReadinessPage() {
           );
         })}
       </div>
-      <FaqList items={READINESS_FAQS} />
+      <PlacedFaqs placement="readiness" />
 
       <Modal
         open={Boolean(confirm)}
@@ -100,7 +102,7 @@ export default function ReadinessPage() {
         title="Reset Readiness Exam"
         width={480}
         footer={
-          <div className="flex justify-end gap-2 border-t border-[#ededf0] px-6 py-4">
+          <div className="flex justify-end gap-2 border-t border-line px-6 py-4">
             <Button variant="outline" onClick={() => setConfirm(null)}>
               Cancel
             </Button>

@@ -3,12 +3,11 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { useState, type ComponentProps, type ReactNode } from "react";
-
-/* eslint-disable @next/next/no-img-element */
+import { LogoStacked } from "@/components/ui/Logo";
 
 /**
- * Shared frame for /auth/signin, /auth/join and /auth/forgot.
- * Values mirror app.bootcamp.com/auth: #4a3ac8 page, 528px card, indigo accents.
+ * Shared frame for /auth/signin, /auth/join and /auth/forgot:
+ * off-white page, stacked NCLEXBase logo, 528px white card with a teal top edge.
  */
 export function AuthShell({
   title,
@@ -26,36 +25,37 @@ export function AuthShell({
   below?: ReactNode;
 }) {
   return (
-    <div className="min-h-dvh bg-brand-dark font-sans">
-      <div className="mx-auto w-full max-w-[528px] px-4 pt-[66px] pb-10 sm:px-0">
-        <div className="mb-[34px] flex items-center justify-center gap-2">
-          <img src="/assets/brand/logo-mark.png" alt="" className="size-11" />
-          <img src="/assets/brand/logo-word.png" alt="Bootcamp.com" className="h-8 w-auto" />
+    <div className="min-h-dvh bg-background font-sans">
+      <div className="mx-auto w-full max-w-[528px] px-4 pt-12 pb-10 sm:px-0">
+        <div className="mb-8 flex justify-center">
+          <Link href="/nclex">
+            <LogoStacked width={200} />
+          </Link>
         </div>
-        <form onSubmit={onSubmit} className="rounded-lg bg-white shadow-[0_16px_30px_rgba(0,0,0,0.24)]">
+        <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-line border-t-4 border-t-primary bg-white shadow-card">
           <div className="px-6 py-8 sm:px-16">
-            <h2 className="text-center text-[26px] leading-[31.2px] font-bold text-ink-strong">{title}</h2>
+            <h2 className="text-center text-[26px] leading-[31.2px] font-bold text-ink">{title}</h2>
             {subtitle && <p className="mt-1 text-center text-base leading-6 text-muted">{subtitle}</p>}
             <div className="mt-6">{children}</div>
           </div>
-          <div className="px-6 py-6 shadow-[0_-1px_0_0_#e5e4e8] sm:px-16">{footer}</div>
+          <div className="border-t border-line px-6 py-6 sm:px-16">{footer}</div>
           {below}
         </form>
-        <p className="mt-6 text-center text-sm text-white/60">Prototype: nothing you enter here leaves your browser.</p>
+        <p className="mt-6 text-center text-sm text-muted">Prototype: nothing you enter here leaves your browser.</p>
       </div>
     </div>
   );
 }
 
 const inputCls =
-  "h-[53px] w-full rounded-lg border border-[#ededf0] bg-[#f6f6f6] px-4 py-3 text-lg leading-[27px] text-ink-strong outline-none transition-[background,border] duration-100 hover:border-faint focus:border-[#6366f1] focus:bg-[#e0e7ff]";
+  "h-[53px] w-full rounded-lg border border-line bg-white px-4 py-3 text-lg leading-[27px] text-ink outline-none transition-[background,border,box-shadow] duration-100 hover:border-faint focus:border-primary focus:shadow-[0_0_0_3px_var(--color-primary-light)]";
 
 export function AuthField({ label, right, className, ...input }: { label: string; right?: ReactNode } & ComponentProps<"input">) {
   return (
     <label className={clsx("mb-6 block", className)}>
       <div className="mb-2 flex items-start justify-between">
         <h5 className="text-sm leading-[16.8px] font-medium text-muted">{label}</h5>
-        {right && <h5 className="text-right text-sm leading-[16.8px] font-medium text-faint">{right}</h5>}
+        {right && <h5 className="text-right text-sm leading-[16.8px] font-medium text-muted">{right}</h5>}
       </div>
       <input {...input} className={inputCls} />
     </label>
@@ -68,7 +68,7 @@ export function PasswordField({ label, right, value, onChange, autoComplete }: {
     <label className="mb-6 block">
       <div className="mb-2 flex items-start justify-between">
         <h5 className="text-sm leading-[16.8px] font-medium text-muted">{label}</h5>
-        {right && <h5 className="text-right text-sm leading-[16.8px] font-medium text-faint">{right}</h5>}
+        {right && <h5 className="text-right text-sm leading-[16.8px] font-medium text-muted">{right}</h5>}
       </div>
       <div className="relative">
         <input type={show ? "text" : "password"} value={value} onChange={(e) => onChange(e.target.value)} autoComplete={autoComplete} className={`${inputCls} pr-14`} />
@@ -76,7 +76,7 @@ export function PasswordField({ label, right, value, onChange, autoComplete }: {
           type="button"
           onClick={() => setShow(!show)}
           aria-label={show ? "Hide password" : "Show password"}
-          className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-6 text-faint hover:text-muted"
+          className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-6 text-muted hover:text-primary"
         >
           <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             {show ? (
@@ -94,23 +94,23 @@ export function PasswordField({ label, right, value, onChange, autoComplete }: {
   );
 }
 
-/** Full-width indigo submit button (gray when disabled). */
+/** Full-width teal submit button (gray when disabled). */
 export function AuthSubmit({ disabled, children }: { disabled?: boolean; children: ReactNode }) {
   return (
     <button
       type="submit"
       disabled={disabled}
-      className="flex h-14 w-full cursor-pointer items-center justify-center rounded-lg bg-[#6366f1] px-4 text-lg leading-[18px] font-semibold text-white shadow-[0_2px_0_0_#4338ca] transition-[background,transform] duration-[50ms] hover:bg-[#818cf8] active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:bg-faint disabled:shadow-none disabled:active:translate-y-0"
+      className="flex h-14 w-full cursor-pointer items-center justify-center rounded-lg bg-primary px-4 text-lg leading-[18px] font-semibold text-white shadow-press transition-[background,transform] duration-[50ms] hover:bg-primary-hover active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:bg-faint disabled:shadow-none disabled:active:translate-y-0"
     >
       {children}
     </button>
   );
 }
 
-/** Indigo text link centered under a form section ("Create an account", "Go back to login"). */
+/** Teal text link centered under a form section ("Create an account", "Go back to login"). */
 export function AuthLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link href={href} className="rounded-lg px-2 text-lg font-semibold text-[#6366f1] transition-colors duration-100 hover:text-[#818cf8]">
+    <Link href={href} className="rounded-lg px-2 text-lg font-semibold text-primary transition-colors duration-100 hover:text-primary-hover">
       {children}
     </Link>
   );

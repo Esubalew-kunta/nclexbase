@@ -1,0 +1,274 @@
+[
+  {
+    "id": "mt-ah-heart-failure",
+    "title": "Left vs Right Heart Failure",
+    "subject": "adult-health",
+    "system": "Cardiovascular",
+    "description": "Left = Lungs, Right = Rest of the body",
+    "access": "free",
+    "status": "published",
+    "order": 0,
+    "file": {
+      "url": "/assets/memory-tricks/mt-ah-heart-failure.pdf",
+      "name": "mt-ah-heart-failure.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-ah-glucose",
+    "title": "Hypo vs Hyperglycemia",
+    "subject": "adult-health",
+    "system": "Endocrine",
+    "description": "Cold and clammy, need some candy. Hot and dry, sugar high.",
+    "access": "free",
+    "status": "published",
+    "order": 1,
+    "file": {
+      "url": "/assets/memory-tricks/mt-ah-glucose.pdf",
+      "name": "mt-ah-glucose.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-ah-abg",
+    "title": "Reading ABGs with ROME",
+    "subject": "adult-health",
+    "system": null,
+    "description": "Respiratory Opposite, Metabolic Equal",
+    "access": "premium",
+    "status": "published",
+    "order": 2,
+    "file": {
+      "url": "/assets/memory-tricks/mt-ah-abg.pdf",
+      "name": "mt-ah-abg.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-ch-tof",
+    "title": "Tetralogy of Fallot",
+    "subject": "child-health",
+    "system": "Cardiovascular",
+    "description": "Think PROVe",
+    "access": "free",
+    "status": "published",
+    "order": 3,
+    "file": {
+      "url": "/assets/memory-tricks/mt-ch-tof.pdf",
+      "name": "mt-ch-tof.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-ch-precautions",
+    "title": "Airborne Precautions",
+    "subject": "child-health",
+    "system": "Immune / Infectious Disease",
+    "description": "My Chicken Hez TB",
+    "access": "premium",
+    "status": "published",
+    "order": 4,
+    "file": {
+      "url": "/assets/memory-tricks/mt-ch-precautions.pdf",
+      "name": "mt-ch-precautions.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-fu-acid-base",
+    "title": "Acid-Base with ROME",
+    "subject": "fundamentals",
+    "system": "Fluid, Electrolytes, and Acid-Base Balance",
+    "description": "Respiratory Opposite, Metabolic Equal",
+    "access": "free",
+    "status": "published",
+    "order": 5,
+    "file": {
+      "url": "/assets/memory-tricks/mt-fu-acid-base.pdf",
+      "name": "mt-fu-acid-base.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-fu-fire",
+    "title": "Fire Safety",
+    "subject": "fundamentals",
+    "system": "Safety and Infection Control",
+    "description": "RACE, then PASS",
+    "access": "free",
+    "status": "published",
+    "order": 6,
+    "file": {
+      "url": "/assets/memory-tricks/mt-fu-fire.pdf",
+      "name": "mt-fu-fire.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-mn-fhr",
+    "title": "Fetal Heart Rate Patterns",
+    "subject": "maternal-and-newborn-health",
+    "system": "Labor & Delivery",
+    "description": "VEAL CHOP",
+    "access": "free",
+    "status": "published",
+    "order": 7,
+    "file": {
+      "url": "/assets/memory-tricks/mt-mn-fhr.pdf",
+      "name": "mt-mn-fhr.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-mn-magnesium",
+    "title": "Magnesium Sulfate Toxicity",
+    "subject": "maternal-and-newborn-health",
+    "system": "Antepartum",
+    "description": "Check the 'reflexes, respirations, urine' trio",
+    "access": "premium",
+    "status": "published",
+    "order": 8,
+    "file": {
+      "url": "/assets/memory-tricks/mt-mn-magnesium.pdf",
+      "name": "mt-mn-magnesium.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-mn-postpartum",
+    "title": "Postpartum Assessment",
+    "subject": "maternal-and-newborn-health",
+    "system": "Postpartum",
+    "description": "BUBBLE-E",
+    "access": "free",
+    "status": "published",
+    "order": 9,
+    "file": {
+      "url": "/assets/memory-tricks/mt-mn-postpartum.pdf",
+      "name": "mt-mn-postpartum.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-mh-lithium",
+    "title": "Lithium Safety",
+    "subject": "mental-health",
+    "system": "Mood and Personality Disorders",
+    "description": "Salt and water keep lithium steady",
+    "access": "free",
+    "status": "published",
+    "order": 10,
+    "file": {
+      "url": "/assets/memory-tricks/mt-mh-lithium.pdf",
+      "name": "mt-mh-lithium.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-mh-communication",
+    "title": "Therapeutic Communication",
+    "subject": "mental-health",
+    "system": "Foundations and Therapeutic Communication",
+    "description": "Feelings first, no 'why'",
+    "access": "premium",
+    "status": "published",
+    "order": 11,
+    "file": {
+      "url": "/assets/memory-tricks/mt-mh-communication.pdf",
+      "name": "mt-mh-communication.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-ph-suffixes",
+    "title": "Cardiac Drug Suffixes",
+    "subject": "pharmacology",
+    "system": "Cardiovascular",
+    "description": "Know the ending, know the class",
+    "access": "free",
+    "status": "published",
+    "order": 12,
+    "file": {
+      "url": "/assets/memory-tricks/mt-ph-suffixes.pdf",
+      "name": "mt-ph-suffixes.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-ph-anticoagulants",
+    "title": "Anticoagulant Labs and Antidotes",
+    "subject": "pharmacology",
+    "system": "Hematologic / Oncologic",
+    "description": "WarPT and HepPTT",
+    "access": "premium",
+    "status": "published",
+    "order": 13,
+    "file": {
+      "url": "/assets/memory-tricks/mt-ph-anticoagulants.pdf",
+      "name": "mt-ph-anticoagulants.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-mc-delegation",
+    "title": "What the RN Cannot Delegate",
+    "subject": "management-of-care",
+    "system": "Assignment and Delegation",
+    "description": "You can't delegate what you EAT",
+    "access": "free",
+    "status": "published",
+    "order": 14,
+    "file": {
+      "url": "/assets/memory-tricks/mt-mc-delegation.pdf",
+      "name": "mt-mc-delegation.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  },
+  {
+    "id": "mt-mc-priorities",
+    "title": "Who Do You See First?",
+    "subject": "management-of-care",
+    "system": "Prioritization",
+    "description": "ABCs, then Acute, Actual, Unstable",
+    "access": "free",
+    "status": "published",
+    "order": 15,
+    "file": {
+      "url": "/assets/memory-tricks/mt-mc-priorities.pdf",
+      "name": "mt-mc-priorities.pdf",
+      "pages": 1,
+      "sizeKb": 54
+    },
+    "updatedAt": "2026-10-11"
+  }
+]

@@ -1,11 +1,11 @@
 import { LETTERS, emailDate } from "@/lib/daily";
 import type { McqItem } from "@/lib/types";
 
-/** The emailed Question of the Day, drawn like the real email (purple banner, A-D list, link to the answer). */
+/** The emailed Question of the Day (teal banner with gold strip, A-D list, link to the answer). */
 export function EmailPreview({ item, date, link }: { item: McqItem; date: string; link: string }) {
   return (
-    <div className="mx-auto w-full max-w-[480px] overflow-hidden bg-white text-left font-sans text-[14px] leading-[22px] text-[#222] shadow-card">
-      <div className="bg-[#6355e6] px-4 py-5 text-center font-bold text-white">
+    <div className="mx-auto w-full max-w-[480px] overflow-hidden bg-white text-left font-sans text-[14px] leading-[22px] text-exam-ink shadow-card">
+      <div className="border-b-4 border-gold bg-primary px-4 py-5 text-center font-bold text-white">
         <div>NCLEX Question of the Day</div>
         <div>{emailDate(date)}</div>
       </div>
@@ -20,12 +20,12 @@ export function EmailPreview({ item, date, link }: { item: McqItem; date: string
           ))}
         </ul>
         <p className="mt-6 font-bold">Click to see the answer to today&apos;s question:</p>
-        <a href={link} className="break-all text-[#0f7b8c] underline">
+        <a href={link} className="break-all text-primary underline">
           {link}
         </a>
         <p className="mt-4">Challenge a friend. Forward this email to them and see if they can get it right.</p>
         <p className="mt-4">Until tomorrow,</p>
-        <p className="font-bold">NCLEX Bootcamp</p>
+        <p className="font-bold">NCLEXBase.com</p>
       </div>
     </div>
   );

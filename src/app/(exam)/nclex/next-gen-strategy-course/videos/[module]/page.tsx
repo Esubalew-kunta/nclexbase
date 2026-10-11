@@ -1,5 +1,5 @@
 import { NGN_COURSE } from "@/data/catalog";
-import { LessonPlayer } from "@/components/exam/LessonPlayer";
+import { CoursePlayer } from "@/components/exam/LessonPlayer";
 
 export const dynamicParams = false;
 
@@ -10,6 +10,12 @@ export function generateStaticParams() {
 export default async function NgnLessonPage({ params }: { params: Promise<{ module: string }> }) {
   const { module } = await params;
   const m = NGN_COURSE[Number(module) - 1];
-  const lessons = m.lessons.map((title) => ({ type: "video" as const, title, duration: "", locked: false }));
-  return <LessonPlayer title={m.title} lessons={lessons} base={`/nclex/next-gen-strategy-course/videos/${module}`} back="/nclex/next-gen-strategy-course/videos" />;
+  return (
+    <CoursePlayer
+      course={`ngn-${module}`}
+      fallbackTitle={m.title}
+      base={`/nclex/next-gen-strategy-course/videos/${module}`}
+      back="/nclex/next-gen-strategy-course/videos"
+    />
+  );
 }

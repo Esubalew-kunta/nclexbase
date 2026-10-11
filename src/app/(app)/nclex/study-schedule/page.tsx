@@ -1,9 +1,9 @@
 "use client";
 
-import { SCHEDULE_FAQS } from "@/data/catalog";
 import { useStore } from "@/lib/store";
-import { FaqList, PageHeader } from "@/components/ui/primitives";
+import { PageHeader } from "@/components/ui/primitives";
 import { StudyScheduleCard } from "@/components/home/StudyScheduleCard";
+import { PlacedFaqs } from "@/components/ui/PlacedFaqs";
 
 export default function StudySchedulePage() {
   const hydrated = useStore((s) => s.hydrated);
@@ -11,7 +11,7 @@ export default function StudySchedulePage() {
     <>
       <PageHeader trail={[{ label: "Study Schedule" }]} title="Your Study Schedule" />
       {hydrated && <StudyScheduleCard />}
-      <FaqList items={SCHEDULE_FAQS} />
+      <PlacedFaqs placement="schedule" />
     </>
   );
 }

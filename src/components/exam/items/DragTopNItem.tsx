@@ -16,7 +16,7 @@ export function DragTopNItemView({ item, answer, onChange, locked, reveal }: Ite
   return (
     <div className="grid max-w-[672px] grid-cols-2 gap-6">
       <div className="border border-black">
-        <div className="flex h-[70px] items-center justify-center border-b border-black bg-[#e8f2ff] font-bold">{item.sourceLabel}</div>
+        <div className="flex h-[70px] items-center justify-center border-b border-black bg-primary-light font-bold">{item.sourceLabel}</div>
         <div className="space-y-1 p-2">
           {item.options.map((o, i) => {
             const used = chosen.includes(i);
@@ -28,7 +28,7 @@ export function DragTopNItemView({ item, answer, onChange, locked, reveal }: Ite
                 onDragStart={(e) => e.dataTransfer.setData("text/plain", String(i))}
                 disabled={locked || used}
                 onClick={() => add(i)}
-                className={clsx(box, used ? "bg-white text-transparent" : "bg-[#e8f2ff] hover:bg-[#d8e8f8]", !locked && !used && "cursor-grab")}
+                className={clsx(box, used ? "bg-white text-transparent" : "bg-primary-light hover:bg-primary/15", !locked && !used && "cursor-grab")}
               >
                 {o}
               </button>
@@ -37,7 +37,7 @@ export function DragTopNItemView({ item, answer, onChange, locked, reveal }: Ite
         </div>
       </div>
       <div
-        className={clsx("border border-black", over && "outline-2 outline-[#0b62b5]")}
+        className={clsx("border border-black", over && "outline-2 outline-primary")}
         onDragOver={(e) => {
           e.preventDefault();
           setOver(true);
@@ -49,7 +49,7 @@ export function DragTopNItemView({ item, answer, onChange, locked, reveal }: Ite
           add(Number(e.dataTransfer.getData("text/plain")));
         }}
       >
-        <div className="flex h-[70px] items-center justify-center border-b border-black bg-[#e8f2ff] font-bold">{item.targetLabel}</div>
+        <div className="flex h-[70px] items-center justify-center border-b border-black bg-primary-light font-bold">{item.targetLabel}</div>
         <div className="space-y-1 p-2">
           {Array.from({ length: item.n }).map((_, k) => {
             const i = chosen[k];
@@ -61,7 +61,7 @@ export function DragTopNItemView({ item, answer, onChange, locked, reveal }: Ite
                   type="button"
                   disabled={locked || !filled}
                   onClick={() => filled && remove(i)}
-                  className={clsx(box, filled ? "border border-[#0b62b5] bg-white" : "bg-[#e8f2ff]")}
+                  className={clsx(box, filled ? "border border-primary bg-white" : "bg-primary-light")}
                 >
                   {filled ? item.options[i] : ""}
                 </button>

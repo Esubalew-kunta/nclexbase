@@ -36,7 +36,7 @@ export function StudyScheduleCard() {
               <div key={i} className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
                 {row.map((b) => (
                   <div key={b} className="flex items-center gap-2">
-                    <Icon name="checkCircle" size={16} className="text-brand" />
+                    <Icon name="checkCircle" size={16} className="text-primary" />
                     <p className="text-base leading-5 text-muted">{b}</p>
                   </div>
                 ))}

@@ -19,7 +19,7 @@ export function FitbItemView({ item, answer, onChange, locked, reveal }: ItemPro
         disabled={locked}
         onChange={(e) => onChange({ type: "fitb", value: e.target.value })}
         aria-label="Your answer"
-        className="h-9 w-40 border border-[#767676] bg-white px-2 text-base disabled:bg-[#f2f2f2]"
+        className="h-9 w-40 border border-muted bg-white px-2 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary-light disabled:bg-background"
       />
       {reveal && <span className="text-base">Correct Answer: {item.answer}</span>}
     </div>
@@ -41,9 +41,9 @@ export function HighlightTextItemView({ item, answer, onChange, locked, reveal }
         "hl rounded-sm px-0.5",
         !locked && "cursor-pointer hover:bg-[#fff6b8]",
         on && !reveal && "bg-[#ffe95c]",
-        reveal && on && isAnswer && "bg-[#c8ecc3]",
-        reveal && on && !isAnswer && "bg-[#f8c9c6] line-through decoration-[#d0312d]",
-        reveal && !on && isAnswer && "outline-2 outline-[#2e9d3a] outline-dashed",
+        reveal && on && isAnswer && "bg-success/20",
+        reveal && on && !isAnswer && "bg-error/15 line-through decoration-error",
+        reveal && !on && isAnswer && "outline-2 outline-success outline-dashed",
       );
     });
   });

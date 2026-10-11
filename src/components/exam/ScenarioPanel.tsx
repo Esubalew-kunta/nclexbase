@@ -30,7 +30,7 @@ export function ScenarioPanel({
     <div>
       <div className={clsx("pt-6", caseStudy.exhibit ? "pb-2" : "pb-4")}>
         {!caseStudy.exhibit && showBanner && (
-          <div className="mb-6 bg-[#eee] px-2.5 py-2">
+          <div className="mb-6 border-l-4 border-primary bg-primary-light px-2.5 py-2">
             The following scenario applies to the next <b>{caseStudy.items.length}</b> items.
           </div>
         )}
@@ -56,8 +56,8 @@ export function ScenarioPanel({
                 aria-selected={on}
                 onClick={() => onTab(i)}
                 className={clsx(
-                  "mr-1 flex cursor-pointer items-center justify-center rounded-t-lg border-x border-t border-[#e0e0e0] px-4 py-2 text-center leading-4 font-bold",
-                  on ? "relative z-10 bg-white shadow-[0_1px_0_0_#fff]" : "bg-[#eee] hover:bg-[#e4e4e4]",
+                  "mr-1 flex cursor-pointer items-center justify-center rounded-t-lg border-x border-t border-line px-4 py-2 text-center leading-4 font-bold",
+                  on ? "relative z-10 bg-white text-primary shadow-[0_1px_0_0_#fff,inset_0_3px_0_0_var(--color-primary)]" : "bg-background text-muted hover:bg-primary-light hover:text-primary",
                 )}
               >
                 {t.label}
@@ -66,7 +66,7 @@ export function ScenarioPanel({
           );
         })}
       </div>
-      <div role="tabpanel" className="rounded-tr-lg rounded-b-lg border border-[#e0e0e0] p-3">
+      <div role="tabpanel" className="rounded-tr-lg rounded-b-lg border border-line p-3">
         <TabBody content={active.content} />
       </div>
     </div>
@@ -94,9 +94,9 @@ function TabBody({ content }: { content: TabContent }) {
         <table className="border-collapse">
           {content.headers && (
             <thead>
-              <tr className="bg-[#e8f2ff]">
+              <tr className="bg-primary-light">
                 {content.headers.map((h, i) => (
-                  <th key={i} className="border border-[#ddd] px-2 py-1 text-left font-bold">
+                  <th key={i} className="border border-line px-2 py-1 text-left font-bold">
                     {h}
                   </th>
                 ))}
@@ -105,9 +105,9 @@ function TabBody({ content }: { content: TabContent }) {
           )}
           <tbody>
             {content.rows.map((row, r) => (
-              <tr key={r} className={r % 2 === 0 ? "bg-[#f2f2f2]" : "bg-white"}>
+              <tr key={r} className={r % 2 === 0 ? "bg-background" : "bg-white"}>
                 {row.map((cell, c) => (
-                  <td key={c} className={clsx("border border-[#ddd] px-2 py-1 align-top", c === 0 && "font-bold")}>
+                  <td key={c} className={clsx("border border-line px-2 py-1 align-top", c === 0 && "font-bold")}>
                     {cell}
                   </td>
                 ))}

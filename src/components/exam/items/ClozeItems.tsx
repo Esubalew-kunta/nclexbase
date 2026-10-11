@@ -65,21 +65,21 @@ export function DragClozeItemView({ item, answer, onChange, locked, reveal }: It
                 aria-label={v === null ? `Blank ${i + 1}, empty` : `Blank ${i + 1}: ${item.choices[v]}. Click to clear.`}
                 className={clsx(
                   "inline-flex min-h-9 min-w-[250px] items-center px-3 text-left align-middle leading-snug",
-                  v === null ? "bg-[#e8f1fb]" : "border border-[#0b62b5] bg-white",
-                  over === i && "ring-2 ring-[#0b62b5]",
-                  reveal && !ok && "border-[#d0312d]",
+                  v === null ? "bg-primary-light" : "border border-primary bg-white",
+                  over === i && "ring-2 ring-primary",
+                  reveal && !ok && "border-error",
                 )}
               >
                 {v !== null ? item.choices[v] : ""}
               </button>
-              {reveal && !ok && <span className="text-sm font-semibold text-[#2e9d3a]">({item.choices[item.answers[i]]})</span>}
+              {reveal && !ok && <span className="text-sm font-semibold text-success">({item.choices[item.answers[i]]})</span>}
             </span>
           );
         })}
       </p>
 
       <div className="mt-6 w-full max-w-[500px] border border-black">
-        <div className="border-b border-black bg-[#e8f1fb] py-5 text-center font-bold">Word Choices</div>
+        <div className="border-b border-black bg-primary-light py-5 text-center font-bold">Word Choices</div>
         <div className="space-y-1 p-2">
           {item.choices.map((c, i) => {
             const usedIn = blanks.indexOf(i);
@@ -93,8 +93,8 @@ export function DragClozeItemView({ item, answer, onChange, locked, reveal }: It
                 onClick={() => pickChoice(i)}
                 className={clsx(
                   "block min-h-[62px] w-full px-2.5 text-left",
-                  usedIn >= 0 ? "bg-white text-transparent" : "bg-[#e8f1fb] hover:bg-[#d8e8f8]",
-                  picked === i && "ring-2 ring-[#0b62b5]",
+                  usedIn >= 0 ? "bg-white text-transparent" : "bg-primary-light hover:bg-primary/15",
+                  picked === i && "ring-2 ring-primary",
                   !locked && usedIn < 0 && "cursor-grab active:cursor-grabbing",
                 )}
               >
@@ -132,7 +132,7 @@ export function DropdownClozeItemView({ item, answer, onChange, locked, reveal }
               aria-label={`Blank ${i + 1}`}
               className={clsx(
                 "h-[25px] max-w-[320px] rounded-[2px] border bg-white px-1 align-middle text-base disabled:opacity-100",
-                reveal && !ok ? "border-[#d0312d]" : "border-[#767676]",
+                reveal && !ok ? "border-error" : "border-muted",
               )}
             >
               <option value="">Select...</option>
@@ -142,7 +142,7 @@ export function DropdownClozeItemView({ item, answer, onChange, locked, reveal }
                 </option>
               ))}
             </select>
-            {reveal && !ok && <span className="text-sm font-semibold text-[#2e9d3a]">({b.options[b.answer]})</span>}
+            {reveal && !ok && <span className="text-sm font-semibold text-success">({b.options[b.answer]})</span>}
           </span>
         );
       })}

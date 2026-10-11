@@ -7,7 +7,7 @@ export default function CheatSheetsPage() {
       <PageHeader
         trail={[{ label: "Cheat Sheets" }]}
         title="NCLEX Cheat Sheets"
-        description="Everything you need to pass the NCLEX®, and nothing you don't. NCLEX Bootcamp's Cheat Sheets condense everything you need to know about a topic into a single, digestible resource."
+        description="Everything you need to pass the NCLEX®, and nothing you don't. NCLEXBase's Cheat Sheets condense everything you need to know about a topic into a single, digestible resource."
       />
       <CheatSheetBrowser />
     </>

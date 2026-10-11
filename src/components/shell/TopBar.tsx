@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
+import { LogoMark } from "@/components/ui/Logo";
+import { SITE_NAME } from "@/lib/brand";
 import { SearchBox } from "./SearchBox";
 import { SidebarContent } from "./Sidebar";
 import { DevResetButton } from "./DevResetButton";
+import { ViewSwitch } from "./ViewSwitch";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -15,11 +18,11 @@ export function UserAvatar({ size = 42 }: { size?: number }) {
   const initial = useStore((s) => (s.user.name || s.user.email).charAt(0));
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full border border-white/5 bg-white/10 transition-colors duration-100 hover:bg-white/20"
+      className="flex shrink-0 items-center justify-center rounded-full border border-line bg-white transition-colors duration-100 hover:border-primary hover:bg-primary-light"
       style={{ width: size, height: size }}
     >
       <span className="flex items-center justify-center rounded-full p-0.5" style={{ width: size - 2, height: size - 2 }}>
-        <span className="flex size-9 items-center justify-center rounded-[36px] bg-[#e0e6eb] text-[13px] leading-none font-medium text-[#2d3a46] uppercase">
+        <span className="flex size-9 items-center justify-center rounded-[36px] bg-primary text-[13px] leading-none font-semibold text-white uppercase">
           {initial}
         </span>
       </span>
@@ -28,9 +31,8 @@ export function UserAvatar({ size = 42 }: { size?: number }) {
 }
 
 /**
- * Wraps the top bar. Once the page scrolls under it, it gets the panel gradient as a
- * solid backdrop (aligned to the panel so there is no visible seam) instead of letting
- * content show through behind the buttons.
+ * Wraps the top bar. Once the page scrolls under it, it gets a solid page-colored
+ * backdrop and a divider instead of letting content show through behind the buttons.
  */
 export function TopBarFrame({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
@@ -46,8 +48,7 @@ export function TopBarFrame({ children }: { children: React.ReactNode }) {
     <div className="absolute inset-x-0 top-0 z-20">
       <div
         aria-hidden
-        style={{ backgroundSize: "100% 100dvh" }}
-        className={`bg-app-gradient pointer-events-none absolute inset-x-0 top-0 h-[72px] transition-opacity duration-200 lg:rounded-tl-lg ${scrolled ? "opacity-100 shadow-[0_2px_8px_rgba(0,0,0,0.12)]" : "opacity-0"}`}
+        className={`pointer-events-none absolute inset-x-0 top-0 h-[72px] border-b border-line bg-background/95 backdrop-blur transition-opacity duration-200 ${scrolled ? "opacity-100" : "opacity-0"}`}
       />
       <div className="relative">{children}</div>
     </div>
@@ -66,16 +67,19 @@ export function TopBar() {
         <button
           onClick={() => setUi({ mobileNavOpen: true })}
           aria-label="Open menu"
-          className="mr-2 flex size-[42px] cursor-pointer items-center justify-center rounded-[64px] bg-white/10 text-white hover:bg-white/30 lg:hidden"
+          className="mr-2 flex size-[42px] cursor-pointer items-center justify-center rounded-[64px] border border-line bg-white text-primary hover:bg-primary-light lg:hidden"
         >
           <svg viewBox="0 0 24 24" className="size-6" fill="currentColor">
             <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
           </svg>
         </button>
+        <Link href="/nclex" aria-label={`${SITE_NAME} home`} className="mr-2 flex items-center lg:hidden">
+          <LogoMark size={34} />
+        </Link>
         <button
           onClick={() => router.back()}
           aria-label="Go back"
-          className="mr-2 hidden size-[42px] cursor-pointer items-center justify-center rounded-[64px] bg-white/10 text-white transition-colors hover:bg-white/30 lg:flex"
+          className="mr-2 hidden size-[42px] cursor-pointer items-center justify-center rounded-[64px] border border-line bg-white text-primary transition-colors hover:bg-primary-light lg:flex"
         >
           <Icon name="back" size={24} style={{ paddingRight: 2 }} />
         </button>
@@ -85,22 +89,25 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center">
-        {/* TEMPORARY: prototype-only reset button (see DevResetButton.tsx). */}
+        {/* TEMPORARY: prototype-only controls (see ViewSwitch.tsx and DevResetButton.tsx). */}
+        <div className="mr-2">
+          <ViewSwitch current="student" />
+        </div>
         <DevResetButton />
         <div className="group relative hidden sm:block">
-          <p className="flex h-[42px] cursor-pointer items-center rounded-full bg-white/10 px-4 py-3 text-base leading-4 font-semibold text-white/90 transition-colors duration-100 hover:bg-white/20">
+          <p className="flex h-[42px] cursor-pointer items-center rounded-full border border-line bg-white px-4 py-3 text-base leading-4 font-semibold text-ink transition-colors duration-100 hover:bg-primary-light">
             <img src="/assets/brand/flame.png" alt="Streak" className="mr-2 h-4 w-3.5" />
             {streak}
           </p>
-          <div className="pointer-events-none absolute top-[52px] left-1/2 z-40 hidden -translate-x-1/2 rounded-lg bg-shell px-3 py-2 text-sm leading-5 font-semibold whitespace-nowrap text-white shadow-lg group-hover:block">
-            <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rotate-45 bg-shell" />
+          <div className="pointer-events-none absolute top-[52px] left-1/2 z-40 hidden -translate-x-1/2 rounded-lg bg-primary-hover px-3 py-2 text-sm leading-5 font-semibold whitespace-nowrap text-white shadow-lg group-hover:block">
+            <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rotate-45 bg-primary-hover" />
             Come back each day to keep your streak going!
           </div>
         </div>
         {plan === "free" && (
           <Link
             href="/nclex/upgrade"
-            className="ml-2 flex h-[42px] items-center justify-center rounded-3xl border border-white/5 bg-white/10 px-4 py-3 text-base leading-4 font-semibold text-white transition-colors duration-100 hover:bg-white/30"
+            className="ml-2 flex h-[42px] items-center justify-center rounded-3xl bg-gold px-4 py-3 text-base leading-4 font-semibold text-ink transition-[filter] duration-100 hover:brightness-95"
           >
             <span className="mr-2 flex">
               <Icon name="shield" size={16} />
@@ -123,8 +130,8 @@ export function MobileNav() {
   const close = () => setUi({ mobileNavOpen: false });
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
-      <div className="animate-fade-in absolute inset-0 bg-[rgba(21,26,30,0.4)]" onClick={close} />
-      <div className="animate-slide-in-left absolute inset-y-0 left-0 w-64 max-w-[85vw] bg-shell shadow-2xl">
+      <div className="animate-fade-in absolute inset-0 bg-[rgba(9,68,72,0.35)]" onClick={close} />
+      <div className="animate-slide-in-left absolute inset-y-0 left-0 w-64 max-w-[85vw] bg-white shadow-2xl">
         <SidebarContent onNavigate={close} />
       </div>
     </div>

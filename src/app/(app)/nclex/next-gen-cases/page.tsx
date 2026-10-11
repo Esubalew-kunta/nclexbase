@@ -8,7 +8,6 @@ export default function CaseStudiesPage() {
         trail={[{ label: "Next Gen Cases" }]}
         title="Case Studies"
         description="The case studies below are based on the real Next Gen NCLEX. Practice with these so you're ready for the real exam."
-        experts={["emily", "cortney", "crysta"]}
       />
       <CaseList />
     </>

@@ -4,6 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { SubjectId } from "@/lib/types";
+import { BRAND } from "@/lib/brand";
 import { Icon } from "./Icon";
 import { ProgressBar, UsageBar, UsageText } from "./primitives";
 
@@ -53,7 +54,7 @@ export function LessonsBlock({ done, total, className }: { done: number; total: 
   );
 }
 
-/** White gradient card row used on Home (icon, title, bars/subtitle, chevron). Hover: scale(1.01). */
+/** White card row used on Home (icon, title, bars/subtitle, chevron). Hover: scale(1.01). */
 export function HomeRow({
   href,
   icon,
@@ -72,18 +73,18 @@ export function HomeRow({
   external?: boolean;
 }) {
   const cls =
-    "bg-card mb-2 flex items-center rounded-lg px-4 py-3 shadow-card transition-transform duration-100 last:mb-0 hover:scale-[1.01]";
+    "mb-2 flex items-center rounded-lg border border-line bg-white px-4 py-3 shadow-card transition-[transform,border-color] duration-100 last:mb-0 hover:scale-[1.01] hover:border-primary/40";
   const body = (
     <>
       {icon}
       <div className="min-w-0 flex-1 pl-4">
-        <h4 className={clsx("text-lg leading-[22.5px] font-semibold text-ink-strong", (children || subtitle) && "mb-2")}>{title}</h4>
+        <h4 className={clsx("text-lg leading-[22.5px] font-semibold text-ink", (children || subtitle) && "mb-2")}>{title}</h4>
         {subtitle && <p className="text-base leading-4 text-muted">{subtitle}</p>}
         {children && <div className="mr-6">{children}</div>}
       </div>
       {trailing}
       <span className="flex size-6 shrink-0 items-center justify-center">
-        <Icon name="chevronRightThin" size={24} className="text-faint" />
+        <Icon name="chevronRightThin" size={24} className="text-primary" />
       </span>
     </>
   );
@@ -127,19 +128,23 @@ export function NumberedRow({
     <div className={clsx("flex px-6 py-4", action ? "items-center" : "items-start")}>
       {(number != null || leading) && (
         <div className="flex flex-col items-center justify-between self-stretch">
-          {leading ?? <h4 className="text-lg leading-[22.5px] font-semibold text-faint">{number}</h4>}
+          {leading ?? <h4 className="text-lg leading-[22.5px] font-semibold text-muted">{number}</h4>}
         </div>
       )}
       <div className="flex min-w-0 flex-1 items-center">
         <div className="flex min-w-0 flex-1 flex-col justify-center px-4">
-          <h4 className={clsx("text-lg leading-[22.5px] font-semibold text-ink-strong", children ? "mb-2" : "")}>{title}</h4>
+          <h4 className={clsx("text-lg leading-[22.5px] font-semibold text-ink", children ? "mb-2" : "")}>{title}</h4>
           {children}
         </div>
-        {action && <div className="flex shrink-0 items-center justify-center gap-2 text-faint">{action}</div>}
+        {action && <div className="flex shrink-0 items-center justify-center gap-2 text-primary">{action}</div>}
       </div>
     </div>
   );
-  const cls = clsx("mb-2 block rounded-lg bg-white shadow-card transition-transform duration-100 hover:scale-[1.01]", (onClick || href) && "cursor-pointer", className);
+  const cls = clsx(
+    "mb-2 block rounded-lg border border-line bg-white shadow-card transition-[transform,border-color] duration-100 hover:scale-[1.01] hover:border-primary/40",
+    (onClick || href) && "cursor-pointer",
+    className,
+  );
   if (href)
     return (
       <Link href={href} className={cls}>
@@ -168,7 +173,7 @@ export function Gauge({
   value,
   target,
   label,
-  color = "#5b8efc",
+  color = BRAND.primary,
   met,
   height = 199,
 }: {
@@ -186,12 +191,12 @@ export function Gauge({
   };
   const [ex, ey] = pt(f, 60);
   const tf = target != null ? target / 100 : null;
-  const tickColor = met ? "#66AC5C" : "#C8C9CE";
+  const tickColor = met ? BRAND.success : BRAND.faint;
   return (
     <svg width="100%" height={height} viewBox="5 -6.16 131 81.16" preserveAspectRatio="none" aria-label={`${Math.round(value)}% ${label}`}>
-      <path d="M 10 70 A 60 60 0 0 1 130 70" stroke="#e5e7ef" strokeWidth="10" fill="none" />
-      <circle cx="10" cy="70" r="5" fill={f > 0 ? color : "#e5e7ef"} />
-      <circle cx="130" cy="70" r="5" fill={f >= 1 ? color : "#e5e7ef"} />
+      <path d="M 10 70 A 60 60 0 0 1 130 70" stroke={BRAND.primaryLight} strokeWidth="10" fill="none" />
+      <circle cx="10" cy="70" r="5" fill={f > 0 ? color : BRAND.primaryLight} />
+      <circle cx="130" cy="70" r="5" fill={f >= 1 ? color : BRAND.primaryLight} />
       {f > 0 && <path d={`M 10 70 A 60 60 0 0 1 ${ex} ${ey}`} stroke={color} strokeWidth="10" fill="none" />}
       {tf != null && (
         <>
@@ -208,7 +213,7 @@ export function Gauge({
       <text x="70" y="62" textAnchor="middle" fontSize="32" fontWeight="700" fill={color} fontFamily="var(--font-brand), sans-serif">
         {Math.round(value)}%
       </text>
-      <text x="70" y="74" textAnchor="middle" fontSize="8" fill="#7a7e9f" fontFamily="var(--font-brand), sans-serif">
+      <text x="70" y="74" textAnchor="middle" fontSize="8" fill={BRAND.muted} fontFamily="var(--font-brand), sans-serif">
         {label}
       </text>
     </svg>
@@ -216,12 +221,12 @@ export function Gauge({
 }
 
 /** Target pill: white (or green when met), radius 256px, 32px icon, 18px text. */
-export function TargetPill({ children, color = "#3b82f6", met }: { children: ReactNode; color?: string; met?: boolean }) {
+export function TargetPill({ children, color = BRAND.primary, met }: { children: ReactNode; color?: string; met?: boolean }) {
   return (
     <span
       className={clsx(
         "inline-flex items-center gap-2 rounded-[256px] border p-1 shadow-[0_1px_4px_rgba(0,0,0,0.1)]",
-        met ? "border-[#66ac5c] bg-[#66ac5c] text-white" : "border-[#ededf0] bg-white text-ink-strong",
+        met ? "border-success bg-success text-white" : "border-line bg-white text-ink",
       )}
     >
       {met ? <Icon name="targetCheck" size={32} className="text-white" /> : <Icon name="target" size={32} style={{ color }} />}

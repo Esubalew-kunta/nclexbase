@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { BRAND } from "@/lib/brand";
 import type { BowtieItem as Bowtie } from "@/lib/types";
 import { Mark, type ItemProps } from "./shared";
 
@@ -32,7 +33,7 @@ export function BowtieItemView({ item, answer, onChange, locked, reveal }: ItemP
           aria-label={filled ? `${label}: ${options[value]}. Click to remove.` : `${label}, empty`}
           className={clsx(
             "flex min-h-[64px] w-full items-center justify-center px-3 py-2 text-center text-[15px] leading-snug",
-            filled ? "border border-[#0b62b5] bg-white" : "border border-dashed border-[#9fb6cc] bg-[#e8f1fb] text-[#6b7f93]",
+            filled ? "border border-primary bg-white" : "border border-dashed border-faint bg-primary-light text-muted",
           )}
         >
           {filled ? options[value] : label}
@@ -44,8 +45,8 @@ export function BowtieItemView({ item, answer, onChange, locked, reveal }: ItemP
   const column = (group: Group, title: string, options: string[]) => {
     const selected = group === "condition" ? (a.condition === null ? [] : [a.condition]) : a[group];
     return (
-      <div className="border border-[#d0d0d0]">
-        <div className="bg-[#e8f1fb] px-3 py-2 text-center font-bold">{title}</div>
+      <div className="border border-line">
+        <div className="bg-primary-light px-3 py-2 text-center font-bold">{title}</div>
         <div className="space-y-1 p-2">
           {options.map((o, i) => {
             const on = selected.includes(i);
@@ -58,7 +59,7 @@ export function BowtieItemView({ item, answer, onChange, locked, reveal }: ItemP
                 aria-pressed={on}
                 className={clsx(
                   "block w-full px-3 py-2.5 text-left text-[15px] leading-snug disabled:cursor-default",
-                  on ? "bg-white text-[#9aa7b3] outline outline-[#d0d0d0]" : "bg-[#e8f1fb] hover:bg-[#d8e8f8]",
+                  on ? "bg-white text-faint outline outline-line" : "bg-primary-light hover:bg-primary/15",
                 )}
               >
                 {o}
@@ -73,9 +74,9 @@ export function BowtieItemView({ item, answer, onChange, locked, reveal }: ItemP
   return (
     <div className="max-w-[760px]">
       {/* The bow tie */}
-      <div className="relative grid grid-cols-[1fr_1.1fr_1fr] items-center gap-x-8 gap-y-3 rounded border border-[#d0d0d0] bg-[#fafcfe] p-4">
+      <div className="relative grid grid-cols-[1fr_1.1fr_1fr] items-center gap-x-8 gap-y-3 rounded border border-line bg-background p-4">
         <svg className="pointer-events-none absolute inset-0 size-full" preserveAspectRatio="none" viewBox="0 0 100 100" aria-hidden>
-          <path d="M31 27 L50 50 L31 73 M69 27 L50 50 L69 73" stroke="#9fb6cc" strokeWidth="0.4" fill="none" vectorEffect="non-scaling-stroke" />
+          <path d="M31 27 L50 50 L31 73 M69 27 L50 50 L69 73" stroke={BRAND.faint} strokeWidth="0.4" fill="none" vectorEffect="non-scaling-stroke" />
         </svg>
         <div className="relative space-y-3">
           {slot("actions", a.actions[0], "Action to Take")}

@@ -26,7 +26,7 @@ export function MatrixItem({ item, answer, onChange, locked, reveal }: ItemProps
             ))}
           </tr>
           {item.rows.map((row, r) => (
-            <tr key={r} className={r % 2 === 0 ? "bg-[#f2f2f2]" : "bg-white"}>
+            <tr key={r} className={r % 2 === 0 ? "bg-background" : "bg-white"}>
               <td className={`${tdCls} text-left`}>
                 {r + 1}. {row}
               </td>
@@ -73,7 +73,7 @@ export function MatrixMultiItemView({ item, answer, onChange, locked, reveal }: 
             ))}
           </tr>
           {item.rows.map((row, r) => (
-            <tr key={r} className={r % 2 === 0 ? "bg-[#f2f2f2]" : "bg-white"}>
+            <tr key={r} className={r % 2 === 0 ? "bg-background" : "bg-white"}>
               <td className={`${tdCls} text-left`}>{row}</td>
               {item.columns.map((_, c) => {
                 const on = cells[r]?.includes(c);

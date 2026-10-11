@@ -59,7 +59,7 @@ export default function DailyWarmupPage() {
             }}
             aria-label="Email address"
             placeholder="you@example.com"
-            className="h-[42px] flex-1 rounded-xl border border-[#ededf0] px-4 text-base text-ink-strong outline-none focus:border-faint"
+            className="h-[42px] flex-1 rounded-xl border border-line px-4 text-base text-ink outline-none focus:border-faint"
           />
           <Button
             onClick={() => {
@@ -79,7 +79,7 @@ export default function DailyWarmupPage() {
           {sent && " Delivery is simulated in this prototype; this is the email that would be sent."}
         </p>
       </Card>
-      <h2 className="mb-3 text-2xl leading-[30px] font-bold text-white">Today&apos;s email</h2>
+      <h2 className="mb-3 text-2xl leading-[30px] font-bold text-ink">Today&apos;s email</h2>
       <EmailPreview item={item} date={date} link={link} />
     </>
   );

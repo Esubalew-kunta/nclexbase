@@ -2,8 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { CASES } from "@/data/cases";
-import { STANDALONE } from "@/data/standalone";
+import { getBank, useBank } from "@/lib/content";
 import { itemById, entriesForCase } from "./bank";
 import { scoreItem } from "./scoring";
 import { latestAttempts, usedItemIds, useStore } from "./store";
@@ -22,7 +21,10 @@ const emptyCounts = (): TagCounts => ({ used: 0, mastered: 0, reviewing: 0, lear
 export function useProgress() {
   const sessions = useStore((s) => s.sessions);
   const tags = useStore((s) => s.tags);
+  const bank = useBank();
   return useMemo(() => {
+    const CASES = bank.cases;
+    const STANDALONE = bank.standalone;
     const used = usedItemIds(sessions);
     const attempts = latestAttempts(sessions);
     const bySubject = new Map<SubjectId, { used: number; earned: number; max: number; time: number; answered: number }>();
@@ -71,7 +73,7 @@ export function useProgress() {
     const standaloneFor = (subject: SubjectId) => countIds(STANDALONE.filter((i) => i.subject === subject).map((i) => i.id));
 
     return { used, bySubject, bySystem, earned, max, caseUsed, caseCounts, subjectCounts, casesTotal, standaloneTotal, standaloneFor };
-  }, [sessions, tags]);
+  }, [sessions, tags, bank]);
 }
 
 /**
@@ -79,7 +81,8 @@ export function useProgress() {
  * content replay the closest authored case so every "Start" button works.
  */
 export function resolveCase(caseId: string, subject?: string) {
-  return CASES.find((c) => c.id === caseId) ?? CASES.find((c) => c.subject === subject) ?? CASES[0];
+  const { cases } = getBank();
+  return cases.find((c) => c.id === caseId) ?? cases.find((c) => c.subject === subject) ?? cases[0];
 }
 
 /** Start a case study as a new session and open the exam screen. */

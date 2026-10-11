@@ -15,12 +15,12 @@ const PAGE_SIZES = [10, 20, 30, 40, 50];
 function ScoreBar({ pct, avg }: { pct: number; avg: number }) {
   return (
     <div className="flex items-center gap-2">
-      <p className="w-[42px] text-base leading-4 text-ink-strong">{pct} %</p>
+      <p className="w-[42px] text-base leading-4 text-ink">{pct} %</p>
       <div className="relative w-[70px]">
-        <div className="flex h-[10px] overflow-hidden rounded-lg border border-transparent bg-[linear-gradient(rgba(0,0,0,0.04)_0%,rgba(0,0,0,0.02)_100%)] shadow-[inset_0_2px_6px_0_rgba(0,0,0,0.07)]">
-          <span className="h-2 bg-[linear-gradient(#60a5fa_0%,#3b82f6_50%,#1d4ed8_100%)]" style={{ width: `${pct}%` }} />
+        <div className="flex h-[10px] overflow-hidden rounded-lg bg-primary-light shadow-[inset_0_1px_3px_0_rgba(14,90,92,0.1)]">
+          <span className="h-2.5 bg-primary" style={{ width: `${pct}%` }} />
         </div>
-        <div className="absolute -top-px -bottom-px w-0.5 bg-faint" style={{ left: `${avg}%` }} />
+        <div className="absolute -top-px -bottom-px w-0.5 bg-gold" style={{ left: `${avg}%` }} />
       </div>
     </div>
   );
@@ -34,20 +34,20 @@ export default function PreviousTestsPage() {
   const list = sessions.filter((s) => s.kind === "custom").slice().reverse();
   const pages = Math.max(1, Math.ceil(list.length / size));
   const rows = list.slice(page * size, page * size + size);
-  const th = "h-12 border-b border-[#ededf0] bg-[#fafafa] px-4 text-left text-base font-semibold";
+  const th = "h-12 border-b border-line bg-background px-4 text-left text-base font-semibold";
 
   return (
     <>
       <PageHeader trail={[{ label: "Previous Tests" }]} title="Previous Tests" />
-      <p className="mb-4 rounded-lg bg-white/10 px-6 py-[18px] text-base leading-6 text-white">
+      <p className="mb-4 rounded-lg border border-l-4 border-line border-l-primary bg-primary-light px-6 py-[18px] text-base leading-6 text-ink">
         Your Readiness Exam attempts can be reviewed on the{" "}
-        <Link href="/nclex/next-gen-readiness-exams" className="underline">
+        <Link href="/nclex/next-gen-readiness-exams" className="font-semibold text-primary underline hover:text-primary-hover">
           Readiness Exams page.
         </Link>
       </p>
 
       <div className="overflow-auto pb-4">
-        <table className="w-full min-w-[860px] overflow-hidden rounded-lg bg-white text-ink shadow-card">
+        <table className="w-full min-w-[860px] overflow-hidden rounded-lg border border-line bg-white text-ink shadow-card">
           <thead>
             <tr>
               <th className={`${th} pl-6 font-bold text-muted`}>#</th>
@@ -67,12 +67,12 @@ export default function PreviousTestsPage() {
               const avg = sc.max ? Math.round((avgMax / sc.max) * 100) : 0;
               const href = s.status === "ended" ? `/nclex/previous-tests/review?id=${s.id}` : `/nclex/custom-test?id=${s.id}`;
               return (
-                <tr key={s.id} onClick={() => router.push(href)} className="h-12 cursor-pointer hover:bg-[#fafafa]">
+                <tr key={s.id} onClick={() => router.push(href)} className="h-12 cursor-pointer hover:bg-primary-light">
                   <td className="pr-4 pl-6 text-muted">{list.length - (page * size + i)}</td>
                   <td className="px-4">{s.title}</td>
                   <td className="px-4">
                     <div className="flex items-center gap-2">
-                      <p className="flex items-center gap-1 rounded-lg bg-[#eef1ff] px-2 py-1 text-sm leading-[14px] font-semibold text-brand capitalize">{s.pool}</p>
+                      <p className="flex items-center gap-1 rounded-lg bg-primary-light px-2 py-1 text-sm leading-[14px] font-semibold text-primary capitalize">{s.pool}</p>
                     </div>
                   </td>
                   <td className="px-4">{new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
@@ -80,7 +80,7 @@ export default function PreviousTestsPage() {
                   <td className="px-4 text-muted">{avg}%</td>
                   <td className="px-4">{s.entries.length}</td>
                   <td className="pr-6 pl-4 text-right">
-                    <Icon name="chevronRight" size={16} className="ml-auto text-faint" />
+                    <Icon name="chevronRight" size={16} className="ml-auto text-primary" />
                   </td>
                 </tr>
               );
@@ -96,7 +96,7 @@ export default function PreviousTestsPage() {
         </table>
       </div>
 
-      <div className="flex items-center justify-end text-white">
+      <div className="flex items-center justify-end text-ink">
         <span className="flex items-center justify-center p-4">
           Page {page + 1} of {pages}
         </span>
@@ -109,12 +109,12 @@ export default function PreviousTestsPage() {
             aria-label={b.label}
             disabled={b.disabled}
             onClick={b.go}
-            className="mr-2 flex size-[42px] cursor-pointer items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/30 disabled:cursor-not-allowed disabled:bg-white/5 disabled:hover:bg-white/5"
+            className="mr-2 flex size-[42px] cursor-pointer items-center justify-center rounded-full border border-line bg-white text-primary hover:bg-primary-light disabled:cursor-not-allowed disabled:text-faint disabled:hover:bg-white"
           >
             <Icon name={b.icon} size={20} />
           </button>
         ))}
-        <div className="relative ml-2 flex rounded-lg border border-white/5 bg-white/10">
+        <div className="relative ml-2 flex rounded-lg border border-line bg-white">
           <select
             value={size}
             onChange={(e) => {
@@ -122,7 +122,7 @@ export default function PreviousTestsPage() {
               setPage(0);
             }}
             aria-label="Rows per page"
-            className="mr-7 cursor-pointer appearance-none bg-transparent p-3 text-sm leading-4 font-bold text-white outline-none"
+            className="mr-7 cursor-pointer appearance-none bg-transparent p-3 text-sm leading-4 font-bold text-ink outline-none"
           >
             {PAGE_SIZES.map((n) => (
               <option key={n} value={n} className="text-ink">
@@ -130,7 +130,7 @@ export default function PreviousTestsPage() {
               </option>
             ))}
           </select>
-          <Icon name="chevronDownBold" size={20} className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-white" />
+          <Icon name="chevronDownBold" size={20} className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-primary" />
         </div>
       </div>
     </>

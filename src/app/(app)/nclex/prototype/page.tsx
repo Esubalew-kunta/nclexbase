@@ -26,7 +26,7 @@ export default function PrototypeControls() {
             <button
               key={p}
               onClick={() => setPlan(p)}
-              className={clsx("h-9 cursor-pointer rounded-full px-4 text-sm font-semibold capitalize", plan === p ? "bg-brand text-white" : "bg-[#f1f1f3] text-ink")}
+              className={clsx("h-9 cursor-pointer rounded-full px-4 text-sm font-semibold capitalize", plan === p ? "bg-primary text-white" : "border border-line bg-white text-ink hover:bg-primary-light")}
             >
               {p}
             </button>
@@ -37,9 +37,9 @@ export default function PrototypeControls() {
           <div className="font-semibold text-ink">Experiments (proposed features)</div>
           <div className="mt-3 space-y-3">
             {EXPERIMENTS.map((x) => (
-              <div key={x.key} className="flex items-start justify-between gap-4 rounded-lg border border-[#ededf0] p-3">
+              <div key={x.key} className="flex items-start justify-between gap-4 rounded-lg border border-line p-3">
                 <div>
-                  <div className="font-semibold text-ink-strong">{x.name}</div>
+                  <div className="font-semibold text-ink">{x.name}</div>
                   <div className="text-sm text-muted">{x.description}</div>
                 </div>
                 <Toggle checked={Boolean(flags[x.key])} onChange={(v) => setFlag(x.key, v)} />

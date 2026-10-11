@@ -8,6 +8,7 @@ import { itemById } from "@/lib/bank";
 import { formatDuration, scoreItem } from "@/lib/scoring";
 import type { MasteryTag, TestSession } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
+import { BRAND, SITE_NAME } from "@/lib/brand";
 
 /* ------------------------------------------------------------------ */
 /* Calculator (TI-108 look-alike, draggable)                            */
@@ -71,7 +72,7 @@ export function Calculator({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed z-50 w-[266px] rounded-lg bg-[#1a74b8] p-1.5 font-exam shadow-2xl"
+      className="fixed z-50 w-[266px] rounded-lg bg-primary p-1.5 font-exam shadow-2xl"
       style={{ left: pos.x, top: pos.y }}
       role="dialog"
       aria-label="Calculator"
@@ -91,21 +92,21 @@ export function Calculator({ onClose }: { onClose: () => void }) {
           <SquareX className="size-4" />
         </button>
       </div>
-      <div className="bg-[#0a14e0] px-4 pt-6 pb-3">
-        <div className="rounded-sm border-2 border-[#9a9a9a] bg-[#c9cfc4] px-2 py-1 text-right font-mono text-2xl tracking-widest text-[#222]">{display}</div>
+      <div className="bg-primary-hover px-4 pt-6 pb-3">
+        <div className="rounded-sm border-2 border-faint bg-primary-light px-2 py-1 text-right font-mono text-2xl tracking-widest text-exam-ink">{display}</div>
         <div className="mt-3 flex items-center justify-between font-serif text-[11px] text-white">
           <span>TEXAS INSTRUMENTS</span>
           <b className="text-base">TI-108SC</b>
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-2 bg-[#0a14e0] px-4 pt-2 pb-4">
+      <div className="grid grid-cols-4 gap-2 bg-primary-hover px-4 pt-2 pb-4">
         {keys.map((k) => (
           <button
             key={k}
             onClick={() => press(k)}
             className={clsx(
               "h-9 rounded-sm border-2 font-serif text-sm font-semibold active:translate-y-px",
-              red(k) ? "border-[#f5a3a3] bg-[#e04b4b] text-white" : "border-[#c7d3ff] bg-white text-[#0a14e0]",
+              red(k) ? "border-white/30 bg-info text-white" : "border-line bg-white text-primary-hover",
               k === "=" && "row-span-2 h-auto",
             )}
           >
@@ -124,7 +125,7 @@ export function Calculator({ onClose }: { onClose: () => void }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Settings / Navigate drawer (right side, #006daa)                     */
+/* Settings / Navigate drawer (right side, deep teal)                   */
 /* ------------------------------------------------------------------ */
 
 const SETTING_ROWS: { key: keyof ExamSettings; label: string; caseOnly?: boolean }[] = [
@@ -137,11 +138,11 @@ const SETTING_ROWS: { key: keyof ExamSettings; label: string; caseOnly?: boolean
 ];
 
 export const TAG_STYLE: Record<MasteryTag | "unused" | "bookmarked", string> = {
-  unused: "#8a8fe8",
-  learning: "#e05e57",
-  reviewing: "#f3d456",
-  mastered: "#66ac5c",
-  bookmarked: "#3b82f6",
+  unused: BRAND.faint,
+  learning: BRAND.error,
+  reviewing: BRAND.warning,
+  mastered: BRAND.success,
+  bookmarked: BRAND.gold,
 };
 
 export function TagIcon({ tag, size = 16 }: { tag: keyof typeof TAG_STYLE; size?: number }) {
@@ -160,7 +161,7 @@ function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
       role="switch"
       aria-checked={on}
       onClick={onClick}
-      className={clsx("relative ml-auto h-5 w-10 shrink-0 cursor-pointer rounded-[20px] border transition-colors duration-300", on ? "border-[#87d068] bg-[#87d068]" : "border-[#ccc] bg-[#ccc]")}
+      className={clsx("relative ml-auto h-5 w-10 shrink-0 cursor-pointer rounded-[20px] border transition-colors duration-300", on ? "border-success bg-success" : "border-white/30 bg-white/30")}
     >
       <span className={clsx("absolute top-px left-0.5 size-4 rounded-full bg-white shadow transition-transform duration-300", on && "translate-x-[18px]")} />
     </button>
@@ -213,7 +214,7 @@ export function SettingsDrawer({ session, onClose, onJump }: { session: TestSess
   return (
     <div className="fixed inset-0 z-40 font-exam tracking-normal" role="dialog" aria-label="Test navigation">
       <div className="animate-fade-in absolute inset-0 bg-black/45" onClick={onClose} />
-      <aside className="animate-slide-in-right absolute inset-y-0 right-0 flex w-[256px] flex-col overflow-y-auto bg-[#006daa] text-white">
+      <aside className="animate-slide-in-right absolute inset-y-0 right-0 flex w-[256px] flex-col overflow-y-auto bg-primary text-white">
         <div className="shrink-0">
           <div className="border-b border-black/10 px-4 pt-4 pb-3">
             <button onClick={onClose} aria-label="Close" className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-white/5 bg-white/10 p-4 hover:bg-white/20">
@@ -222,14 +223,14 @@ export function SettingsDrawer({ session, onClose, onJump }: { session: TestSess
               </svg>
             </button>
             <div className="pt-4">
-              <h4 className="mb-1 text-base leading-4 text-white/70">{isCase ? "Question Bank" : "Bootcamp.com"}</h4>
+              <h4 className="mb-1 text-base leading-4 text-white/70">{isCase ? "Question Bank" : SITE_NAME}</h4>
               <h4 className="text-lg leading-[18px] font-bold">{isCase ? session.title : `${session.tutor ? "Tutored" : "Untutored"}, ${session.timed ? "Timed" : "Untimed"}`}</h4>
             </div>
             <div className="mt-3 flex flex-col gap-3">
-              <div className="flex h-[10px] overflow-hidden rounded-lg bg-[linear-gradient(rgba(0,0,0,0.04),rgba(0,0,0,0.02))] shadow-[inset_0_2px_6px_rgba(0,0,0,0.07)]">
-                <span className="bg-grad-good h-2" style={{ width: `${(pools.mastered / total) * 100}%` }} />
-                <span className="bg-grad-warn h-2" style={{ width: `${(pools.reviewing / total) * 100}%` }} />
-                <span className="bg-grad-bad h-2" style={{ width: `${(pools.learning / total) * 100}%` }} />
+              <div className="flex h-[10px] overflow-hidden rounded-lg bg-white/15">
+                <span className="bg-success h-2" style={{ width: `${(pools.mastered / total) * 100}%` }} />
+                <span className="bg-warning h-2" style={{ width: `${(pools.reviewing / total) * 100}%` }} />
+                <span className="bg-error h-2" style={{ width: `${(pools.learning / total) * 100}%` }} />
               </div>
               <div className="flex items-center gap-2">
                 <h5 className="text-sm leading-[14px]">
@@ -238,7 +239,7 @@ export function SettingsDrawer({ session, onClose, onJump }: { session: TestSess
                 <button
                   onClick={() => setShowSettings((v) => !v)}
                   aria-label="Toggle settings"
-                  className="ml-auto flex size-8 cursor-pointer items-center justify-center rounded-lg border border-black/5 bg-white p-2 text-ink-strong"
+                  className="ml-auto flex size-8 cursor-pointer items-center justify-center rounded-lg border border-black/5 bg-white p-2 text-ink"
                 >
                   <Icon name="examSettings" size={16} />
                 </button>
@@ -337,7 +338,7 @@ export function SettingsDrawer({ session, onClose, onJump }: { session: TestSess
                         onClick={() => onJump(i)}
                         className={clsx(
                           "flex w-full cursor-pointer items-center rounded-lg border px-3 py-2 text-left text-sm font-semibold",
-                          current ? "border-white bg-white text-[#006daa]" : "border-white/10 bg-white/10 text-white/70 hover:bg-white/15",
+                          current ? "border-white bg-white text-primary" : "border-white/10 bg-white/10 text-white/70 hover:bg-white/15",
                         )}
                       >
                         <Icon name={current ? "qStatusCurrent" : "qStatusOther"} size={14} />
@@ -359,13 +360,13 @@ export function SettingsDrawer({ session, onClose, onJump }: { session: TestSess
 }
 
 /* ------------------------------------------------------------------ */
-/* Dialogs (Pearson look: #0f6292 panel, outlined buttons)              */
+/* Dialogs (Pearson look: dark teal panel, outlined buttons)            */
 /* ------------------------------------------------------------------ */
 
 function ExamDialog({ title, children, actions, onClose, width = 474 }: { title: string; children: ReactNode; actions: ReactNode; onClose?: () => void; width?: number }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 font-exam tracking-normal" role="dialog" aria-label={title}>
-      <div className="animate-pop-in w-full bg-[#0f6292] text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)]" style={{ maxWidth: width }}>
+      <div className="animate-pop-in w-full border-t-4 border-gold bg-primary-hover text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)]" style={{ maxWidth: width }}>
         <div className="mx-4 flex items-center border-b border-white py-2.5">
           <span className="flex-1 text-base">{title}</span>
           {onClose && (
@@ -400,11 +401,11 @@ function InfoIcon() {
     <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
       <defs>
         <radialGradient id="exam-info" cx="0.35" cy="0.3" r="0.8">
-          <stop offset="0" stopColor="#7cc4ff" />
-          <stop offset="1" stopColor="#0b62c4" />
+          <stop offset="0" stopColor={BRAND.info} />
+          <stop offset="1" stopColor={BRAND.primary} />
         </radialGradient>
       </defs>
-      <circle cx="16" cy="16" r="15" fill="url(#exam-info)" stroke="#e8f4ff" strokeWidth="1.5" />
+      <circle cx="16" cy="16" r="15" fill="url(#exam-info)" stroke={BRAND.primaryLight} strokeWidth="1.5" />
       <rect x="14.2" y="13" width="3.6" height="11" rx="1" fill="white" />
       <circle cx="16" cy="9.2" r="2.1" fill="white" />
     </svg>
@@ -482,15 +483,15 @@ export function EndReviewDialog({ session, onCancel, onEnd }: { session: TestSes
         ))}
         <div>
           <p className="mb-1 text-base">Learning</p>
-          {tagBadge("learning", "#fcecee", "#e05e57")}
+          {tagBadge("learning", BRAND.surface, BRAND.error)}
         </div>
         <div>
           <p className="mb-1 text-base">Reviewing</p>
-          {tagBadge("reviewing", "#fffde9", "#d09528")}
+          {tagBadge("reviewing", BRAND.warning, BRAND.ink)}
         </div>
         <div>
           <p className="mb-1 text-base">Mastered</p>
-          {tagBadge("mastered", "#eaf5ea", "#54964b")}
+          {tagBadge("mastered", BRAND.surface, BRAND.success)}
         </div>
       </div>
     </ExamDialog>
@@ -537,7 +538,7 @@ export function PauseDialog({ onResume }: { onResume: () => void }) {
 /** First-time tip above the tag buttons. */
 export function TagTip({ onClose }: { onClose: () => void }) {
   return (
-    <div className="animate-fade-in absolute right-[330px] bottom-12 z-30 w-[250px] rounded-lg bg-[#1f2023] p-3 font-sans text-white shadow-xl">
+    <div className="animate-fade-in absolute right-[330px] bottom-12 z-30 w-[250px] rounded-lg bg-ink p-3 font-sans text-white shadow-xl">
       <div className="flex items-center border-b border-white/20 pb-2">
         <span className="flex-1 text-base font-bold">Tag Questions</span>
         <button onClick={onClose} aria-label="Dismiss" className="cursor-pointer text-white/80 hover:text-white">
@@ -545,7 +546,7 @@ export function TagTip({ onClose }: { onClose: () => void }) {
         </button>
       </div>
       <p className="pt-2 text-[15px] leading-[21px]">Use mastery tags to rate your understanding of each question. You can sort and review tagged questions later.</p>
-      <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-[#1f2023]" />
+      <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-ink" />
     </div>
   );
 }

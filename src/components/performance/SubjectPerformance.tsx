@@ -2,14 +2,15 @@
 
 import clsx from "clsx";
 import { Fragment, useState, type ReactNode } from "react";
-import { PERFORMANCE_FAQS, subjectById } from "@/data/catalog";
+import { subjectById } from "@/data/catalog";
+import { subjectName } from "@/lib/content";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import { formatDuration } from "@/lib/scoring";
 import type { SubjectId } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
-import { FaqList } from "@/components/ui/primitives";
 import { SubjectIcon } from "@/components/ui/visuals";
+import { PlacedFaqs } from "@/components/ui/PlacedFaqs";
 
 /* ------------------------------------------------------------------ */
 /* Small table pieces                                                  */
@@ -28,10 +29,10 @@ export function SortArrows() {
 function MiniBar({ children, tick }: { children: ReactNode; tick: number }) {
   return (
     <div className="relative w-[100px]">
-      <div className="flex h-[10px] overflow-hidden rounded-lg border border-transparent bg-[linear-gradient(rgba(0,0,0,0.04)_0%,rgba(0,0,0,0.02)_100%)] shadow-[inset_0_2px_6px_0_rgba(0,0,0,0.07)]">
+      <div className="flex h-[10px] overflow-hidden rounded-lg bg-primary-light shadow-[inset_0_1px_3px_0_rgba(14,90,92,0.1)]">
         {children}
       </div>
-      <div className="absolute -top-px -bottom-px w-0.5 bg-faint" style={{ left: `${tick}%` }} />
+      <div className="absolute -top-px -bottom-px w-0.5 bg-gold" style={{ left: `${tick}%` }} />
     </div>
   );
 }
@@ -41,7 +42,7 @@ export function ScoreCell({ pct, avg }: { pct: number; avg: number }) {
     <div className="flex items-center gap-2">
       <p className="min-w-[42px] text-base leading-4 whitespace-nowrap">{pct} %</p>
       <MiniBar tick={avg}>
-        <span className="h-2 bg-[linear-gradient(#60a5fa_0%,#3b82f6_50%,#1d4ed8_100%)] transition-[width] duration-500" style={{ width: `${pct}%` }} />
+        <span className="h-2 bg-primary transition-[width] duration-500" style={{ width: `${pct}%` }} />
       </MiniBar>
     </div>
   );
@@ -55,9 +56,9 @@ export function UsageCell({ used, total, mastered = 0, reviewing = 0, learning =
         {used} / {total}
       </p>
       <MiniBar tick={74}>
-        <span className="bg-grad-good h-2 transition-[width] duration-500" style={{ width: w(mastered) }} />
-        <span className="bg-grad-warn h-2 transition-[width] duration-500" style={{ width: w(reviewing) }} />
-        <span className="bg-grad-bad h-2 transition-[width] duration-500" style={{ width: w(learning) }} />
+        <span className="bg-success h-2 transition-[width] duration-500" style={{ width: w(mastered) }} />
+        <span className="bg-warning h-2 transition-[width] duration-500" style={{ width: w(reviewing) }} />
+        <span className="bg-error h-2 transition-[width] duration-500" style={{ width: w(learning) }} />
       </MiniBar>
     </div>
   );
@@ -80,7 +81,7 @@ function CreateButton({ subject, system }: { subject: SubjectId; system?: string
         setUi({ createTestOpen: true, createTestPreset: { subject, system } });
       }}
       aria-label="Create a test"
-      className="ml-auto flex size-8 cursor-pointer items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-[#6765ef]"
+      className="ml-auto flex size-8 cursor-pointer items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover"
     >
       <Icon name="plusSquare" size={16} />
     </button>
@@ -115,25 +116,25 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
     allOpen,
     table: (
       <div className="overflow-auto">
-        <table className="w-full min-w-[760px] overflow-hidden rounded-lg bg-white text-ink-strong">
+        <table className="w-full min-w-[760px] overflow-hidden rounded-lg bg-white text-ink">
           <tbody>
-            <tr className="border-b border-[#ededf0] bg-[#fafafa]">
+            <tr className="border-b border-line bg-background">
               <td className={clsx(th, "w-12 rounded-tl-lg")} />
               <td className={clsx(th, "cursor-pointer")} onClick={() => toggleSort("name")}>
-                <span className="inline-flex items-center text-ink-strong">
+                <span className="inline-flex items-center text-ink">
                   Subject
                   <SortArrows />
                 </span>
               </td>
               <td className={clsx(th, "cursor-pointer")} onClick={() => toggleSort("score")}>
-                <span className="inline-flex items-center text-ink-strong">
+                <span className="inline-flex items-center text-ink">
                   Score
                   <SortArrows />
                 </span>
               </td>
               <td className={th}>Avg. Score</td>
               <td className={th}>
-                <span className="text-ink-strong">Questions Used</span>
+                <span className="text-ink">Questions Used</span>
               </td>
               <td className={clsx(th, "w-16 rounded-tr-lg text-right")} />
             </tr>
@@ -150,21 +151,21 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
                         return n;
                       })
                     }
-                    className="group cursor-pointer border-b border-[#ededf0] bg-white shadow-[inset_3px_0_0_0_#ededf0] transition-colors hover:bg-[#f6f6f6]"
+                    className="group cursor-pointer border-b border-line bg-white shadow-[inset_3px_0_0_0_var(--color-line)] transition-colors hover:bg-primary-light"
                   >
                     <td className="px-4 py-3">
                       {isOpen ? (
-                        <svg viewBox="0 0 48 48" className="size-4 text-faint" fill="currentColor">
+                        <svg viewBox="0 0 48 48" className="size-4 text-primary" fill="currentColor">
                           <path d="M6 23.5c0-.83.67-1.5 1.5-1.5h33a1.5 1.5 0 0 1 0 3h-33A1.5 1.5 0 0 1 6 23.5Z" />
                         </svg>
                       ) : (
-                        <Icon name="plus" size={16} className="text-faint" />
+                        <Icon name="plus" size={16} className="text-primary" />
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <SubjectIcon id={id} size={20} />
-                        <p className="truncate text-base leading-4 transition-colors group-hover:text-brand">{s.name}</p>
+                        <p className="truncate text-base leading-4 transition-colors group-hover:text-primary">{subjectName(s.id)}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -185,10 +186,10 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
                       const v = progress.bySystem.get(`${id}::${sys.name}`);
                       const sp = v?.max ? Math.round((v.earned / v.max) * 100) : 0;
                       return (
-                        <tr key={sys.name} className="border-b border-[#ededf0] bg-[#fafafa] shadow-[inset_3px_0_0_0_#ededf0]">
+                        <tr key={sys.name} className="border-b border-line bg-background shadow-[inset_3px_0_0_0_var(--color-line)]">
                           <td className="px-4 py-3" />
                           <td className="px-4 py-3 text-muted">
-                            <div className="ml-7 flex items-center gap-2 text-ink-strong">
+                            <div className="ml-7 flex items-center gap-2 text-ink">
                               <p className="truncate text-base leading-4">{sys.name}</p>
                               {sp < sys.avg && <Warning />}
                             </div>
@@ -226,9 +227,9 @@ export function TimeManagementTable({ subjects, perQuestion }: { subjects: Subje
   const progress = useProgress();
   return (
     <div className="overflow-auto">
-      <table className="w-full min-w-[640px] overflow-hidden rounded-lg bg-white text-ink-strong">
+      <table className="w-full min-w-[640px] overflow-hidden rounded-lg bg-white text-ink">
         <tbody>
-          <tr className="border-b border-[#ededf0] bg-[#fafafa]">
+          <tr className="border-b border-line bg-background">
             <td className="w-12 rounded-tl-lg py-4 pr-4 pl-6" />
             <td className="p-4 text-base leading-4 font-semibold">Subject</td>
             <td className="p-4 text-base leading-4 font-semibold">
@@ -246,12 +247,12 @@ export function TimeManagementTable({ subjects, perQuestion }: { subjects: Subje
             const per = perQuestion ? perQuestion[id] : stat?.answered ? stat.time / stat.answered : undefined;
             const slow = per != null && per > s.avgTimeSec;
             return (
-              <tr key={id} className="border-b border-[#ededf0] bg-white last:border-0">
+              <tr key={id} className="border-b border-line bg-white last:border-0">
                 <td className="py-4 pr-4 pl-6" />
                 <td className="p-4">
                   <div className="flex items-center gap-2">
                     <SubjectIcon id={id} size={20} />
-                    <p className="truncate text-base leading-4">{s.name}</p>
+                    <p className="truncate text-base leading-4">{subjectName(s.id)}</p>
                   </div>
                 </td>
                 <td className="p-4">
@@ -259,7 +260,7 @@ export function TimeManagementTable({ subjects, perQuestion }: { subjects: Subje
                     <span className="w-[50px] text-base leading-4">{per == null ? "--" : formatDuration(per)}</span>
                     {per != null && (
                       <span
-                        className={clsx("ml-2 h-2 rounded-sm", slow ? "bg-grad-bad" : "bg-grad-good")}
+                        className={clsx("ml-2 h-2 rounded-sm", slow ? "bg-error" : "bg-success")}
                         style={{ width: Math.max(4, Math.min(100, (per / s.avgTimeSec) * 12)) }}
                       />
                     )}
@@ -286,8 +287,8 @@ export function SectionHeading({ title, description, action }: { title: string; 
   return (
     <div className="mb-4 flex justify-between gap-4">
       <div>
-        <h2 className="text-2xl leading-[30px] font-bold text-white">{title}</h2>
-        <p className="mt-1 text-base leading-6 text-white/70">{description}</p>
+        <h2 className="text-2xl leading-[30px] font-bold text-ink">{title}</h2>
+        <p className="mt-1 text-base leading-6 text-muted">{description}</p>
       </div>
       {action}
     </div>
@@ -296,7 +297,7 @@ export function SectionHeading({ title, description, action }: { title: string; 
 
 export function ExpandAllToggle({ allOpen, onClick }: { allOpen: boolean; onClick: () => void }) {
   return (
-    <p onClick={onClick} className="flex shrink-0 cursor-pointer items-center justify-center gap-1 text-base leading-6 text-white">
+    <p onClick={onClick} className="flex shrink-0 cursor-pointer items-center justify-center gap-1 text-base leading-6 font-semibold text-primary hover:text-primary-hover">
       {allOpen ? (
         <svg viewBox="0 0 48 48" className="size-4" fill="currentColor">
           <path d="M6 23.5c0-.83.67-1.5 1.5-1.5h33a1.5 1.5 0 0 1 0 3h-33A1.5 1.5 0 0 1 6 23.5Z" />
@@ -320,7 +321,7 @@ export function SubjectPerformance({ subjects }: { subjects: SubjectId[] }) {
   const { table, toggleAll, allOpen } = useSubjectPerformanceTable({ subjects, defaultExpanded: true });
   return (
     <>
-      <p className="mb-6 text-lg leading-[27px] text-white/70">Performance tracks every question attempt for case studies, standalone questions, and readiness exams.</p>
+      <p className="mb-6 text-lg leading-[27px] text-muted">Performance tracks every question attempt for case studies, standalone questions, and readiness exams.</p>
       <SectionHeading
         title="Subject Performance"
         description={
@@ -337,7 +338,7 @@ export function SubjectPerformance({ subjects }: { subjects: SubjectId[] }) {
       <div className="mb-8">
         <TimeManagementTable subjects={subjects} />
       </div>
-      <FaqList items={PERFORMANCE_FAQS} />
+      <PlacedFaqs placement="performance" />
     </>
   );
 }

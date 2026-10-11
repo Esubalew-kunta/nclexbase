@@ -18,17 +18,20 @@ import {
   type Assignment,
   type Tone,
 } from "@/lib/schedule";
+import { BRAND } from "@/lib/brand";
 import { Modal } from "@/components/ui/primitives";
 import { CreateScheduleModal } from "@/components/home/CreateScheduleModal";
 import { ScheduleSettingsModal } from "./ScheduleSettingsModal";
 
 const TONES: Record<Tone, { bg: string; fg: string; border: string; swatch: string }> = {
-  lav: { bg: "#eeecff", fg: "#4b3fd0", border: "#dcd8ff", swatch: "#e6e3ff" },
-  green: { bg: "#e8f6ee", fg: "#1c7d4a", border: "#c9ebd7", swatch: "#d9f3e3" },
-  red: { bg: "#fdecec", fg: "#c33c35", border: "#f8cfcf", swatch: "#fbdcdc" },
-  gray: { bg: "#f1f1f4", fg: "#454653", border: "#e0e0e6", swatch: "#e9e9ee" },
-  blue: { bg: "#e6f0fd", fg: "#1f5fbf", border: "#cbdffa", swatch: "#d5e6fb" },
-  amber: { bg: "#fff3e0", fg: "#a9650b", border: "#fadfb6", swatch: "#fdebcd" },
+  // "lav" is the default tone of built-in assignments, so it carries the brand teal.
+  lav: { bg: BRAND.primaryLight, fg: BRAND.primary, border: "rgba(14,90,92,0.25)", swatch: "rgba(14,90,92,0.2)" },
+  green: { bg: "rgba(46,125,91,0.1)", fg: BRAND.success, border: "rgba(46,125,91,0.3)", swatch: "rgba(46,125,91,0.25)" },
+  red: { bg: "rgba(180,35,24,0.08)", fg: BRAND.error, border: "rgba(180,35,24,0.25)", swatch: "rgba(180,35,24,0.2)" },
+  gray: { bg: BRAND.background, fg: BRAND.ink, border: BRAND.line, swatch: BRAND.line },
+  blue: { bg: "rgba(47,111,115,0.1)", fg: BRAND.info, border: "rgba(47,111,115,0.3)", swatch: "rgba(47,111,115,0.3)" },
+  amber: { bg: "rgba(201,163,78,0.14)", fg: BRAND.ink, border: "rgba(201,163,78,0.5)", swatch: "rgba(201,163,78,0.45)" },
+  // Optional user label color, kept so saved assignments tagged "pink" still render.
   pink: { bg: "#fde8f3", fg: "#b3317a", border: "#f8cde4", swatch: "#fbd9ec" },
 };
 const SWATCHES: Tone[] = ["lav", "blue", "amber", "pink", "green", "red"];
@@ -154,7 +157,7 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
           "flex cursor-pointer items-center gap-2 rounded-md border transition-shadow hover:shadow-sm",
           compactCell ? "px-1.5 py-1 text-xs" : "px-3 text-base",
           !compactCell && (prefs.compact ? "h-[42px]" : "min-h-[56px] py-2"),
-          selected === a.id && "ring-2 ring-[#2d3a46]",
+          selected === a.id && "ring-2 ring-primary",
           done && "opacity-60",
         )}
         style={{ background: t.bg, color: t.fg, borderColor: t.border }}
@@ -165,7 +168,7 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
           onClick={(e) => e.stopPropagation()}
           onChange={() => toggle(a.id)}
           aria-label={`Mark “${a.title}” complete`}
-          className={clsx("shrink-0 cursor-pointer accent-brand", compactCell ? "size-3" : "size-4")}
+          className={clsx("shrink-0 cursor-pointer accent-primary", compactCell ? "size-3" : "size-4")}
         />
         <span className={clsx("min-w-0 flex-1", compactCell || prefs.compact ? "truncate" : "leading-5", done && "line-through")}>{a.title}</span>
         {!compactCell && <span className="shrink-0 text-sm opacity-80">{formatMinutes(minutesOf(a))}</span>}
@@ -190,19 +193,19 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
       <div className={clsx("flex min-h-[260px]", selectedAssignment && "flex-col sm:flex-row")}>
         <div className="min-w-0 flex-1 px-4 pb-6" {...dropProps(iso)}>
           <div className="flex items-center py-4">
-            <h3 className={clsx("text-xl leading-6 font-semibold", isToday ? "text-[#f43f5e]" : "text-ink-strong")}>
+            <h3 className={clsx("text-xl leading-6 font-semibold", isToday ? "text-error" : "text-ink")}>
               {isToday ? "Today" : anchor.toLocaleDateString("en-US", { weekday: "long" })}
             </h3>
             <span
-              className={clsx("ml-2 flex size-6 items-center justify-center rounded-full text-sm font-semibold", isToday ? "bg-[#f43f5e] text-white" : "bg-[#ededf0] text-muted")}
+              className={clsx("ml-2 flex size-6 items-center justify-center rounded-full text-sm font-semibold", isToday ? "bg-primary text-white" : "bg-line text-muted")}
             >
               {anchor.getDate()}
             </span>
-            <span className="ml-auto text-base text-faint">{dayTotal(iso) ? formatMinutes(dayTotal(iso)) : ""}</span>
+            <span className="ml-auto text-base text-muted">{dayTotal(iso) ? formatMinutes(dayTotal(iso)) : ""}</span>
           </div>
           <div className="flex flex-col gap-2">
             {list.map((a) => chip(a, "row"))}
-            <button onClick={() => addTo(iso)} aria-label="Add assignment" className="flex h-7 cursor-pointer items-center justify-center rounded-md border border-[#ededf0] bg-[#fafafa] text-muted hover:bg-[#f1f1f4]">
+            <button onClick={() => addTo(iso)} aria-label="Add assignment" className="flex h-7 cursor-pointer items-center justify-center rounded-md border border-line bg-background text-muted hover:bg-primary-light">
               <Plus className="size-4" />
             </button>
           </div>
@@ -233,17 +236,17 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
     const outside = d < planStart || d >= planEnd;
     const total = dayTotal(iso);
     return (
-      <div key={iso} className={clsx("group min-h-[110px] min-w-0 border-r border-b border-[#ededf0] p-1", outside && "bg-[#fafafa]")} {...dropProps(iso)}>
+      <div key={iso} className={clsx("group min-h-[110px] min-w-0 border-r border-b border-line p-1", outside && "bg-background")} {...dropProps(iso)}>
         <div className="mb-1 flex items-center justify-between px-1 text-sm">
-          <span className={clsx("flex h-6 min-w-6 items-center justify-center rounded-full px-1 font-medium", isToday ? "bg-[#f43f5e] text-white" : outside ? "text-faint" : "text-ink-strong")}>
+          <span className={clsx("flex h-6 min-w-6 items-center justify-center rounded-full px-1 font-medium", isToday ? "bg-primary text-white" : outside ? "text-faint" : "text-ink")}>
             {opts.showMonth && d.getDate() === 1 ? `${d.getDate()} ${d.toLocaleString("en-US", { month: "short" })}` : d.getDate()}
           </span>
-          <span className="text-xs text-faint">{total ? formatMinutes(total) : ""}</span>
+          <span className="text-xs text-muted">{total ? formatMinutes(total) : ""}</span>
         </div>
         <div className="flex flex-col gap-1">
           {list.map((a) => chip(a, "cell"))}
           {!outside && (
-            <button onClick={() => addTo(iso)} aria-label="Add assignment" className="hidden h-5 cursor-pointer items-center justify-center rounded bg-[#f6f6f8] text-muted group-hover:flex hover:bg-[#ededf0]">
+            <button onClick={() => addTo(iso)} aria-label="Add assignment" className="hidden h-5 cursor-pointer items-center justify-center rounded bg-background text-muted group-hover:flex hover:bg-primary-light">
               <Plus className="size-3" />
             </button>
           )}
@@ -254,8 +257,8 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
 
   const weekRow = (weekStart: Date, showMonth: boolean) => (
     <div key={toISODate(weekStart)} className="grid grid-cols-[28px_repeat(7,minmax(0,1fr))]">
-      <div className="flex items-center justify-center border-r border-b border-[#ededf0]">
-        <span className="-rotate-90 text-xs whitespace-nowrap text-faint">
+      <div className="flex items-center justify-center border-r border-b border-line">
+        <span className="-rotate-90 text-xs whitespace-nowrap text-muted">
           Week {Math.min(totalWeeks, Math.max(1, weekNumber(weekStart)))} of {totalWeeks}
         </span>
       </div>
@@ -264,7 +267,7 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
   );
 
   const dowHeader = (
-    <div className="sticky top-0 z-10 grid grid-cols-[28px_repeat(7,minmax(0,1fr))] border-y border-[#ededf0] bg-white text-base text-ink">
+    <div className="sticky top-0 z-10 grid grid-cols-[28px_repeat(7,minmax(0,1fr))] border-y border-line bg-white text-base text-ink">
       <div />
       {Array.from({ length: 7 }, (_, i) => (
         <div key={i} className="py-2 text-center">
@@ -295,21 +298,21 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
   return (
     <div className="relative rounded-xl bg-white shadow-card">
       <div className="flex flex-wrap items-center gap-2 px-4 pt-4">
-        <h3 className="mr-auto text-xl leading-6 font-semibold text-ink-strong">{title}</h3>
+        <h3 className="mr-auto text-xl leading-6 font-semibold text-ink">{title}</h3>
         <div className="flex items-center gap-2">
-          <button onClick={() => step(-1)} aria-label="Previous" className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ededf0] text-ink hover:bg-[#f6f6f6]">
+          <button onClick={() => step(-1)} aria-label="Previous" className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink hover:bg-primary-light">
             {vertical ? <ChevronUp className="size-4" /> : <ChevronLeft className="size-4" />}
           </button>
-          <button onClick={goToday} className="h-8 cursor-pointer rounded-full border border-[#ededf0] px-4 text-sm text-ink hover:bg-[#f6f6f6]">
+          <button onClick={goToday} className="h-8 cursor-pointer rounded-full border border-line px-4 text-sm text-ink hover:bg-primary-light">
             Today
           </button>
-          <button onClick={() => step(1)} aria-label="Next" className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ededf0] text-ink hover:bg-[#f6f6f6]">
+          <button onClick={() => step(1)} aria-label="Next" className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink hover:bg-primary-light">
             {vertical ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
           </button>
           <div className="relative">
             <button
               onClick={() => setViewMenu((v) => !v)}
-              className={clsx("flex h-8 cursor-pointer items-center gap-2 rounded-full border px-4 text-sm text-ink hover:bg-[#f6f6f6]", viewMenu ? "border-ink-strong" : "border-[#ededf0]")}
+              className={clsx("flex h-8 cursor-pointer items-center gap-2 rounded-full border px-4 text-sm text-ink hover:bg-primary-light", viewMenu ? "border-ink" : "border-line")}
             >
               {viewLabel}
               <ChevronDown className="size-3.5" />
@@ -332,7 +335,7 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
                         setViewMenu(false);
                         setSelected(null);
                       }}
-                      className={clsx("flex h-10 cursor-pointer items-center gap-2 rounded-md px-3 hover:bg-[#f6f6f6]", prefs.view === key && "bg-[#f1f1f4]")}
+                      className={clsx("flex h-10 cursor-pointer items-center gap-2 rounded-md px-3 hover:bg-primary-light", prefs.view === key && "bg-primary-light font-semibold text-primary")}
                     >
                       <span className="flex size-4 items-center">{prefs.view === key && <Check className="size-3.5" />}</span>
                       {label}
@@ -342,19 +345,19 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
               </>
             )}
           </div>
-          <button onClick={() => setRebalance(true)} className="flex h-8 cursor-pointer items-center gap-2 rounded-full border border-[#ededf0] px-4 text-sm text-ink hover:bg-[#f6f6f6]">
+          <button onClick={() => setRebalance(true)} className="flex h-8 cursor-pointer items-center gap-2 rounded-full border border-line px-4 text-sm text-ink hover:bg-primary-light">
             <RefreshCw className="size-3.5" />
             Rebalance
           </button>
-          <button onClick={() => setSettings(true)} aria-label="Settings" className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#ededf0] text-ink hover:bg-[#f6f6f6]">
+          <button onClick={() => setSettings(true)} aria-label="Settings" className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink hover:bg-primary-light">
             <Settings className="size-4" />
           </button>
         </div>
       </div>
 
       <div className="px-4 pt-3 pb-3">
-        <div className="h-2 overflow-hidden rounded-full bg-[#ededf0]">
-          <div className="h-full rounded-full bg-good transition-[width] duration-300" style={{ width: `${all.length ? (doneCount / all.length) * 100 : 0}%` }} />
+        <div className="h-2 overflow-hidden rounded-full bg-line">
+          <div className="h-full rounded-full bg-success transition-[width] duration-300" style={{ width: `${all.length ? (doneCount / all.length) * 100 : 0}%` }} />
         </div>
         <div className="mt-2 flex flex-wrap justify-between gap-x-4 text-sm text-ink">
           <span>
@@ -387,14 +390,14 @@ export function ScheduleCalendar({ home }: { home?: boolean }) {
       )}
 
       {home && (
-        <Link href="/nclex/study-schedule" className="flex items-center justify-between border-t border-[#ededf0] px-4 py-4 text-base font-semibold text-ink-strong hover:bg-[#fafafa]">
+        <Link href="/nclex/study-schedule" className="flex items-center justify-between border-t border-line px-4 py-4 text-base font-semibold text-ink hover:bg-primary-light">
           View full schedule
-          <ChevronRight className="size-4 text-faint" />
+          <ChevronRight className="size-4 text-muted" />
         </Link>
       )}
 
       {toast && (
-        <div className="animate-fade-in fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-brand px-4 py-3 text-white shadow-lg">
+        <div className="animate-fade-in fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-primary px-4 py-3 text-white shadow-lg">
           <button onClick={toast.undo} aria-label="Undo" className="cursor-pointer text-white/80">
             <RefreshCw className="size-4" />
           </button>
@@ -447,62 +450,62 @@ function AssignmentPanel({
   const [date, setDate] = useState(a.date);
 
   return (
-    <aside className={clsx("flex flex-col gap-3 p-4", inline ? "w-full shrink-0 border-t border-[#ededf0] sm:w-[285px] sm:border-t-0 sm:border-l" : "")}>
+    <aside className={clsx("flex flex-col gap-3 p-4", inline ? "w-full shrink-0 border-t border-line sm:w-[285px] sm:border-t-0 sm:border-l" : "")}>
       <div className="flex items-center gap-2">
-        <input type="checkbox" checked={done} onChange={onToggle} aria-label="Completed" className="size-5 cursor-pointer accent-brand" />
+        <input type="checkbox" checked={done} onChange={onToggle} aria-label="Completed" className="size-5 cursor-pointer accent-primary" />
         <span className="ml-auto flex items-center gap-1.5 text-xs">
-          {a.custom && <span className="rounded-md border border-[#ededf0] bg-[#f6f6f8] px-2 py-0.5 text-ink">Custom</span>}
-          <span className="rounded-md border border-[#ededf0] bg-[#f6f6f8] px-2 py-0.5 text-muted">{formatMinutes(minutes)}</span>
+          {a.custom && <span className="rounded-md border border-line bg-background px-2 py-0.5 text-ink">Custom</span>}
+          <span className="rounded-md border border-line bg-background px-2 py-0.5 text-muted">{formatMinutes(minutes)}</span>
         </span>
         {inline && (
-          <button onClick={onClose} aria-label="Close" className="cursor-pointer text-faint hover:text-ink">
+          <button onClick={onClose} aria-label="Close" className="cursor-pointer text-muted hover:text-ink">
             &times;
           </button>
         )}
       </div>
 
       {a.custom ? (
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className="border-b border-[#ededf0] pb-3 text-xl font-semibold text-ink-strong outline-none focus:border-brand" aria-label="Title" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} className="border-b border-line pb-3 text-xl font-semibold text-ink outline-none focus:border-primary" aria-label="Title" />
       ) : (
-        <h4 className="border-b border-[#ededf0] pb-3 text-xl leading-6 font-semibold text-ink-strong">{a.title}</h4>
+        <h4 className="border-b border-line pb-3 text-xl leading-6 font-semibold text-ink">{a.title}</h4>
       )}
 
-      <div className="flex items-center gap-2 border-b border-[#ededf0] pb-3">
-        <button onClick={() => setTone("gray")} aria-label="Default color" className={clsx("flex size-6 cursor-pointer items-center justify-center rounded-md border border-[#ededf0] bg-[#f6f6f8]", tone === "gray" && "ring-2 ring-[#2d3a46]")}>
+      <div className="flex items-center gap-2 border-b border-line pb-3">
+        <button onClick={() => setTone("gray")} aria-label="Default color" className={clsx("flex size-6 cursor-pointer items-center justify-center rounded-md border border-line bg-background", tone === "gray" && "ring-2 ring-primary")}>
           {tone === "gray" && <Check className="size-3.5" />}
         </button>
         {SWATCHES.map((t) => (
-          <button key={t} onClick={() => setTone(t)} aria-label={`Color ${t}`} className={clsx("size-6 cursor-pointer rounded-md", tone === t && "ring-2 ring-[#2d3a46]")} style={{ background: TONES[t].swatch }} />
+          <button key={t} onClick={() => setTone(t)} aria-label={`Color ${t}`} className={clsx("size-6 cursor-pointer rounded-md", tone === t && "ring-2 ring-primary")} style={{ background: TONES[t].swatch }} />
         ))}
       </div>
 
-      <label className="flex items-center gap-2 border-b border-[#ededf0] pb-3 text-base text-ink">
+      <label className="flex items-center gap-2 border-b border-line pb-3 text-base text-ink">
         <span className="text-muted">&#9719;</span>
         <input type="number" min={1} max={600} value={mins} onChange={(e) => setMins(Math.max(1, Number(e.target.value) || 1))} className="w-16 bg-transparent outline-none" />
         <span className="ml-auto text-sm text-muted">minutes</span>
       </label>
 
-      <label className="flex items-center gap-2 border-b border-[#ededf0] pb-3 text-base text-ink">
+      <label className="flex items-center gap-2 border-b border-line pb-3 text-base text-ink">
         <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="w-full bg-transparent outline-none" aria-label="Date" />
       </label>
 
       <button
         onClick={() => onSave({ title: a.custom ? title.trim() || "New assignment" : undefined, tone, date, minutes: mins })}
-        className="h-12 cursor-pointer rounded-full bg-brand text-base font-semibold text-white shadow-[0_2px_0_0_#4a3ac8] transition-[background,transform] duration-[50ms] hover:bg-[#6765ef] active:translate-y-[2px] active:shadow-none"
+        className="h-12 cursor-pointer rounded-full bg-primary text-base font-semibold text-white shadow-press transition-[background,transform] duration-[50ms] hover:bg-primary-hover active:translate-y-[2px] active:shadow-none"
       >
         Save
       </button>
       {a.href && (
-        <Link href={a.href} className="text-center text-sm font-semibold text-brand hover:underline">
+        <Link href={a.href} className="text-center text-sm font-semibold text-primary hover:underline">
           Open assignment
         </Link>
       )}
       <div className="flex gap-2">
-        <button onClick={onDuplicate} className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-[#ededf0] px-4 text-sm text-ink hover:bg-[#f6f6f6]">
+        <button onClick={onDuplicate} className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-line px-4 text-sm text-ink hover:bg-primary-light">
           <Copy className="size-3.5" />
           Duplicate
         </button>
-        <button onClick={onDelete} className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-[#ededf0] px-4 text-sm text-[#c33c35] hover:bg-[#fdf3f3]">
+        <button onClick={onDelete} className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-line px-4 text-sm text-error hover:bg-error/5">
           <Trash2 className="size-3.5" />
           Delete
         </button>
