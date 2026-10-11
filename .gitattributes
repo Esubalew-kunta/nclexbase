@@ -1,0 +1,5 @@
+# Never convert line endings in binary assets (Windows checkouts use core.autocrlf).
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
