@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { questionForDate, todayISO } from "@/lib/daily";
 import { useStore } from "@/lib/store";
-import { Button, Card, PageHeader, Toggle } from "@/components/ui/primitives";
+import { Button, Card, Toggle } from "@/components/ui/primitives";
 import { EmailPreview } from "@/components/daily/EmailPreview";
+import { CopyHeader } from "@/components/ui/CopyHeader";
 
 export default function DailyWarmupPage() {
   const router = useRouter();
@@ -30,11 +31,7 @@ export default function DailyWarmupPage() {
 
   return (
     <>
-      <PageHeader
-        trail={[{ label: "Daily Warmup" }]}
-        title="Daily Warmup"
-        description="Get one NCLEX® question in your inbox every day. Click the link in the email to answer it and read the rationale."
-      />
+      <CopyHeader trail={[{ label: "Daily Warmup" }]} titleKey="warmup.title" descriptionKey="warmup.description" />
       <Card className="mb-4 p-6">
         <div className="flex items-center gap-4">
           <div className="flex-1">

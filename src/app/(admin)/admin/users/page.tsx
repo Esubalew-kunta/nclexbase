@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { crud } from "@/lib/admin/crud";
-import { useAdminStore } from "@/lib/admin/store";
+import { newId, useAdminStore } from "@/lib/admin/store";
+import { DeleteRecordButton } from "@/components/admin/parts";
 import type { UserRec } from "@/lib/admin/types";
-import { useAll } from "@/lib/content";
+import { getAll, useAll } from "@/lib/content";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import { todayISO } from "@/lib/daily";
@@ -131,10 +132,16 @@ export default function UsersAdmin() {
       title="Users"
       description="Student accounts. Only the student on this browser is real until the backend exists; the others are sample accounts so search, filters and actions can be tried."
       actions={
-        <Btn onClick={exportCsv}>
-          <Download className="size-4" />
-          Export CSV ({list.filtered.length})
-        </Btn>
+        <>
+          <Btn onClick={exportCsv}>
+            <Download className="size-4" />
+            Export CSV ({list.filtered.length})
+          </Btn>
+          <Btn variant="primary" onClick={() => edit.open("new")}>
+            <Plus className="size-4" />
+            New user
+          </Btn>
+        </>
       }
     >
       <ListToolbar list={list} placeholder="Search name, email, institution" />
@@ -147,16 +154,40 @@ export default function UsersAdmin() {
           Disable
         </Btn>
         <Btn onClick={() => (api.patchMany([...sel.selected], { status: "active" }, "Re-enabled"), toast("Updated"))}>Enable</Btn>
+        <Btn
+          variant="danger"
+          onClick={async () => {
+            if (!(await confirmDialog({ title: `Delete ${sel.selected.size} user${sel.selected.size === 1 ? "" : "s"}?`, body: "Their accounts are removed. This can't be undone.", confirm: "Delete", danger: true }))) return;
+            api.hardDelete([...sel.selected]);
+            sel.clear();
+          }}
+        >
+          Delete
+        </Btn>
       </BulkBar>
       <DataTable list={list} columns={columns} rowId={(u) => u.id} onRowClick={(u) => edit.open(u.id)} selection={sel} empty={<ListEmpty list={list} noun="users" />} />
       {editing && <UserDrawer key={editing.id + editing.updatedAt + editing.plan} rec={editing} onClose={edit.close} />}
+      {edit.id === "new" && (
+        <UserDrawer
+          isNew
+          rec={{ id: newId("u"), name: "", email: "", plan: "free", status: "active", institution: "", createdAt: todayISO(), lastActive: todayISO(), answered: 0, scorePct: 0, updatedAt: todayISO() }}
+          onClose={edit.close}
+        />
+      )}
     </AdminPage>
   );
 }
 
-function UserDrawer({ rec, onClose }: { rec: UserRec; onClose: () => void }) {
+function UserDrawer({ rec, onClose, isNew }: { rec: UserRec; onClose: () => void; isNew?: boolean }) {
   const [f, setF] = useState(rec);
   const save = () => {
+    if (!f.name.trim() || !/^\S+@\S+\.\S+$/.test(f.email)) return toast("Enter a name and a valid email.", "error");
+    if (getAll("users").some((u) => u.id !== f.id && u.email.toLowerCase() === f.email.trim().toLowerCase())) return toast("Another user has that email.", "error");
+    if (isNew) {
+      api.create({ ...f, name: f.name.trim(), email: f.email.trim() });
+      toast("User created");
+      return onClose();
+    }
     if (rec.local) {
       useStore.setState((s) => ({ user: { ...s.user, name: f.name === "Student on this browser" ? s.user.name : f.name, email: f.email, plan: f.plan } }));
       logLocal(`Updated the student on this browser (${f.email})`);
@@ -168,9 +199,11 @@ function UserDrawer({ rec, onClose }: { rec: UserRec; onClose: () => void }) {
     <Drawer
       open
       onClose={onClose}
-      title={rec.name}
+      title={isNew ? "New user" : rec.name}
       footer={
         <>
+          {!isNew && !rec.local && <DeleteRecordButton noun="user" onDelete={() => (api.hardDelete([rec.id]), onClose())} />}
+          <span className="flex-1" />
           <Btn onClick={onClose}>Cancel</Btn>
           <Btn variant="primary" onClick={save}>
             Save

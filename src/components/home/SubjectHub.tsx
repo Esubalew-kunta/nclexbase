@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { subjectById } from "@/data/catalog";
-import { useAll, useLessons, useSubjectRec } from "@/lib/content";
+import { useAll, useCopy, useLessons, useSubjectRec } from "@/lib/content";
+import { courseHref, subjectHref } from "@/lib/routes";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import type { SubjectId } from "@/lib/types";
@@ -24,14 +24,14 @@ export function SubjectRedirect({ id }: { id: SubjectId }) {
   const rec = useSubjectRec(id);
   const first = rec?.tabs[0] ?? tabsFor(id)[0];
   useEffect(() => {
-    if (hydrated) router.replace(`/nclex/${id}/${first}`);
+    if (hydrated && first) router.replace(subjectHref(id, first));
   }, [hydrated, router, id, first]);
   return null;
 }
 
 export function SubjectHub({ id, tab }: { id: SubjectId; tab: SubjectTab }) {
   const router = useRouter();
-  const live = subjectById(id);
+  const copy = useCopy();
   const rec = useSubjectRec(id);
   const lessons = useLessons(id);
   const course = useAll("courses").find((c) => c.id === id);
@@ -39,8 +39,7 @@ export function SubjectHub({ id, tab }: { id: SubjectId; tab: SubjectTab }) {
   const hydrated = useStore((s) => s.hydrated);
   const setUi = useStore((s) => s.setUi);
   const progress = useProgress();
-  const base = `/nclex/${id}`;
-  const name = rec?.name ?? live.name;
+  const name = rec?.name ?? id;
   const tabs = rec?.tabs ?? tabsFor(id);
   const systems = (rec?.systems ?? []).filter((s) => s.visible);
 
@@ -53,14 +52,14 @@ export function SubjectHub({ id, tab }: { id: SubjectId; tab: SubjectTab }) {
     plan === "free" ? <UpgradeButton onClick={(e) => e.stopPropagation()} /> : <Button onClick={action(system)}>Create Test</Button>;
 
   // A tab the admin turned off (or a subject they hid) still has a static page; explain instead of rendering it.
-  if (hydrated && (!tabs.includes(tab) || rec?.visible === false))
+  if (hydrated && (!rec || !tabs.includes(tab) || rec.visible === false))
     return (
       <>
         <PageHeader trail={[{ label: name }]} title={name} />
         <div className="rounded-lg border border-dashed border-line bg-white px-6 py-12 text-center">
           <p className="text-lg font-semibold text-ink">This section isn&apos;t available right now.</p>
           {rec?.visible !== false && tabs[0] && (
-            <Link href={`${base}/${tabs[0]}`} className="mt-3 inline-block font-semibold text-primary underline hover:text-primary-hover">
+            <Link href={subjectHref(id, tabs[0])} className="mt-3 inline-block font-semibold text-primary underline hover:text-primary-hover">
               Go to {TAB_LABELS[tabs[0]]}
             </Link>
           )}
@@ -71,28 +70,28 @@ export function SubjectHub({ id, tab }: { id: SubjectId; tab: SubjectTab }) {
   return (
     <>
       <PageHeader trail={[{ label: name }]} title={name} />
-      <UnderlineTabs tabs={tabs.map((t) => ({ label: TAB_LABELS[t], href: `${base}/${t}` }))} active={`${base}/${tab}`} />
+      <UnderlineTabs tabs={tabs.map((t) => ({ label: TAB_LABELS[t], href: subjectHref(id, t) }))} active={subjectHref(id, tab)} />
 
       {tab === "case-studies" && (
         <>
-          <Banner>The case studies below are based on the real Next Gen NCLEX. Practice with these so you&apos;re ready for the real exam.</Banner>
+          <Banner>{copy("subject.casesBanner")}</Banner>
           <CaseList subject={id} />
         </>
       )}
 
       {tab === "standalone" && (
         <>
-          <Banner>The standalone questions below are based on the real Next Gen NCLEX. Practice with these so you&apos;re ready for the real exam.</Banner>
+          <Banner>{copy("subject.standaloneBanner")}</Banner>
           <h2 className="py-4 text-2xl leading-[30px] font-bold text-ink">By Subject</h2>
           <NumberedRow leading={<SubjectIcon id={id} size={24} />} title={name} onClick={() => action()()} action={actionButton()}>
-            <UsageBlock className="lg:max-w-[630px]" usage={{ total: live.standaloneCount, ...progress.standaloneFor(id) }} />
+            <UsageBlock className="lg:max-w-[630px]" usage={{ total: rec?.stats.standaloneCount ?? 0, ...progress.standaloneFor(id) }} />
           </NumberedRow>
           <h2 className="py-4 text-2xl leading-[30px] font-bold text-ink">By System</h2>
           {systems.map((sys, i) => (
             <NumberedRow key={sys.key} number={i + 1} title={sys.label} onClick={() => action(sys.key)()} action={actionButton(sys.key)}>
               <UsageBlock
                 className="lg:max-w-[630px]"
-                usage={{ total: live.systems.find((x) => x.name === sys.key)?.count ?? 0, used: progress.bySystem.get(`${id}::${sys.key}`)?.used ?? 0 }}
+                usage={{ total: sys.count, used: progress.bySystem.get(`${id}::${sys.key}`)?.used ?? 0 }}
               />
             </NumberedRow>
           ))}
@@ -106,10 +105,10 @@ export function SubjectHub({ id, tab }: { id: SubjectId; tab: SubjectTab }) {
             {
               id,
               title: course?.title ?? name,
-              runtime: course?.runtime ?? live.videoRuntime,
+              runtime: course?.runtime ?? "",
               count: lessons.length,
               lessons: lessons.map((l) => ({ type: l.type, title: l.title, duration: l.duration, count: l.count, locked: l.access === "premium" })),
-              href: `/nclex/crash-courses/videos/${id}`,
+              href: courseHref(id),
             },
           ]}
         />

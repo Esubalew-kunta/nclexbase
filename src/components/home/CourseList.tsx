@@ -8,6 +8,7 @@ import type { Lesson } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
 import { ProgressBar, UsageBar } from "@/components/ui/primitives";
+import { withParam } from "@/lib/routes";
 
 export interface Course {
   id: string;
@@ -56,7 +57,7 @@ export function CourseList({ courses, filter = "", defaultOpen = false }: { cour
         const firstFree = c.lessons.findIndex((l) => !l.locked) + 1 || 1;
         return (
           <div key={c.id} className="mb-2 rounded-lg bg-white shadow-card transition-transform duration-200 hover:scale-[1.01]">
-            <Link href={`${c.href}?index=${firstFree}`} className="flex items-center rounded-t-lg bg-white px-6 py-4">
+            <Link href={withParam(c.href, "index", firstFree)} className="flex items-center rounded-t-lg bg-white px-6 py-4">
               <div className="mr-4 flex min-w-0 flex-1 items-start">
                 <h4 className="mr-4 text-lg leading-[22.5px] font-semibold text-muted">{n + 1}</h4>
                 <div className="min-w-0 flex-1 lg:max-w-[630px]">
@@ -81,7 +82,7 @@ export function CourseList({ courses, filter = "", defaultOpen = false }: { cour
             {expanded && (
               <div className="flex flex-col">
                 {lessons.map((l) => (
-                  <LessonRow key={l.index} lesson={l} href={`${c.href}?index=${l.index}`} />
+                  <LessonRow key={l.index} lesson={l} href={withParam(c.href, "index", l.index)} />
                 ))}
               </div>
             )}

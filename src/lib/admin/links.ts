@@ -17,6 +17,7 @@ export function adminHref(entity: string, id?: string): string | null {
     users: id ? `/admin/users?edit=${e}` : "/admin/users",
     codes: id ? `/admin/codes?edit=${e}` : "/admin/codes",
     messages: id ? `/admin/inbox?edit=${e}` : "/admin/inbox",
+    announcements: id ? `/admin/announcements?edit=${e}` : "/admin/announcements",
     settings: "/admin/settings",
   };
   return map[entity as CollectionName] ?? null;

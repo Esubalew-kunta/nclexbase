@@ -6,9 +6,9 @@ import { useStore } from "@/lib/store";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { BRAND } from "@/lib/brand";
 import { useConfig } from "@/lib/content";
-import type { QuickActionKey } from "@/lib/admin/config";
 
 interface Action {
+  id: string;
   title: string;
   subtitle: string;
   icon: IconName;
@@ -19,21 +19,21 @@ interface Action {
   external?: boolean;
 }
 
-/** Quick-action cards (3 columns; 2 on tablet/phone). Order, labels and visibility: Admin > Home & Navigation. Hover: scale(1.01). */
+/** Quick-action cards (3 columns; 2 on tablet/phone). Cards, order, words and icons: Admin > Home & Navigation. Hover: scale(1.01). */
 export function QuickActions() {
   const setUi = useStore((s) => s.setUi);
   const plan = useStore((s) => s.user.plan);
-  const config = useConfig().home.quickActions;
-  const base: Record<QuickActionKey, Omit<Action, "title" | "subtitle">> = {
-    createTest: { icon: "qaCreateTest", color: BRAND.primary, onClick: () => setUi({ createTestOpen: true }) },
-    dailyWarmup: { icon: "shield", color: BRAND.gold, href: plan === "free" ? "/nclex/upgrade" : "/nclex/daily-warmup", locked: plan === "free" },
-    performance: { icon: "qaPerformance", color: BRAND.primary, href: "/nclex/performance" },
-    readiness: { icon: "qaReadiness", color: BRAND.primary, href: "/nclex/next-gen-readiness-exams" },
-    previousTests: { icon: "qaPreviousTests", color: BRAND.primary, href: "/nclex/previous-tests" },
-  };
+  const config = useConfig().homeLayout.quickActions;
   const actions: Action[] = config
-    .filter((c) => c.visible && base[c.key])
-    .map((c) => ({ ...base[c.key], title: c.label, subtitle: c.key === "dailyWarmup" && plan === "free" ? "Upgrade to unlock" : c.subtitle }));
+    .filter((c) => c.visible)
+    .map((c): Action => {
+      const external = /^https?:/.test(c.href);
+      // Built-in cards keep their behaviour; custom cards are plain links.
+      if (c.builtin === "createTest") return { id: c.id, title: c.label, subtitle: c.subtitle, icon: c.icon, color: BRAND.primary, onClick: () => setUi({ createTestOpen: true }) };
+      if (c.builtin === "dailyWarmup")
+        return { id: c.id, title: c.label, subtitle: plan === "free" ? "Upgrade to unlock" : c.subtitle, icon: c.icon, color: BRAND.gold, href: plan === "free" ? "/nclex/upgrade" : c.href || "/nclex/daily-warmup", locked: plan === "free" };
+      return { id: c.id, title: c.label, subtitle: c.subtitle, icon: c.icon, color: BRAND.primary, href: c.href || "/nclex", external };
+    });
 
   return (
     <div className="mb-8 grid w-full grid-cols-2 gap-2 lg:grid-cols-3">
@@ -60,18 +60,18 @@ export function QuickActions() {
         );
         if (a.onClick)
           return (
-            <button key={a.title} onClick={a.onClick} className={cls}>
+            <button key={a.id} onClick={a.onClick} className={cls}>
               {inner}
             </button>
           );
         if (a.external)
           return (
-            <a key={a.title} href={a.href} target="_blank" rel="noreferrer" className={cls}>
+            <a key={a.id} href={a.href} target="_blank" rel="noreferrer" className={cls}>
               {inner}
             </a>
           );
         return (
-          <Link key={a.title} href={a.href!} className={cls}>
+          <Link key={a.id} href={a.href!} className={cls}>
             {inner}
           </Link>
         );

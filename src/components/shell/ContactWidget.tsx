@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { newId, useAdminStore } from "@/lib/admin/store";
-import { useAll, useConfig } from "@/lib/content";
+import { useAll, useCopy } from "@/lib/content";
 
 /** Stand-in for the live app's Intercom messenger (opened from sidebar → Contact). */
 export function ContactWidget() {
@@ -12,7 +12,7 @@ export function ContactWidget() {
   const [sent, setSent] = useState(false);
   const [text, setText] = useState("");
   const user = useStore((s) => s.user);
-  const siteName = useConfig().branding.siteName;
+  const copy = useCopy();
   // Messages land in Admin > Support Inbox; replies from there show up here.
   const thread = useAll("messages").filter((m) => m.email === user.email);
   const send = () => {
@@ -49,7 +49,7 @@ export function ContactWidget() {
         <div className="animate-pop-in fixed right-5 bottom-[84px] z-40 flex h-[520px] max-h-[calc(100dvh-104px)] w-[376px] max-w-[calc(100vw-40px)] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_5px_40px_rgba(0,0,0,0.16)]">
           <div className="border-b-[3px] border-gold bg-primary px-6 pt-6 pb-8 text-white">
             <p className="text-2xl font-bold">Hi there</p>
-            <p className="mt-2 text-base text-white/90">Questions about {siteName}? Send us a message and our team will reply here.</p>
+            <p className="mt-2 text-base text-white/90">{copy("contact.intro")}</p>
           </div>
           <div className="flex flex-1 flex-col gap-3 overflow-auto p-5 text-sm text-ink">
             {thread.map((m) => (

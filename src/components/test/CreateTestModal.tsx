@@ -4,7 +4,6 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
-import { subjectById, TOTALS } from "@/data/catalog";
 import { buildEntries, studyItems } from "@/lib/bank";
 import { useBank, useCaseRows, useConfig, useSubjects } from "@/lib/content";
 import { usedItemIds, useStore } from "@/lib/store";
@@ -78,7 +77,8 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
   const allItems = useMemo(() => studyItems(), [bank]); // eslint-disable-line react-hooks/exhaustive-deps
   const caseRows = useCaseRows();
   const subjects = useSubjects();
-  const freeQuestions = useConfig().freeTier.freeQuestions;
+  const { freeTier, totals } = useConfig();
+  const freeQuestions = freeTier.freeQuestions;
   const used = useMemo(() => usedItemIds(sessions), [sessions]);
   const inPool = (item: Item, pool: Pool) =>
     pool === "unused" ? !used.has(item.id) : pool === "bookmarked" ? Boolean(bookmarks[item.id]) : tags[item.id] === pool;
@@ -92,22 +92,21 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
     {
       id: "cases",
       label: "Case Studies",
-      count: TOTALS.cases,
+      count: totals.cases,
       locked: isFree,
       children: caseRows.map((r) => ({ id: `case:${r.id}`, label: r.title, count: r.number <= 2 ? 5 : 6, locked: isFree })),
     },
     ...subjects.map((s) => {
-      // Question counts mirror the live catalog; systems and names come from Admin > Subjects & Systems.
-      const live = subjectById(s.id);
+      // Names, systems and the counts shown all come from Admin > Subjects & Systems.
       return {
         id: s.id,
         label: s.name,
-        count: live.standaloneCount,
+        count: s.stats.standaloneCount,
         locked: isFree,
         subject: s.id,
         children: s.systems
           .filter((sys) => sys.visible)
-          .map((sys) => ({ id: `${s.id}:${sys.key}`, label: sys.label, count: live.systems.find((x) => x.name === sys.key)?.count ?? 0, locked: isFree, system: sys.key })),
+          .map((sys) => ({ id: `${s.id}:${sys.key}`, label: sys.label, count: sys.count, locked: isFree, system: sys.key })),
       };
     }),
   ];

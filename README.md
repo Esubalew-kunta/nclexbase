@@ -40,7 +40,7 @@ The repo includes `render.yaml`, so use **New → Blueprint** and pick this repo
 lessons, FAQs, QOTD), structure (subjects, systems, tabs), experience (home, navigation, announcement, plans, targets)
 and people (users, institution codes, support inbox). Edits are saved in this browser (localStorage, PDFs in
 IndexedDB) on top of the seed data, and every student page reads through `src/lib/content`. Prototype sign-in:
-`admin@nclexbase.com` / `admin123`. Details: [docs/ADMIN_PLAN.md](docs/ADMIN_PLAN.md).
+`admin@nclexbase.com` / `admin123`. Details: [docs/ADMIN_PLAN.md](docs/ADMIN_PLAN.md); full-control review: [docs/ADMIN_REVIEW.md](docs/ADMIN_REVIEW.md).
 
 ## Structure
 

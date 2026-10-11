@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CheatSheetRec, LessonRec, MemoryTrickRec, SubjectRec } from "@/lib/admin/types";
 import { usePublished, useSubjects } from "@/lib/content";
+import { subjectHref } from "@/lib/routes";
 import { useStore } from "@/lib/store";
 import type { SubjectId } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
@@ -26,12 +27,12 @@ function buildIndex(subjects: SubjectRec[], lessons: LessonRec[], sheets: CheatS
     lessons
       .filter((l) => l.course === s.id)
       .forEach((l, i) => {
-        if (l.type === "video") hits.push({ title: l.title, kind: "Video", subject: s.id, index: `1.${i + 1}`, href: `/nclex/${s.id}/videos`, locked: l.access === "premium" });
+        if (l.type === "video") hits.push({ title: l.title, kind: "Video", subject: s.id, index: `1.${i + 1}`, href: subjectHref(s.id, "videos"), locked: l.access === "premium" });
       });
   for (const c of sheets)
-    if (shown.has(c.subject)) hits.push({ title: c.title, kind: "Cheat Sheet", subject: c.subject, href: `/nclex/${c.subject}/cheat-sheets`, locked: c.access === "premium" });
+    if (shown.has(c.subject)) hits.push({ title: c.title, kind: "Cheat Sheet", subject: c.subject, href: subjectHref(c.subject, "cheat-sheets"), locked: c.access === "premium" });
   for (const t of tricks)
-    if (shown.has(t.subject) && t.file) hits.push({ title: t.title, kind: "Memory Trick", subject: t.subject, href: `/nclex/${t.subject}/memory-tricks`, locked: t.access === "premium" });
+    if (shown.has(t.subject) && t.file) hits.push({ title: t.title, kind: "Memory Trick", subject: t.subject, href: subjectHref(t.subject, "memory-tricks"), locked: t.access === "premium" });
   return hits;
 }
 
@@ -137,7 +138,7 @@ export function SearchBox() {
             {groups.map(({ subject, hits }) => (
               <div key={subject.id}>
                 <Link
-                  href={`/nclex/${subject.id}`}
+                  href={subjectHref(subject.id)}
                   onClick={() => setFocused(false)}
                   className="flex flex-col justify-center border-b border-line bg-primary-light px-4 py-3 hover:bg-primary/15"
                 >

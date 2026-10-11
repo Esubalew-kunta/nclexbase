@@ -2,8 +2,8 @@
 
 import clsx from "clsx";
 import { Fragment, useState, type ReactNode } from "react";
-import { subjectById } from "@/data/catalog";
-import { subjectName } from "@/lib/content";
+import type { SubjectRec } from "@/lib/admin/types";
+import { subjectName, useSubjects } from "@/lib/content";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import { formatDuration } from "@/lib/scoring";
@@ -94,14 +94,31 @@ const th = "p-3 px-4 text-left text-base leading-4 font-semibold text-muted";
 /* Subject Performance (subjects expand into systems)                  */
 /* ------------------------------------------------------------------ */
 
+/** Performance numbers for a subject from Admin > Subjects & Systems (averages are editable there). */
+function subjectView(subjects: SubjectRec[], id: SubjectId) {
+  const rec = subjects.find((s) => s.id === id);
+  return {
+    id,
+    name: rec?.name ?? id,
+    avgScore: rec?.stats.avgScore ?? 0,
+    perfTotal: rec?.stats.perfTotal ?? 0,
+    avgTimeSec: rec?.stats.avgTimeSec ?? 70,
+    perfSystems: (rec?.systems ?? [])
+      .filter((x) => x.visible)
+      .map((x) => ({ key: x.key, name: x.label, avg: x.avg, total: x.perfTotal }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
 export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subjects: SubjectId[]; defaultExpanded?: boolean }) {
   const progress = useProgress();
+  const all = useSubjects(true);
   const [open, setOpen] = useState<Set<SubjectId>>(() => new Set(defaultExpanded ? subjects : []));
   const [sort, setSort] = useState<{ key: "name" | "score"; dir: 1 | -1 } | null>(null);
   const allOpen = open.size === subjects.length;
 
   const rows = subjects.map((id) => {
-    const s = subjectById(id);
+    const s = subjectView(all, id);
     const stat = progress.bySubject.get(id);
     const counts = progress.subjectCounts(id);
     return { id, s, pct: stat?.max ? Math.round((stat.earned / stat.max) * 100) : 0, counts };
@@ -183,10 +200,10 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
                   </tr>
                   {isOpen &&
                     s.perfSystems.map((sys) => {
-                      const v = progress.bySystem.get(`${id}::${sys.name}`);
+                      const v = progress.bySystem.get(`${id}::${sys.key}`);
                       const sp = v?.max ? Math.round((v.earned / v.max) * 100) : 0;
                       return (
-                        <tr key={sys.name} className="border-b border-line bg-background shadow-[inset_3px_0_0_0_var(--color-line)]">
+                        <tr key={sys.key} className="border-b border-line bg-background shadow-[inset_3px_0_0_0_var(--color-line)]">
                           <td className="px-4 py-3" />
                           <td className="px-4 py-3 text-muted">
                             <div className="ml-7 flex items-center gap-2 text-ink">
@@ -204,7 +221,7 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
                             <UsageCell used={v?.used ?? 0} total={sys.total} />
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <CreateButton subject={id} system={sys.name} />
+                            <CreateButton subject={id} system={sys.key} />
                           </td>
                         </tr>
                       );
@@ -225,6 +242,7 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
 
 export function TimeManagementTable({ subjects, perQuestion }: { subjects: SubjectId[]; perQuestion?: Partial<Record<SubjectId, number>> }) {
   const progress = useProgress();
+  const all = useSubjects(true);
   return (
     <div className="overflow-auto">
       <table className="w-full min-w-[640px] overflow-hidden rounded-lg bg-white text-ink">
@@ -242,7 +260,7 @@ export function TimeManagementTable({ subjects, perQuestion }: { subjects: Subje
             <td className="w-12 rounded-tr-lg p-4" />
           </tr>
           {subjects.map((id) => {
-            const s = subjectById(id);
+            const s = subjectView(all, id);
             const stat = progress.bySubject.get(id);
             const per = perQuestion ? perQuestion[id] : stat?.answered ? stat.time / stat.answered : undefined;
             const slow = per != null && per > s.avgTimeSec;

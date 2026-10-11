@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, ArrowUp, CircleAlert, CircleCheck, CirclePlay, CircleX, Clock, FileText, MessageSquare, Scale, ShieldCheck, Sparkles, SquarePen, Timer } from "lucide-react";
 import { subjectName, systemLabel, useConfig } from "@/lib/content";
+import { subjectHref } from "@/lib/routes";
 import { useStore } from "@/lib/store";
 import { avgPoints, formatClock, scoreItem, scoringRule } from "@/lib/scoring";
 import type { Answer, Item } from "@/lib/types";
@@ -98,7 +99,7 @@ export function Feedback({ item, answer, seconds }: { item: Item; answer: Answer
       {item.linkedVideo && (
         <section>
           <SectionHead icon={CirclePlay}>Linked Crash Course Video</SectionHead>
-          <LinkedCard kind="video" title={item.linkedVideo} subtitle={subjectName(item.subject)} locked={plan === "free"} href={`/nclex/${item.subject}/crash-courses`} />
+          <LinkedCard kind="video" title={item.linkedVideo} subtitle={subjectName(item.subject)} locked={plan === "free"} href={subjectHref(item.subject, "videos")} />
         </section>
       )}
       {item.linkedSheet && (

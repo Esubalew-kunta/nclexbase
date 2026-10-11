@@ -1,4 +1,5 @@
-import { getCaseRows } from "@/lib/content";
+import { getAll, getCaseRows, getConfig } from "@/lib/content";
+import { caseHref, readinessHref } from "@/lib/routes";
 import type { Schedule } from "./store";
 
 /* ------------------------------------------------------------------ */
@@ -91,16 +92,6 @@ export const EMPTY_EDITS: ScheduleEdits = { done: {}, overrides: {}, deleted: {}
 
 type Draft = Omit<Assignment, "date">;
 
-const STANDALONE_BLOCKS: { title: string; minutes: number }[] = [
-  { title: "35 Adult Health Standalone Questions", minutes: 75 },
-  { title: "20 Child Health, 10 Pharmacology Standalone Questions", minutes: 60 },
-  { title: "30 Mental Health Standalone Questions", minutes: 60 },
-  { title: "20 Fundamentals Standalone Questions", minutes: 90 },
-  { title: "35 Adult Health Standalone Questions", minutes: 75 },
-  { title: "30 Maternal & Newborn Health Standalone Questions", minutes: 60 },
-  { title: "30 Management of Care Standalone Questions", minutes: 60 },
-  { title: "30 Pharmacology Standalone Questions", minutes: 60 },
-];
 
 /** Dates the student studies on (not a weekly day off, not a picked day off). */
 export function studyDates(s: Schedule): Date[] {
@@ -144,49 +135,56 @@ function distribute(items: Draft[], days: Date[]): Assignment[] {
   return out;
 }
 
-/** The proven plan: onboarding day, cases and standalone blocks interleaved, weekly reviews, and four CAT readiness exams. */
+/**
+ * The study plan: onboarding day, cases and standalone blocks interleaved, review pairs, and the
+ * readiness exams. Every ingredient (texts, minutes, blocks, review cadence) comes from
+ * Admin > Targets & Rules > Study schedule template.
+ */
 export function generatePlan(s: Schedule): Assignment[] {
   const days = studyDates(s);
   if (!days.length) return [];
+  const rules = getConfig().schedule;
 
-  const intro: Draft[] = [
-    { id: "intro-test", title: "Create Your First Test", minutes: 15, href: "/nclex", tone: "lav" },
-    { id: "intro-qotd", title: "Get the NCLEX Question of the Day", minutes: 15, href: "/nclex/question-of-the-day", tone: "lav" },
-    { id: "intro-guide", title: "Read “Dr. Emily’s NCLEX Study Guide”", minutes: 15, href: "/nclex/study-guide", tone: "lav" },
-  ];
-  const ngn: Draft = { id: "ngn", title: "(Optional) Next Gen NCLEX Overview", minutes: 30, href: "/nclex/next-gen-strategy-course/videos", tone: "green" };
+  const intro: Draft[] = rules.intro.map((x) => ({ id: x.id, title: x.title, minutes: x.minutes, href: x.href || null, tone: "lav" }));
+  const ngn: Draft | null = rules.ngnOverview.enabled
+    ? { id: "ngn", title: rules.ngnOverview.title, minutes: rules.ngnOverview.minutes, href: "/nclex/next-gen-strategy-course/videos", tone: "green" }
+    : null;
 
+  // Case studies of every visible subject, interleaved so subjects alternate.
+  const rows = getCaseRows();
+  const subjects = getAll("subjects").filter((x) => x.visible).sort((a, b) => a.order - b.order);
   const cases = interleave(
-    ["adult-health", "child-health", "mental-health", "maternal-and-newborn-health"].map((sub) =>
-      getCaseRows().filter((r) => r.subject === sub).map<Draft>((r) => ({ id: `case-${r.number}`, title: r.title, minutes: 30, href: `/nclex/next-gen-cases/qbanks/${r.id}`, tone: "lav" })),
-    ),
+    subjects
+      .map((sub) => rows.filter((r) => r.subject === sub.id).map<Draft>((r) => ({ id: `case-${r.number}`, title: r.title, minutes: rules.caseMinutes, href: caseHref(r.id), tone: "lav" })))
+      .filter((q) => q.length),
   );
-  const blockCount = Math.max(6, Math.round(days.length * 0.45));
-  const blocks = Array.from({ length: blockCount }, (_, i): Draft => ({ id: `std-${i + 1}`, ...STANDALONE_BLOCKS[i % STANDALONE_BLOCKS.length], href: "/nclex/next-gen-standalone", tone: "lav" }));
+  const blockCount = rules.blocks.length ? Math.max(6, Math.round(days.length * 0.45)) : 0;
+  const blocks = Array.from({ length: blockCount }, (_, i): Draft => ({ id: `std-${i + 1}`, ...rules.blocks[i % rules.blocks.length], href: "/nclex/next-gen-standalone", tone: "lav" }));
 
-  // Weekly review pair after every ~6 content assignments.
-  const content = interleave([cases, blocks]);
-  const stream: Draft[] = [ngn];
+  // A review pair after every N content assignments.
+  const content = interleave([cases, blocks].filter((q) => q.length));
+  const stream: Draft[] = ngn ? [ngn] : [];
   let week = 0;
   content.forEach((c, i) => {
     stream.push(c);
-    if ((i + 1) % 6 === 0) {
+    if (rules.reviewEvery > 0 && (i + 1) % rules.reviewEvery === 0) {
       week++;
-      stream.push(
-        { id: `tag-${week}`, title: "30 Learning and Reviewing Tagged Questions", minutes: 60, href: "/nclex/previous-tests", tone: "lav" },
-        { id: `crash-${week}`, title: "Review Crash Course Videos and Cheat Sheets", minutes: 60, href: "/nclex/crash-courses", tone: "green" },
-      );
+      stream.push(...rules.review.map<Draft>((r, k) => ({ id: `${r.id}-${week}`, title: r.title, minutes: r.minutes, href: r.href || null, tone: k % 2 ? "green" : "lav" })));
     }
   });
 
   // Day 1 is onboarding; readiness exams (and the day after, to review them) get their own days.
   const fixed = new Map<number, Draft[]>();
-  fixed.set(0, intro);
-  if (days.length >= 14) {
-    [0.12, 0.38, 0.62, 0.85].forEach((p, n) => {
-      const at = Math.min(days.length - 2, Math.max(2, Math.floor(days.length * p)));
-      fixed.set(at, [{ id: `cat-${n + 1}`, title: `CAT Readiness Exam ${n + 1}`, minutes: 180, href: `/nclex/next-gen-readiness-exams/qbanks/readiness-exam-${n + 1}`, tone: "red" }]);
-      fixed.set(at + 1, [{ id: `catrev-${n + 1}`, title: `Review CAT Readiness Exam ${n + 1}`, minutes: 60, href: "/nclex/previous-tests", tone: "red" }]);
+  if (intro.length) fixed.set(0, intro);
+  const exams = getAll("readiness")
+    .filter((e) => e.status === "published")
+    .sort((a, b) => a.order - b.order);
+  if (days.length >= 14 && exams.length) {
+    exams.forEach((e, n) => {
+      const p = 0.12 + ((0.85 - 0.12) * n) / Math.max(1, exams.length - 1);
+      const at = Math.min(days.length - 2, Math.max(2, Math.floor(days.length * (exams.length === 1 ? 0.5 : p))));
+      fixed.set(at, [{ id: `cat-${e.number}`, title: e.title, minutes: rules.readinessMinutes, href: readinessHref(e.id), tone: "red" }]);
+      fixed.set(at + 1, [{ id: `catrev-${e.number}`, title: `Review ${e.title}`, minutes: 60, href: "/nclex/previous-tests", tone: "red" }]);
     });
   }
 

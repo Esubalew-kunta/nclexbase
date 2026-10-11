@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
-import { CASE_ROWS } from "@/data/cases";
 import { crud, today } from "@/lib/admin/crud";
 import { newId } from "@/lib/admin/store";
 import type { CaseContent, CaseRec, QuestionRec, Status } from "@/lib/admin/types";
 import type { CaseTab, ItemType, TabContent } from "@/lib/types";
 import { useAll, useSubjects } from "@/lib/content";
+import { caseHref } from "@/lib/routes";
 import { AdminPage, Badge, Btn, confirmDialog, Dialog, EmptyState, Field, IconBtn, Input, Panel, Segmented, Select, StatusBadge, stripHtml, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { HistoryButton, StatusPicker, SubjectSelect } from "@/components/admin/parts";
 import { blankItem, TYPE_LABELS, validateItem } from "@/components/admin/items";
@@ -48,7 +48,6 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
   const content = f.content;
   const items = useMemo(() => (content?.itemIds ?? []).map((qid) => questions.find((q) => q.id === qid)).filter(Boolean) as QuestionRec[], [content, questions]);
   const itemProblems = items.filter((q) => validateItem(q).length).length;
-  const seeded = CASE_ROWS.some((r) => r.id === rec.id);
   const setContent = (patch: Partial<CaseContent>) => setF((x) => ({ ...x, content: { ...(x.content as CaseContent), ...patch } }));
 
   const save = (status?: Status) => {
@@ -78,8 +77,8 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
       description={`${rec.id} · #${rec.number}`}
       actions={
         <>
-          {seeded && (
-            <Link href={`/nclex/next-gen-cases/qbanks/${rec.id}`} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-primary hover:bg-primary-light">
+          {rec.status === "published" && (
+            <Link href={caseHref(rec.id)} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-primary hover:bg-primary-light">
               <ExternalLink className="size-4" />
               Try as student
             </Link>

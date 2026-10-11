@@ -10,7 +10,7 @@ import type { PlanRec, Status } from "@/lib/admin/types";
 import { useAll } from "@/lib/content";
 import { AdminPage, Badge, Btn, confirmDialog, Drawer, Field, IconBtn, Input, Panel, StatusBadge, Switch, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { ConfigPanel, useConfigSection } from "@/components/admin/config";
-import { HistoryButton, StatusPicker } from "@/components/admin/parts";
+import { DeleteRecordButton, HistoryButton, StatusPicker } from "@/components/admin/parts";
 
 const api = crud("plans");
 
@@ -169,6 +169,7 @@ function PlanEditor({ rec, plans, onClose }: { rec: PlanRec | null; plans: PlanR
       footer={
         <>
           {rec && <HistoryButton<PlanRec> historyKey={`plans:${rec.id}`} onRestore={(v) => (api.restore(rec.id, v), onClose())} describe={(v) => `$${v.price} · ${v.months} mo`} />}
+          {rec && <DeleteRecordButton status={rec.status} noun="plan" onDelete={() => (api.hardDelete([rec.id]), onClose())} />}
           <span className="flex-1" />
           <Btn onClick={close}>Cancel</Btn>
           <Btn onClick={() => save("draft")}>Save draft</Btn>

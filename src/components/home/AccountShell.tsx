@@ -3,18 +3,20 @@
 import clsx from "clsx";
 import type { ComponentProps, ReactNode } from "react";
 import { useStore } from "@/lib/store";
+import { useCopy } from "@/lib/content";
 import { PageHeader, UnderlineTabs } from "@/components/ui/primitives";
 
 export function AccountShell({ active, children }: { active: "profile" | "redeem-code"; children: ReactNode }) {
   const email = useStore((s) => s.user.email);
   const hydrated = useStore((s) => s.hydrated);
+  const copy = useCopy();
   const day = hydrated ? new Date().toLocaleDateString("en-US", { weekday: "long" }) : "";
   return (
     <>
       <PageHeader
         trail={[{ label: "Account", href: "/nclex/account/profile" }]}
         title={<span suppressHydrationWarning>Happy {day}, {email}!</span>}
-        description="Thanks for being part of the NCLEXBase.com family. Edit your profile, manage your memberships, view payment history, and more on this page."
+        description={copy("account.description")}
       />
       <UnderlineTabs
         tabs={[

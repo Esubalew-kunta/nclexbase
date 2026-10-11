@@ -9,7 +9,7 @@ import type { FaqPlacement, FaqRec, Status } from "@/lib/admin/types";
 import { useAll } from "@/lib/content";
 import { AdminPage, Badge, Btn, confirmDialog, Drawer, Field, fmtDate, Input, Segmented, StatusBadge, stripHtml, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { BulkBar, DataTable, ListEmpty, ListToolbar, statusFilter, useEditParam, useList, useSelection, type Column } from "@/components/admin/list";
-import { HistoryButton, StatusBulkActions, StatusPicker } from "@/components/admin/parts";
+import { DeleteRecordButton, HistoryButton, StatusBulkActions, StatusPicker } from "@/components/admin/parts";
 
 const api = crud("faqs");
 
@@ -125,6 +125,7 @@ function FaqEditor({ rec, onClose, nextOrder }: { rec: FaqRec | null; onClose: (
       footer={
         <>
           {rec && <HistoryButton<FaqRec> historyKey={`faqs:${rec.id}`} onRestore={(v) => (api.restore(rec.id, v), onClose())} describe={(v) => v.question} />}
+          {rec && <DeleteRecordButton status={rec.status} noun="FAQ" onDelete={() => (api.hardDelete([rec.id]), onClose())} />}
           <span className="flex-1" />
           <Btn onClick={close}>Cancel</Btn>
           <Btn onClick={() => save("draft")}>Save draft</Btn>

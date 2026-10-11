@@ -7,7 +7,7 @@ import { PLANS_SEED } from "@/data/plans";
 import faqsJson from "@/data/live/faqs.json";
 import { tabsFor } from "@/lib/subjectTabs";
 import type { SubjectId } from "@/lib/types";
-import type { CaseRec, CheatSheetRec, CodeRec, Collections, CourseRec, FaqPlacement, FaqRec, LessonRec, MessageRec, QuestionRec, ReadinessRec, SubjectRec, UserRec } from "./types";
+import type { AnnouncementRec, CaseRec, CheatSheetRec, CodeRec, Collections, CourseRec, FaqPlacement, FaqRec, LessonRec, MessageRec, QuestionRec, ReadinessRec, SubjectRec, UserRec } from "./types";
 
 /*
  * Turns today's static data (src/data/*) into admin records. These are the starting
@@ -24,7 +24,12 @@ const subjects = (): SubjectRec[] =>
     order: i,
     visible: true,
     tabs: tabsFor(s.id),
-    systems: s.systems.map((sys) => ({ key: sys.name, label: sys.name, visible: true })),
+    systems: s.systems.map((sys) => {
+      const perf = s.perfSystems.find((p) => p.name === sys.name);
+      return { key: sys.name, label: sys.name, visible: true, count: sys.count, perfTotal: perf?.total ?? sys.count, avg: perf?.avg ?? s.avgScore };
+    }),
+    icon: null,
+    stats: { questionCount: s.questionCount, standaloneCount: s.standaloneCount, perfTotal: s.perfTotal, avgScore: s.avgScore, avgTimeSec: s.avgTimeSec },
     updatedAt: SEEDED,
   }));
 
@@ -72,6 +77,7 @@ const readiness = (): ReadinessRec[] =>
     minQuestions: r.minQuestions,
     maxQuestions: r.questions,
     minutes: r.minutes,
+    shuffle: r.number !== 1,
     access: r.free ? "free" : "premium",
     status: "published",
     order: i,
@@ -179,6 +185,22 @@ const messages = (): MessageRec[] => [
   },
 ];
 
+const announcements = (): AnnouncementRec[] => [
+  {
+    id: "ann-memory-tricks",
+    message: "New: Memory Tricks are now on every subject page.",
+    linkLabel: "Take a look",
+    linkHref: "/nclex/adult-health/memory-tricks",
+    audience: "all",
+    tone: "info",
+    start: "",
+    end: "",
+    status: "draft",
+    order: 0,
+    updatedAt: SEEDED,
+  },
+];
+
 export type SeedFactories = { [K in keyof Collections]: () => Collections[K][] };
 
 /** One factory per collection. Called once and cached (see lib/content). */
@@ -196,4 +218,5 @@ export const SEED: SeedFactories = {
   users,
   codes,
   messages,
+  announcements,
 };

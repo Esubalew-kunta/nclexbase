@@ -23,6 +23,22 @@ export interface SystemRec {
   key: string;
   label: string;
   visible: boolean;
+  /** Standalone questions shown for this system ("0 of N questions used"). */
+  count: number;
+  /** Questions counted on the Performance page (standalone + case + readiness). */
+  perfTotal: number;
+  /** Average score of all students, % (Performance page). */
+  avg: number;
+}
+
+/** Numbers shown on student pages. Seeded from the live catalog; the admin can type them or recount from the bank. */
+export interface SubjectStats {
+  questionCount: number;
+  standaloneCount: number;
+  perfTotal: number;
+  avgScore: number;
+  /** Average seconds per question for this subject (time-management tables). */
+  avgTimeSec: number;
 }
 
 export interface SubjectRec {
@@ -33,6 +49,9 @@ export interface SubjectRec {
   /** Subject page tabs, in display order. Missing tabs are hidden. */
   tabs: SubjectTab[];
   systems: SystemRec[];
+  /** Uploaded icon image; seeded subjects fall back to their built-in icon. */
+  icon: FileRef | null;
+  stats: SubjectStats;
   updatedAt: string;
 }
 
@@ -103,6 +122,10 @@ export interface ReadinessRec {
   minQuestions: number;
   maxQuestions: number;
   minutes: number;
+  /** Present the shared pool in a fixed order (exam 1) or a shuffled one (other exams). */
+  shuffle: boolean;
+  /** Pool questions this exam uses (a case's items always come together). Empty or missing = the whole pool. */
+  questionIds?: string[];
   access: Access;
   status: Status;
   order: number;
@@ -200,6 +223,21 @@ export interface MessageRec {
   updatedAt: string;
 }
 
+export interface AnnouncementRec {
+  id: string;
+  message: string;
+  linkLabel: string;
+  linkHref: string;
+  audience: "all" | "free" | "premium";
+  tone: "info" | "premium";
+  /** ISO dates (inclusive). Empty = no limit. */
+  start: string;
+  end: string;
+  status: Status;
+  order: number;
+  updatedAt: string;
+}
+
 export interface Collections {
   subjects: SubjectRec;
   memoryTricks: MemoryTrickRec;
@@ -214,6 +252,7 @@ export interface Collections {
   users: UserRec;
   codes: CodeRec;
   messages: MessageRec;
+  announcements: AnnouncementRec;
 }
 
 export type CollectionName = keyof Collections;
@@ -232,4 +271,5 @@ export const COLLECTION_LABELS: Record<CollectionName, string> = {
   users: "User",
   codes: "Institution code",
   messages: "Message",
+  announcements: "Announcement",
 };

@@ -1,13 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { subjectById } from "@/data/catalog";
 import { useConfig, useSubjects } from "@/lib/content";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import type { SubjectId } from "@/lib/types";
-import { Button, PageHeader, UpgradeButton } from "@/components/ui/primitives";
+import { Button, UpgradeButton } from "@/components/ui/primitives";
 import { NumberedRow, UsageBlock } from "@/components/ui/visuals";
+import { CopyHeader } from "@/components/ui/CopyHeader";
 
 export default function StandalonePage() {
   const router = useRouter();
@@ -20,11 +20,7 @@ export default function StandalonePage() {
 
   return (
     <>
-      <PageHeader
-        trail={[{ label: "Next Gen Standalone" }]}
-        title="Standalone Questions"
-        description="The standalone questions below are based on the real Next Gen NCLEX. Practice with these so you're ready for the real exam."
-      />
+      <CopyHeader trail={[{ label: "Next Gen Standalone" }]} titleKey="standalone.title" descriptionKey="standalone.description" />
       <div className="mt-4">
         {plan === "free" && (
           <NumberedRow title="Free Questions" onClick={() => create()} action={<Button onClick={(e) => (e.stopPropagation(), create())}>Create Test</Button>}>
@@ -38,7 +34,7 @@ export default function StandalonePage() {
             onClick={() => (plan === "free" ? router.push("/nclex/upgrade") : create(s.id))}
             action={plan === "free" ? <UpgradeButton /> : <Button onClick={(e) => (e.stopPropagation(), create(s.id))}>Create Test</Button>}
           >
-            <UsageBlock usage={{ total: subjectById(s.id).standaloneCount, ...progress.standaloneFor(s.id) }} />
+            <UsageBlock usage={{ total: s.stats.standaloneCount, ...progress.standaloneFor(s.id) }} />
           </NumberedRow>
         ))}
       </div>

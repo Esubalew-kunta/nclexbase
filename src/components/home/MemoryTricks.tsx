@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Download, FileText } from "lucide-react";
 import { GENERAL } from "@/data/memoryTricks";
 import type { FileRef, MemoryTrickRec } from "@/lib/admin/types";
-import { useMemoryTricks, useSubjectRec } from "@/lib/content";
+import { useCopy, useMemoryTricks, useSubjectRec } from "@/lib/content";
 import { useStore } from "@/lib/store";
 import type { SubjectId } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
@@ -24,6 +24,7 @@ export function MemoryTricksBrowser({ subject }: { subject: SubjectId }) {
   const all = useMemoryTricks(subject);
   const tricks = useMemo(() => all.filter((t): t is Trick => Boolean(t.file)), [all]);
   const rec = useSubjectRec(subject);
+  const copy = useCopy();
   const plan = useStore((s) => s.user.plan);
   const [system, setSystem] = useState(ALL);
   const [q, setQ] = useState("");
@@ -43,7 +44,7 @@ export function MemoryTricksBrowser({ subject }: { subject: SubjectId }) {
 
   return (
     <>
-      <Banner>Memory tricks turn high-yield facts into something you won&apos;t forget. Each one is a printable PDF filed under its system.</Banner>
+      <Banner>{copy("subject.memoryTricksBanner")}</Banner>
 
       <div className="relative mb-4">
         <Icon name="search" size={20} className="absolute top-1/2 left-6 -translate-y-1/2 text-muted" />

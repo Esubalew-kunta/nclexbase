@@ -9,6 +9,7 @@ import { COLLECTION_LABELS, type CollectionName } from "@/lib/admin/types";
 import { todayISO } from "@/lib/daily";
 import { AdminPage, Btn, confirmDialog, Dialog, Field, Input, Panel, Select, Switch, toast } from "@/components/admin/ui";
 import { ConfigPanel, useConfigSection } from "@/components/admin/config";
+import { ImageDrop } from "@/components/admin/parts";
 
 const EXPORT_VERSION = 1;
 
@@ -40,7 +41,7 @@ export default function SettingsAdmin() {
   return (
     <AdminPage title="Settings" description="Site-wide settings, the admin sign-in, and backups of everything the admin has changed.">
       <div className="space-y-4">
-        <ConfigPanel section={branding} title="Branding & links" description="Name and links shown in the sidebar footer, sign-up page and support text. Logo files are fixed (official set).">
+        <ConfigPanel section={branding} title="Branding & links" description="Name, links and the coach shown on score messages. Logo files are the official set and aren't changed here.">
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Site name">
               <Input value={b.siteName} onChange={(x) => branding.setDraft({ ...b, siteName: x.target.value })} />
@@ -53,6 +54,12 @@ export default function SettingsAdmin() {
             </Field>
             <Field label="Privacy Policy URL">
               <Input value={b.privacyUrl} onChange={(x) => branding.setDraft({ ...b, privacyUrl: x.target.value })} />
+            </Field>
+            <Field label="Coach name" hint="Shown with the coach photo next to score messages.">
+              <Input value={b.coachName} onChange={(x) => branding.setDraft({ ...b, coachName: x.target.value })} />
+            </Field>
+            <Field label="Coach photo">
+              <ImageDrop value={b.coachPhotoUrl || null} onChange={(f) => branding.setDraft({ ...b, coachPhotoUrl: f?.url ?? "" })} />
             </Field>
           </div>
         </ConfigPanel>

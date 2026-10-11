@@ -4,14 +4,26 @@ import clsx from "clsx";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { SubjectId } from "@/lib/types";
+import { useFileUrl } from "@/lib/admin/files";
+import { useSubjectRec } from "@/lib/content";
+import { isSeededSubject } from "@/lib/routes";
 import { BRAND } from "@/lib/brand";
 import { Icon } from "./Icon";
 import { ProgressBar, UsageBar, UsageText } from "./primitives";
 
 /* eslint-disable @next/next/no-img-element */
 
+/** Subject icon: the admin's uploaded image, else the built-in icon for seeded subjects, else the initial. */
 export function SubjectIcon({ id, size = 32 }: { id: SubjectId; size?: number }) {
-  return <img src={`/assets/subjects/${id}.png`} alt="" className="shrink-0" style={{ width: size, height: size }} />;
+  const rec = useSubjectRec(id);
+  const { href } = useFileUrl(rec?.icon?.url);
+  const src = rec?.icon ? href : isSeededSubject(id) ? `/assets/subjects/${id}.png` : null;
+  if (src) return <img src={src} alt="" className="shrink-0 object-contain" style={{ width: size, height: size }} />;
+  return (
+    <span className="flex shrink-0 items-center justify-center rounded-md bg-primary-light font-bold text-primary uppercase" style={{ width: size, height: size, fontSize: size * 0.45 }} aria-hidden>
+      {(rec?.name ?? id).charAt(0)}
+    </span>
+  );
 }
 
 const TYPE_IMG = {

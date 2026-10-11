@@ -7,7 +7,7 @@ import { itemById } from "@/lib/bank";
 import { avgPoints, scoreSession } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
-import { PageHeader } from "@/components/ui/primitives";
+import { CopyHeader } from "@/components/ui/CopyHeader";
 
 const PAGE_SIZES = [10, 20, 30, 40, 50];
 
@@ -38,7 +38,7 @@ export default function PreviousTestsPage() {
 
   return (
     <>
-      <PageHeader trail={[{ label: "Previous Tests" }]} title="Previous Tests" />
+      <CopyHeader trail={[{ label: "Previous Tests" }]} titleKey="previous.title" />
       <p className="mb-4 rounded-lg border border-l-4 border-line border-l-primary bg-primary-light px-6 py-[18px] text-base leading-6 text-ink">
         Your Readiness Exam attempts can be reviewed on the{" "}
         <Link href="/nclex/next-gen-readiness-exams" className="font-semibold text-primary underline hover:text-primary-hover">

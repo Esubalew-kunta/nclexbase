@@ -227,8 +227,10 @@ Sign in at `/admin/login` (prototype: `admin@nclexbase.com` / `admin123`, change
 
 **Different from the plan / deferred to the backend**
 - One super admin instead of four roles (decision 2); the audit log records every change by that account.
-- New subjects can't be created (needs icons and a real question bank); everything else about subjects is editable.
-- Readiness exams share one question pool; per-exam pools need the adaptive engine on the server.
+- ~~New subjects can't be created~~ Done in the full-CRUD pass: subjects, systems, merges, icons and student-facing
+  counts are all editable. See [ADMIN_REVIEW.md](ADMIN_REVIEW.md).
+- ~~Readiness exams share one question pool~~ Each exam can use the whole pool or a chosen set; true adaptive
+  (CAT) selection still needs the engine on the server.
 - Video files, emails (Daily Warmup, password reset) and payments are previews only.
 - Users other than the student on this browser are sample data.
 - Seed data fixes: seven hand-written standalone questions used system names that don't exist in the taxonomy

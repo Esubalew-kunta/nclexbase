@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   ListTree,
   LogOut,
+  Megaphone,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -29,15 +30,16 @@ import {
   SlidersHorizontal,
   Sparkles,
   Target,
+  Type,
   Users,
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useAdminStore } from "@/lib/admin/store";
+import { STORAGE_FULL_EVENT, useAdminStore } from "@/lib/admin/store";
 import { getAll } from "@/lib/content";
 import { LogoMark } from "@/components/ui/Logo";
 import { ViewSwitch } from "@/components/shell/ViewSwitch";
-import { ConfirmHost, stripHtml, Toaster } from "./ui";
+import { ConfirmHost, stripHtml, toast, Toaster } from "./ui";
 
 interface NavItem {
   href: string;
@@ -69,6 +71,8 @@ export const ADMIN_NAV: { title: string; items: NavItem[] }[] = [
     title: "Experience",
     items: [
       { href: "/admin/home", label: "Home & Navigation", icon: Home },
+      { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/admin/copy", label: "Pages & Copy", icon: Type },
       { href: "/admin/plans", label: "Plans & Access", icon: Sparkles },
       { href: "/admin/rules", label: "Targets & Rules", icon: Target },
     ],
@@ -163,6 +167,8 @@ function buildJumps(): Jump[] {
   for (const c of getAll("cheatSheets")) out.push({ label: c.title, sub: "Cheat sheet", href: `/admin/cheat-sheets?edit=${c.id}` });
   for (const f of getAll("faqs")) out.push({ label: f.question, sub: "FAQ", href: `/admin/faqs?edit=${f.id}` });
   for (const u of getAll("users")) out.push({ label: u.name, sub: `User · ${u.email}`, href: `/admin/users?edit=${u.id}` });
+  for (const a of getAll("announcements")) out.push({ label: a.message, sub: "Announcement", href: `/admin/announcements?edit=${a.id}` });
+  for (const c of getAll("courses")) out.push({ label: c.title, sub: "Course", href: `/admin/courses?course=${c.id}` });
   for (const c of getAll("codes")) out.push({ label: c.code, sub: `Code · ${c.institution}`, href: `/admin/codes?edit=${c.id}` });
   return out;
 }
@@ -296,6 +302,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    const onFull = () => toast("Browser storage is full, so the last change was not saved. Export a backup (Settings), then delete unused items or uploads.", "error");
+    window.addEventListener(STORAGE_FULL_EVENT, onFull);
+    return () => window.removeEventListener(STORAGE_FULL_EVENT, onFull);
   }, []);
 
   useEffect(() => {

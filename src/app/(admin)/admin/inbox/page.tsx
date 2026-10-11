@@ -9,6 +9,7 @@ import type { MessageRec } from "@/lib/admin/types";
 import { useAll } from "@/lib/content";
 import { AdminPage, Badge, Btn, Drawer, fmtDateTime, Segmented, TextArea, toast } from "@/components/admin/ui";
 import { DataTable, ListEmpty, ListToolbar, useEditParam, useList, type Column } from "@/components/admin/list";
+import { DeleteRecordButton } from "@/components/admin/parts";
 
 const api = crud("messages");
 const TONE = { open: "warning", pending: "teal", closed: "neutral" } as const;
@@ -84,6 +85,8 @@ function Thread({ msg, onClose }: { msg: MessageRec; onClose: () => void }) {
             { value: "closed", label: "Closed" },
           ]}
         />
+        <span className="flex-1" />
+        <DeleteRecordButton noun="conversation" onDelete={() => (api.hardDelete([msg.id]), onClose())} />
       </div>
       <div className="space-y-3">
         <div className="rounded-lg border border-line bg-background p-3">

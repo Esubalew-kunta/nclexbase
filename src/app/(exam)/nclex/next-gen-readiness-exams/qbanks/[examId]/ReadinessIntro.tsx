@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { X } from "lucide-react";
-import { readinessEntries, readinessEntriesShuffled } from "@/data/readiness";
+import { readinessEntriesFor } from "@/lib/bank";
 import { useAll } from "@/lib/content";
 import { useStore } from "@/lib/store";
 
@@ -20,7 +20,7 @@ export function ReadinessIntro({ id: examId, number, title }: { id: string; numb
   const hours = minutes % 60 ? `${Math.floor(minutes / 60)} hours ${minutes % 60} minutes` : `${minutes / 60} hours`;
 
   const start = () => {
-    const entries = number === 1 ? readinessEntries() : readinessEntriesShuffled(number);
+    const entries = readinessEntriesFor({ shuffle: exam?.shuffle ?? number !== 1, number: exam?.number ?? number, questionIds: exam?.questionIds });
     const id = createSession({
       kind: "readiness",
       title: name,

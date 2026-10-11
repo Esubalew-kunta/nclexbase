@@ -9,7 +9,7 @@ import { useAll } from "@/lib/content";
 import { todayISO } from "@/lib/daily";
 import { AdminPage, Badge, Btn, confirmDialog, Drawer, Field, fmtDate, IconBtn, Input, Segmented, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { BulkBar, DataTable, ListEmpty, ListToolbar, useEditParam, useList, useSelection, type Column } from "@/components/admin/list";
-import { HistoryButton } from "@/components/admin/parts";
+import { DeleteRecordButton, HistoryButton } from "@/components/admin/parts";
 
 const api = crud("codes");
 const state = (c: CodeRec) => (c.status === "disabled" ? "disabled" : c.expiresAt && c.expiresAt < todayISO() ? "expired" : c.used >= c.seats ? "full" : "active");
@@ -122,6 +122,7 @@ function CodeEditor({ rec, rows, onClose }: { rec: CodeRec | null; rows: CodeRec
       footer={
         <>
           {rec && <HistoryButton<CodeRec> historyKey={`codes:${rec.id}`} onRestore={(v) => (api.restore(rec.id, v), onClose())} describe={(v) => `${v.code} · ${v.seats} seats`} />}
+          {rec && <DeleteRecordButton status={undefined} noun="code" onDelete={() => (api.hardDelete([rec.id]), onClose())} />}
           <span className="flex-1" />
           <Btn onClick={close}>Cancel</Btn>
           <Btn variant="primary" onClick={save}>

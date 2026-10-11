@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Download, Eye } from "lucide-react";
 import { PRINT_CSS } from "@/lib/brand";
 import type { FileRef } from "@/lib/admin/types";
-import { useCheatSheets, useConfig, useSubjects } from "@/lib/content";
+import { useCheatSheets, useConfig, useCopy, useSubjects } from "@/lib/content";
 import { Icon } from "@/components/ui/Icon";
 import { Button, Card, PageHeader } from "@/components/ui/primitives";
 import { FileLink, PdfModal } from "@/components/ui/files";
@@ -13,6 +13,7 @@ export default function StudyGuidePage() {
   const subjects = useSubjects();
   const sheets = useCheatSheets();
   const { studyGuide } = useConfig();
+  const copy = useCopy();
   const [open, setOpen] = useState(false);
   // Admin > Study Guide can upload a PDF; otherwise the guide is generated from subjects, systems and cheat sheets.
   const file: FileRef | null = studyGuide.fileUrl ? { url: studyGuide.fileUrl, name: studyGuide.fileName || "nclex-study-guide.pdf", pages: 0, sizeKb: 0 } : null;
@@ -45,7 +46,7 @@ export default function StudyGuidePage() {
 
   return (
     <>
-      <PageHeader trail={[{ label: "Study Guide" }]} title="NCLEX® Study Guide" description={studyGuide.intro} />
+      <PageHeader trail={[{ label: "Study Guide" }]} title={copy("studyGuide.title")} description={studyGuide.intro} />
       <Card className="flex flex-col items-start gap-4 border border-line p-6 sm:flex-row sm:items-center">
         <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary-light text-primary">
           <Icon name="studyGuide" size={24} />

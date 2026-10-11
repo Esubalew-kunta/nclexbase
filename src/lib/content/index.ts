@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { READINESS_CASES } from "@/data/readiness";
 import { useAdminStore, type CollectionPatch } from "@/lib/admin/store";
 import { DEFAULT_CONFIG, mergeDeep, type ConfigPatch, type SiteConfig } from "@/lib/admin/config";
+import { COPY_DEFAULTS } from "@/lib/admin/copy";
 import { SEED } from "@/lib/admin/seed";
 import type { CaseRec, CollectionName, Collections, FaqPlacement, QuestionRec, SubjectRec } from "@/lib/admin/types";
 import type { Lesson } from "@/data/catalog";
@@ -86,6 +87,12 @@ export function useConfig(): SiteConfig {
   return resolveConfig(patch);
 }
 
+/** Page text: admin override or the registered default (lib/admin/copy.ts). */
+export function useCopy(): (key: string) => string {
+  const copy = useConfig().copy;
+  return (key) => copy[key] ?? COPY_DEFAULTS[key] ?? key;
+}
+
 /* ------------------------------------------------------------------ */
 /* Taxonomy                                                            */
 /* ------------------------------------------------------------------ */
@@ -98,6 +105,11 @@ export function useSubjects(includeHidden = false): SubjectRec[] {
 
 export function useSubjectRec(id: SubjectId): SubjectRec | undefined {
   return useAll("subjects").find((s) => s.id === id);
+}
+
+/** Subject record (any visibility) for non-React code. */
+export function getSubjectRec(id: SubjectId | string): SubjectRec | undefined {
+  return getAll("subjects").find((s) => s.id === id);
 }
 
 /** Display name of a subject (admin can rename). */
@@ -147,6 +159,9 @@ export function useFaqs(placement: FaqPlacement): (readonly [string, string])[] 
 }
 
 export const usePlans = () => usePublished("plans");
+
+/** Announcements that are published, inside their date window. */
+export const useAnnouncements = () => usePublished("announcements");
 export const useReadinessExams = () => usePublished("readiness");
 
 /** Case study rows for list pages (published only). */

@@ -9,7 +9,7 @@ import type { MemoryTrickRec, Status } from "@/lib/admin/types";
 import { useAll, useSubjects } from "@/lib/content";
 import { AccessBadge, AdminPage, Badge, Btn, confirmDialog, Drawer, Field, fmtDate, Input, Segmented, StatusBadge, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { accessFilter, BulkBar, DataTable, ListEmpty, ListToolbar, statusFilter, useEditParam, useList, useSelection, type Column, type FilterDef } from "@/components/admin/list";
-import { FileDrop, HistoryButton, StatusBulkActions, StatusPicker, SubjectSelect, subjectFilter, SystemSelect, systemFilter } from "@/components/admin/parts";
+import { FileDrop, DeleteRecordButton, HistoryButton, StatusBulkActions, StatusPicker, SubjectSelect, subjectFilter, SystemSelect, systemFilter } from "@/components/admin/parts";
 
 const api = crud("memoryTricks");
 
@@ -215,6 +215,7 @@ function TrickEditor({ rec, onClose }: { rec: MemoryTrickRec | null; onClose: ()
       footer={
         <>
           {rec && <HistoryButton<MemoryTrickRec> historyKey={`memoryTricks:${rec.id}`} onRestore={(v) => (api.restore(rec.id, v), onClose())} describe={(v) => `${v.title} · ${v.status}`} />}
+          {rec && <DeleteRecordButton status={rec.status} noun="memory trick" onDelete={() => (api.hardDelete([rec.id]), onClose())} />}
           <span className="flex-1" />
           <Btn onClick={close}>Cancel</Btn>
           <Btn onClick={() => save("draft")}>Save draft</Btn>

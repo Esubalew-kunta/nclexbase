@@ -86,3 +86,24 @@ function shuffle<T>(arr: T[], rand: () => number) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
 }
+
+/**
+ * Entries for a CAT readiness exam from the readiness pool (Admin > Readiness Exams).
+ * Case items stay together and in order; `shuffle` reorders whole groups with a seed so
+ * each exam presents the same pool differently.
+ */
+export function readinessEntriesFor(exam: { shuffle: boolean; number: number; questionIds?: string[] }): SessionEntry[] {
+  const bank = getBank();
+  const pool = [...bank.byId.values()].filter((q) => q.source.kind === "readiness" && q.status === "published").sort((a, b) => a.order - b.order);
+  const groups: SessionEntry[][] = [];
+  for (const q of pool) {
+    const caseId = bank.caseOf.get(q.id)?.id;
+    const last = groups[groups.length - 1];
+    if (caseId && last && last[0].caseId === caseId) last.push({ itemId: q.id, caseId });
+    else groups.push([{ itemId: q.id, caseId }]);
+  }
+  const picked = exam.questionIds?.length ? new Set(exam.questionIds) : null;
+  const chosen = picked ? groups.filter((g) => g.some((e) => picked.has(e.itemId))) : groups;
+  if (exam.shuffle) shuffle(chosen, mulberry32(exam.number * 7919));
+  return chosen.flat();
+}

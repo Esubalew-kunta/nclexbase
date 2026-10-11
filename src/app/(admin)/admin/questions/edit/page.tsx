@@ -50,6 +50,8 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
   const canSave = isNew || dirty;
   const problems = validateItem(q);
   const standalone = q.source.kind === "standalone";
+  // Standalone and readiness-pool questions are published on their own; case questions follow their case.
+  const ownStatus = q.source.kind !== "case";
   const caseRec = q.source.kind === "case" ? cases.find((c) => q.source.kind === "case" && c.id === q.source.caseId) : undefined;
   const set = (patch: Partial<Item> | Partial<QuestionRec>) => setQ((x) => ({ ...x, ...patch }) as QuestionRec);
 
@@ -97,11 +99,11 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
       actions={
         <>
           {!isNew && <HistoryButton<QuestionRec> historyKey={`questions:${q.id}`} onRestore={(v) => api.restore(q.id, v)} describe={(v) => `${v.status} · ${v.stem.replace(/<[^>]+>/g, "").slice(0, 40)}`} />}
-          <Btn onClick={() => save("draft")} disabled={!canSave || !standalone}>
+          <Btn onClick={() => save("draft")} disabled={!canSave || !ownStatus}>
             Save draft
           </Btn>
-          <Btn variant="primary" onClick={() => save(standalone ? "published" : undefined)} disabled={!canSave}>
-            {standalone ? (q.status === "published" && !isNew ? "Save & keep published" : "Publish") : "Save"}
+          <Btn variant="primary" onClick={() => save(ownStatus ? "published" : undefined)} disabled={!canSave}>
+            {ownStatus ? (q.status === "published" && !isNew ? "Save & keep published" : "Publish") : "Save"}
           </Btn>
         </>
       }
@@ -122,24 +124,24 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
               <Field label="Average score (%)" hint="Shown to students as “% of students answered correctly”.">
                 <Input type="number" min={0} max={100} value={q.avgPercent} onChange={(e) => set({ avgPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} />
               </Field>
-              {standalone ? (
-                <>
-                  <Field label="Access">
-                    <Segmented
-                      value={q.access}
-                      onChange={(v) => set({ access: v })}
-                      options={[
-                        { value: "free", label: "Free pool" },
-                        { value: "premium", label: "Premium" },
-                      ]}
-                    />
-                  </Field>
-                  <Field label="Status">
-                    <StatusPicker value={q.status} onChange={(v) => set({ status: v })} />
-                  </Field>
-                </>
+              {standalone && (
+                <Field label="Access">
+                  <Segmented
+                    value={q.access}
+                    onChange={(v) => set({ access: v })}
+                    options={[
+                      { value: "free", label: "Free pool" },
+                      { value: "premium", label: "Premium" },
+                    ]}
+                  />
+                </Field>
+              )}
+              {ownStatus ? (
+                <Field label={standalone ? "Status" : "In the readiness pool"} hint={standalone ? undefined : "Published = used in new readiness exams."}>
+                  <StatusPicker value={q.status} onChange={(v) => set({ status: v })} />
+                </Field>
               ) : (
-                <p className="text-sm text-muted sm:col-span-2">Access and publishing follow the {q.source.kind === "case" ? "case study" : "readiness exam"} this question belongs to.</p>
+                <p className="text-sm text-muted sm:col-span-2">Access and publishing follow the case study this question belongs to.</p>
               )}
             </div>
           </Panel>
@@ -231,7 +233,7 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
             </div>
           </Panel>
 
-          {!isNew && standalone && q.status === "archived" && (
+          {!isNew && ownStatus && q.status === "archived" && (
             <Panel title="Danger zone">
               <Btn
                 variant="danger"

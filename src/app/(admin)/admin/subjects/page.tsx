@@ -4,12 +4,13 @@ import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowUp, Eye, EyeOff, GitMerge, Plus, Trash2 } from "lucide-react";
-import { crud } from "@/lib/admin/crud";
-import type { SubjectRec, SystemRec } from "@/lib/admin/types";
-import { useAll, useSubjects } from "@/lib/content";
+import { crud, slugify, today } from "@/lib/admin/crud";
+import type { CollectionName, SubjectRec, SystemRec } from "@/lib/admin/types";
+import { getAll, useAll, useSubjects } from "@/lib/content";
 import { ALL_TABS, TAB_LABELS, type SubjectTab } from "@/lib/subjectTabs";
 import { AdminPage, Badge, Btn, confirmDialog, Dialog, Field, IconBtn, Input, Panel, Select, Switch, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
-import { HistoryButton } from "@/components/admin/parts";
+import { HistoryButton, ImageDrop } from "@/components/admin/parts";
+import { SubjectIcon } from "@/components/ui/visuals";
 
 const api = crud("subjects");
 
@@ -21,26 +22,54 @@ const move = <T,>(arr: T[], i: number, d: number) => {
   return out;
 };
 
+/** Everything that points at a subject, so deletes can be blocked or turned into a merge. */
+function useSubjectUsage(id: string) {
+  const questions = useAll("questions");
+  const cases = useAll("cases");
+  const tricks = useAll("memoryTricks");
+  const sheets = useAll("cheatSheets");
+  const lessons = useAll("lessons");
+  return useMemo(() => {
+    const qs = questions.filter((q) => q.subject === id);
+    return {
+      questions: qs.length,
+      standalone: qs.filter((q) => q.source.kind === "standalone" && q.status === "published").length,
+      studyable: qs.filter((q) => q.source.kind !== "readiness" && q.status === "published").length,
+      cases: cases.filter((c) => c.subject === id).length,
+      tricks: tricks.filter((t) => t.subject === id).length,
+      sheets: sheets.filter((c) => c.subject === id).length,
+      lessons: lessons.filter((l) => l.course === id).length,
+    };
+  }, [questions, cases, tricks, sheets, lessons, id]);
+}
+
 export default function SubjectsAdmin() {
   const router = useRouter();
   const params = useSearchParams();
   const subjects = useSubjects(true);
+  const [creating, setCreating] = useState(false);
   const openId = params.get("open") ?? subjects[0]?.id;
   const current = subjects.find((s) => s.id === openId) ?? subjects[0];
 
-  const reorder = (i: number, d: number) => {
-    const ids = move(
-      subjects.map((s) => s.id),
-      i,
-      d,
+  const reorder = (i: number, d: number) =>
+    api.reorder(
+      move(
+        subjects.map((s) => s.id),
+        i,
+        d,
+      ),
     );
-    api.reorder(ids);
-  };
 
   return (
     <AdminPage
       title="Subjects & Systems"
-      description="The structure every other screen filters by. Rename, reorder or hide subjects; choose which tabs each subject page shows; manage its systems (sub-subjects). Adding a brand-new subject needs the backend (icons, question bank), so it isn't offered here yet."
+      description="The structure every other screen filters by: subjects, their page tabs, their systems (sub-subjects), icons, and the numbers students see. Create, rename, reorder, hide, merge or delete."
+      actions={
+        <Btn variant="primary" onClick={() => setCreating(true)}>
+          <Plus className="size-4" />
+          New subject
+        </Btn>
+      }
     >
       <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
         <Panel title="Subjects" description="Order here is the order in the sidebar, Home and every filter." bodyClassName="p-2">
@@ -49,10 +78,11 @@ export default function SubjectsAdmin() {
               <li key={s.id}>
                 <div
                   className={clsx(
-                    "group flex items-center gap-1 rounded-md px-2 py-1.5",
+                    "group flex items-center gap-2 rounded-md px-2 py-1.5",
                     current?.id === s.id ? "bg-primary-light shadow-[inset_3px_0_0_0_var(--color-primary)]" : "hover:bg-background",
                   )}
                 >
+                  <SubjectIcon id={s.id} size={22} />
                   <button type="button" onClick={() => router.replace(`/admin/subjects?open=${s.id}`)} className="min-w-0 flex-1 cursor-pointer text-left">
                     <span className={clsx("block truncate text-sm font-medium", s.visible ? "text-ink" : "text-muted line-through")}>{s.name}</span>
                     <span className="text-xs text-muted">
@@ -72,16 +102,69 @@ export default function SubjectsAdmin() {
         </Panel>
         {current && <SubjectEditor key={current.id + current.updatedAt} rec={current} />}
       </div>
+      {creating && <NewSubjectDialog onClose={() => setCreating(false)} />}
     </AdminPage>
   );
 }
 
+function NewSubjectDialog({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const subjects = useSubjects(true);
+  const [name, setName] = useState("");
+  const id = slugify(name);
+  const clash = subjects.some((s) => s.id === id);
+  const create = () => {
+    if (!name.trim() || !id) return toast("Give the subject a name.", "error");
+    if (clash) return toast("A subject with that name already exists.", "error");
+    const rec: SubjectRec = {
+      id,
+      name: name.trim(),
+      order: subjects.length,
+      visible: false,
+      tabs: ["standalone", "videos", "cheat-sheets", "memory-tricks", "performance"],
+      systems: [],
+      icon: null,
+      stats: { questionCount: 0, standaloneCount: 0, perfTotal: 0, avgScore: 60, avgTimeSec: 70 },
+      updatedAt: today(),
+    };
+    api.create(rec);
+    // Every subject has its own crash course.
+    crud("courses").create({ id, kind: "subject", title: rec.name, runtime: "", status: "published", order: subjects.length, updatedAt: today() });
+    toast(`Created ${rec.name}. It stays hidden until you switch “Visible to students” on.`);
+    onClose();
+    router.replace(`/admin/subjects?open=${id}`);
+  };
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title="New subject"
+      footer={
+        <>
+          <Btn onClick={onClose}>Cancel</Btn>
+          <Btn variant="primary" onClick={create} disabled={!id || clash}>
+            Create subject
+          </Btn>
+        </>
+      }
+    >
+      <Field label="Name" hint={id ? `Link id: ${id}${clash ? " (already used)" : ""}` : "e.g. Gerontology"} error={clash ? "That name is taken." : ""}>
+        <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      </Field>
+      <p className="mt-3 text-sm text-muted">The subject starts hidden with no systems, so you can set it up before students see it. A crash course for it is created too.</p>
+    </Dialog>
+  );
+}
+
 function SubjectEditor({ rec }: { rec: SubjectRec }) {
+  const router = useRouter();
   const [f, setF] = useState<SubjectRec>(rec);
   const [newSystem, setNewSystem] = useState("");
   const [merge, setMerge] = useState<SystemRec | null>(null);
+  const [mergeSubject, setMergeSubject] = useState(false);
   const questions = useAll("questions");
   const tricks = useAll("memoryTricks");
+  const usageAll = useSubjectUsage(rec.id);
   const dirty = !sameRecord(f, rec);
   useUnsavedGuard(dirty);
 
@@ -94,14 +177,16 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
   }, [questions, tricks, rec]);
 
   const setSystems = (systems: SystemRec[]) => setF((x) => ({ ...x, systems }));
-  const shownTabs = f.tabs;
+  const setSys = (key: string, patch: Partial<SystemRec>) => setSystems(f.systems.map((x) => (x.key === key ? { ...x, ...patch } : x)));
+  const setStat = (k: keyof SubjectRec["stats"], v: number) => setF((x) => ({ ...x, stats: { ...x.stats, [k]: Math.max(0, v) } }));
   const hiddenTabs = ALL_TABS.filter((t) => !f.tabs.includes(t));
+  const inUse = usageAll.questions + usageAll.cases + usageAll.tricks + usageAll.sheets + usageAll.lessons;
 
   const addSystem = () => {
     const label = newSystem.trim();
     if (!label) return;
     if (f.systems.some((s) => s.label.toLowerCase() === label.toLowerCase() || s.key.toLowerCase() === label.toLowerCase())) return toast("A system with that name already exists.", "error");
-    setSystems([...f.systems, { key: label, label, visible: true }]);
+    setSystems([...f.systems, { key: label, label, visible: true, count: 0, perfTotal: 0, avg: f.stats.avgScore }]);
     setNewSystem("");
   };
 
@@ -120,6 +205,30 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
     toast(`Saved ${f.name}`);
   };
 
+  const deleteSubject = async () => {
+    if (!(await confirmDialog({ title: `Delete ${rec.name}?`, body: "Nothing uses this subject, so it is removed along with its (empty) crash course.", confirm: "Delete subject", danger: true }))) return;
+    api.hardDelete([rec.id]);
+    if (getAll("courses").some((c) => c.id === rec.id)) crud("courses").hardDelete([rec.id]);
+    router.replace("/admin/subjects");
+  };
+
+  const statRow = (k: keyof SubjectRec["stats"], label: string, bank?: number, hint?: string) => (
+    <div className="grid items-center gap-2 sm:grid-cols-[1fr_120px_auto]">
+      <span className="text-sm text-ink">
+        {label}
+        {hint && <span className="block text-xs text-muted">{hint}</span>}
+      </span>
+      <Input type="number" min={0} value={f.stats[k]} onChange={(e) => setStat(k, Number(e.target.value) || 0)} aria-label={label} />
+      {bank !== undefined ? (
+        <Btn variant="ghost" onClick={() => setStat(k, bank)} title="Use the number of published items in the bank">
+          Use bank ({bank})
+        </Btn>
+      ) : (
+        <span />
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <Panel
@@ -137,24 +246,29 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
           </div>
         }
       >
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <Field label="Display name" required>
-            <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+        <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+          <div className="space-y-4">
+            <Field label="Display name" required>
+              <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+            </Field>
+            <Switch checked={f.visible} onChange={(v) => setF({ ...f, visible: v })} label="Visible to students" description="Hidden subjects disappear from the sidebar, Home and filters." />
+          </div>
+          <Field label="Icon" hint="Seeded subjects use their built-in icon when none is uploaded.">
+            <ImageDrop value={f.icon} onChange={(icon) => setF({ ...f, icon })} />
           </Field>
-          <Switch checked={f.visible} onChange={(v) => setF({ ...f, visible: v })} label="Visible to students" description="Hidden subjects disappear from the sidebar, Home and filters." />
         </div>
       </Panel>
 
-      <Panel title="Subject page tabs" description="Tabs students see on this subject's page, in order. The first tab is where /nclex/subject opens.">
+      <Panel title="Subject page tabs" description="Tabs students see on this subject's page, in order. The first tab is where the subject link opens.">
         <ul className="divide-y divide-line rounded-md border border-line">
-          {shownTabs.map((t, i) => (
+          {f.tabs.map((t, i) => (
             <li key={t} className="flex items-center gap-2 px-3 py-2">
               <span className="w-6 text-xs text-muted tabular-nums">{i + 1}</span>
               <span className="flex-1 text-sm text-ink">{TAB_LABELS[t]}</span>
               <IconBtn label="Move up" disabled={i === 0} onClick={() => setF({ ...f, tabs: move(f.tabs, i, -1) })}>
                 <ArrowUp className="size-4" />
               </IconBtn>
-              <IconBtn label="Move down" disabled={i === shownTabs.length - 1} onClick={() => setF({ ...f, tabs: move(f.tabs, i, 1) })}>
+              <IconBtn label="Move down" disabled={i === f.tabs.length - 1} onClick={() => setF({ ...f, tabs: move(f.tabs, i, 1) })}>
                 <ArrowDown className="size-4" />
               </IconBtn>
               <IconBtn label={`Hide ${TAB_LABELS[t]}`} onClick={() => setF({ ...f, tabs: f.tabs.filter((x) => x !== t) })}>
@@ -176,13 +290,16 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
         )}
       </Panel>
 
-      <Panel title="Systems (sub-subjects)" description="Used by the Standalone tab, Create Test, Memory Tricks and every system filter. Renaming keeps all linked content attached.">
+      <Panel title="Systems (sub-subjects)" description="Used by the Standalone tab, Create Test, Memory Tricks, Performance and every system filter. Renaming keeps all linked content attached. Numbers are what students see.">
         <div className="overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[820px] text-sm">
             <thead className="bg-background text-left text-xs text-muted uppercase">
               <tr>
                 <th className="w-10 px-3 py-2">#</th>
                 <th className="px-3 py-2">Name</th>
+                <th className="w-24 px-3 py-2" title="Standalone questions shown for this system">Questions</th>
+                <th className="w-24 px-3 py-2" title="Questions counted on the Performance page">Perf. total</th>
+                <th className="w-20 px-3 py-2" title="Average score of all students, %">Avg %</th>
                 <th className="px-3 py-2">Used by</th>
                 <th className="px-3 py-2">Visible</th>
                 <th className="w-32 px-3 py-2" />
@@ -195,25 +312,29 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
                   <tr key={s.key} className="border-t border-line">
                     <td className="px-3 py-1.5 text-xs text-muted tabular-nums">{i + 1}</td>
                     <td className="px-3 py-1.5">
-                      <Input
-                        value={s.label}
-                        aria-label={`Name of system ${i + 1}`}
-                        onChange={(e) => setSystems(f.systems.map((x) => (x.key === s.key ? { ...x, label: e.target.value } : x)))}
-                        className="h-8"
-                      />
+                      <Input value={s.label} aria-label={`Name of system ${i + 1}`} onChange={(e) => setSys(s.key, { label: e.target.value })} className="h-8" />
                       {s.label !== s.key && <span className="mt-0.5 block text-[11px] text-muted">Originally “{s.key}”</span>}
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input type="number" min={0} value={s.count} aria-label="Questions" onChange={(e) => setSys(s.key, { count: Math.max(0, Number(e.target.value) || 0) })} className="h-8" />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input type="number" min={0} value={s.perfTotal} aria-label="Performance total" onChange={(e) => setSys(s.key, { perfTotal: Math.max(0, Number(e.target.value) || 0) })} className="h-8" />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input type="number" min={0} max={100} value={s.avg} aria-label="Average score" onChange={(e) => setSys(s.key, { avg: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} className="h-8" />
                     </td>
                     <td className="px-3 py-1.5 text-xs text-muted">
                       {u ? (
                         <>
-                          {u.questions} question{u.questions === 1 ? "" : "s"} · {u.tricks} trick{u.tricks === 1 ? "" : "s"}
+                          {u.questions} q · {u.tricks} tricks
                         </>
                       ) : (
                         <Badge tone="teal">New</Badge>
                       )}
                     </td>
                     <td className="px-3 py-1.5">
-                      <Switch checked={s.visible} onChange={(v) => setSystems(f.systems.map((x) => (x.key === s.key ? { ...x, visible: v } : x)))} />
+                      <Switch checked={s.visible} onChange={(v) => setSys(s.key, { visible: v })} />
                     </td>
                     <td className="px-3 py-1.5">
                       <div className="flex justify-end">
@@ -231,6 +352,13 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
                   </tr>
                 );
               })}
+              {!f.systems.length && (
+                <tr>
+                  <td colSpan={8} className="px-3 py-6 text-center text-muted">
+                    No systems yet. Add the first one below.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -243,8 +371,34 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
         </div>
       </Panel>
 
+      <Panel title="Numbers shown to students" description="These mirror the full product catalog. Type your own, or use the count of published items currently in the bank.">
+        <div className="space-y-2">
+          {statRow("questionCount", "Questions (Home)", usageAll.studyable, "“0 of N questions used” on Home")}
+          {statRow("standaloneCount", "Standalone questions", usageAll.standalone, "Standalone page, subject tab and Create Test")}
+          {statRow("perfTotal", "Questions on Performance", usageAll.questions)}
+          {statRow("avgScore", "Average score of all students (%)")}
+          {statRow("avgTimeSec", "Average seconds per question", undefined, "Time Management tables")}
+        </div>
+      </Panel>
+
+      <Panel title="Delete or merge this subject">
+        <p className="mb-3 text-sm text-muted">
+          Used by {usageAll.questions} questions, {usageAll.cases} case studies, {usageAll.tricks} memory tricks, {usageAll.sheets} cheat sheets and {usageAll.lessons} lessons.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Btn onClick={() => setMergeSubject(true)} disabled={!inUse}>
+            <GitMerge className="size-4" />
+            Merge into another subject…
+          </Btn>
+          <Btn variant="danger" disabled={Boolean(inUse)} onClick={deleteSubject} title={inUse ? "Merge or move its content first" : undefined}>
+            <Trash2 className="size-4" />
+            Delete subject
+          </Btn>
+        </div>
+      </Panel>
+
       {merge && (
-        <MergeDialog
+        <MergeSystemDialog
           subject={f}
           from={merge}
           usage={usage.get(merge.key)!}
@@ -255,12 +409,13 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
           }}
         />
       )}
+      {mergeSubject && <MergeSubjectDialog from={rec} onClose={() => setMergeSubject(false)} />}
     </div>
   );
 }
 
 /** A system that content still points to can't just be deleted: move its content to another system first. */
-function MergeDialog({ subject, from, usage, onClose, onDone }: { subject: SubjectRec; from: SystemRec; usage: { questions: number; tricks: number }; onClose: () => void; onDone: () => void }) {
+function MergeSystemDialog({ subject, from, usage, onClose, onDone }: { subject: SubjectRec; from: SystemRec; usage: { questions: number; tricks: number }; onClose: () => void; onDone: () => void }) {
   const targets = subject.systems.filter((s) => s.key !== from.key);
   const [to, setTo] = useState(targets[0]?.key ?? "");
   const questions = useAll("questions");
@@ -296,6 +451,63 @@ function MergeDialog({ subject, from, usage, onClose, onDone }: { subject: Subje
           {targets.map((s) => (
             <option key={s.key} value={s.key}>
               {s.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
+    </Dialog>
+  );
+}
+
+/** Move every record of one subject to another, then delete the empty subject (and its course). */
+function MergeSubjectDialog({ from, onClose }: { from: SubjectRec; onClose: () => void }) {
+  const router = useRouter();
+  const subjects = useSubjects(true).filter((s) => s.id !== from.id);
+  const [to, setTo] = useState(subjects[0]?.id ?? "");
+  const target = subjects.find((s) => s.id === to);
+  const run = async () => {
+    if (!target) return;
+    if (!(await confirmDialog({ title: `Merge ${from.name} into ${target.name}?`, body: "All content moves over; its systems are added to the target subject; then this subject is deleted.", confirm: "Merge", danger: true })))
+      return;
+    const ids = <K extends CollectionName>(col: K, pick: (r: Record<string, unknown>) => boolean) =>
+      (getAll(col) as unknown as Record<string, unknown>[]).filter(pick).map((r) => String(r.id));
+    const q = ids("questions", (r) => r.subject === from.id);
+    const c = ids("cases", (r) => r.subject === from.id);
+    const t = ids("memoryTricks", (r) => r.subject === from.id);
+    const s = ids("cheatSheets", (r) => r.subject === from.id);
+    const l = ids("lessons", (r) => r.course === from.id);
+    if (q.length) crud("questions").patchMany(q, { subject: to }, `Merged from ${from.name}`);
+    if (c.length) crud("cases").patchMany(c, { subject: to }, `Merged from ${from.name}`);
+    if (t.length) crud("memoryTricks").patchMany(t, { subject: to }, `Merged from ${from.name}`);
+    if (s.length) crud("cheatSheets").patchMany(s, { subject: to }, `Merged from ${from.name}`);
+    if (l.length) crud("lessons").patchMany(l, { course: to }, `Merged from ${from.name}`);
+    const extra = from.systems.filter((x) => !target.systems.some((y) => y.key === x.key));
+    api.update({ ...target, systems: [...target.systems, ...extra] }, "update", `Added systems from ${from.name}`);
+    api.hardDelete([from.id]);
+    if (getAll("courses").some((x) => x.id === from.id)) crud("courses").hardDelete([from.id]);
+    toast(`Merged into ${target.name}`);
+    onClose();
+    router.replace(`/admin/subjects?open=${to}`);
+  };
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`Merge ${from.name}`}
+      footer={
+        <>
+          <Btn onClick={onClose}>Cancel</Btn>
+          <Btn variant="primary" onClick={run} disabled={!to}>
+            Merge
+          </Btn>
+        </>
+      }
+    >
+      <Field label="Move everything into">
+        <Select value={to} onChange={(e) => setTo(e.target.value)}>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
             </option>
           ))}
         </Select>

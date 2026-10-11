@@ -2,8 +2,8 @@
 
 import clsx from "clsx";
 import { useState, type ReactNode } from "react";
-import { EXPERTS, TOTALS } from "@/data/catalog";
-import { useConfig, useReadinessExams, useSubjects } from "@/lib/content";
+import { CoachPhoto } from "@/components/ui/CoachPhoto";
+import { useConfig, useCopy, useReadinessExams, useSubjects } from "@/lib/content";
 import { BRAND } from "@/lib/brand";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
@@ -20,7 +20,6 @@ import {
 } from "@/components/performance/SubjectPerformance";
 import { PlacedFaqs } from "@/components/ui/PlacedFaqs";
 
-/* eslint-disable @next/next/no-img-element */
 
 /** Readiness score band. Thresholds: Admin > Targets & Scoring. */
 export function readinessStatus(percent: number, bands: { high: number; borderline: number }) {
@@ -30,12 +29,13 @@ export function readinessStatus(percent: number, bands: { high: number; borderli
 }
 
 export default function PerformancePage() {
-  const { targets: TARGETS, readinessBands } = useConfig();
+  const { targets: TARGETS, readinessBands, totals } = useConfig();
+  const copy = useCopy();
   const exams = useReadinessExams();
   const subjectIds = useSubjects().map((s) => s.id);
   const progress = useProgress();
   const sessions = useStore((s) => s.sessions);
-  const totalQuestions = TOTALS.performanceQuestions;
+  const totalQuestions = totals.performanceQuestions;
   const usedCount = progress.used.size;
   const scorePct = progress.max ? Math.round((progress.earned / progress.max) * 100) : 0;
   const usagePct = Math.round((usedCount / totalQuestions) * 100);
@@ -59,17 +59,17 @@ export default function PerformancePage() {
     <>
       <PageHeader
         trail={[{ label: "Performance" }]}
-        title="Performance"
-        description="Performance tracks every question attempt for case studies, standalone questions, and readiness exams."
+        title={copy("performance.title")}
+        description={copy("performance.description")}
       />
 
       <section className="mb-8">
         <h2 className="text-2xl leading-[30px] font-bold text-ink">Pass Targets</h2>
         <div className="relative mt-4 mb-4 pl-8">
-          <img src={EXPERTS.emily.photo} alt="" className="absolute top-1/2 left-0 size-[42px] -translate-y-1/2 rounded-full border-2 border-white object-cover shadow-[0_0_0_1px_var(--color-line)]" />
+          <CoachPhoto className="absolute top-1/2 left-0 size-[42px] -translate-y-1/2 rounded-full border-2 border-white object-cover shadow-[0_0_0_1px_var(--color-line)]" />
           <p className="rounded-lg border border-line bg-primary-light py-3 pr-6 pl-6 text-base leading-6 text-ink sm:pl-6">
             <span className="block pl-4 sm:pl-2">
-              99% of NCLEXBase students who meet all targets pass the NCLEX. <strong className="font-bold">You&apos;ve met {met} of 3 targets.</strong>{" "}
+              {copy("performance.banner")} <strong className="font-bold">You&apos;ve met {met} of 3 targets.</strong>{" "}
               {met === 3 ? "You're ready to pass!" : met ? "Keep going!" : "Just getting started!"}
             </span>
           </p>
@@ -112,7 +112,7 @@ export default function PerformancePage() {
             pill={<TargetPill color={BRAND.gold} met={readinessMet}>Target: Attempt All {readiness.length}</TargetPill>}
             rows={[
               ["Used Exam Questions", rUsed, false],
-              ["Unused Exam Questions", TOTALS.readiness - rUsed, false],
+              ["Unused Exam Questions", totals.readiness - rUsed, false],
               ["Correct / Total Pts", `${rEarned} / ${rMax}`, false],
             ]}
           />

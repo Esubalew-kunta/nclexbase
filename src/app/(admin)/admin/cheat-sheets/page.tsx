@@ -10,7 +10,7 @@ import type { CheatSheetRec, Status } from "@/lib/admin/types";
 import { useAll, useSubjects } from "@/lib/content";
 import { AccessBadge, AdminPage, Badge, Btn, confirmDialog, Drawer, Field, fmtDate, Input, Segmented, StatusBadge, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { accessFilter, BulkBar, DataTable, ListEmpty, ListToolbar, statusFilter, useEditParam, useList, useSelection, type Column, type FilterDef } from "@/components/admin/list";
-import { FileDrop, HistoryButton, StatusBulkActions, StatusPicker, SubjectSelect, subjectFilter } from "@/components/admin/parts";
+import { FileDrop, DeleteRecordButton, HistoryButton, StatusBulkActions, StatusPicker, SubjectSelect, subjectFilter } from "@/components/admin/parts";
 
 const api = crud("cheatSheets");
 
@@ -193,6 +193,7 @@ function SheetEditor({ rec, onClose, tagOptions }: { rec: CheatSheetRec | null; 
       footer={
         <>
           {rec && <HistoryButton<CheatSheetRec> historyKey={`cheatSheets:${rec.id}`} onRestore={(v) => (api.restore(rec.id, v), onClose())} describe={(v) => v.title} />}
+          {rec && <DeleteRecordButton status={rec.status} noun="cheat sheet" onDelete={() => (api.hardDelete([rec.id]), onClose())} />}
           <span className="flex-1" />
           <Btn onClick={close}>Cancel</Btn>
           <Btn onClick={() => save("draft")}>Save draft</Btn>

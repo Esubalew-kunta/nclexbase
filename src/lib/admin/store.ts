@@ -164,7 +164,18 @@ export const useAdminStore = create<AdminStore>()(
     {
       name: "nclexbase-admin",
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      // A full localStorage would otherwise lose the edit silently on reload; AdminShell shows the warning.
+      storage: createJSONStorage(() => ({
+        getItem: (k) => localStorage.getItem(k),
+        removeItem: (k) => localStorage.removeItem(k),
+        setItem: (k, v) => {
+          try {
+            localStorage.setItem(k, v);
+          } catch {
+            window.dispatchEvent(new Event(STORAGE_FULL_EVENT));
+          }
+        },
+      })),
       skipHydration: true,
       partialize: (s) => ({ session: s.session, credentials: s.credentials, data: s.data, config: s.config, audit: s.audit, history: s.history, savedViews: s.savedViews, sidebarCollapsed: s.sidebarCollapsed }),
     },
@@ -172,3 +183,6 @@ export const useAdminStore = create<AdminStore>()(
 );
 
 export const newId = (prefix: string) => `${prefix}-${uid()}`;
+
+/** Fired on window when admin data can't be written because browser storage is full. */
+export const STORAGE_FULL_EVENT = "nclexbase:storage-full";

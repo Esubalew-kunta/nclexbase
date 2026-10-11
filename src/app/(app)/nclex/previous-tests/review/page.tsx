@@ -4,12 +4,13 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useState } from "react";
-import { EXPERTS, SUBJECTS, subjectById } from "@/data/catalog";
+import { getAll, getSubjectRec, subjectName, useCopy } from "@/lib/content";
+import { CoachPhoto } from "@/components/ui/CoachPhoto";
+import { subjectHref } from "@/lib/routes";
 import { caseForItem, itemById } from "@/lib/bank";
 import { avgPoints, chanceOfPassing, formatDuration, scoreItem, scoreSession } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import { formatFull } from "@/lib/schedule";
-import { subjectName } from "@/lib/content";
 import { BRAND } from "@/lib/brand";
 import type { SubjectId, TestSession } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
@@ -18,7 +19,6 @@ import { SubjectIcon } from "@/components/ui/visuals";
 import { ExpandAllToggle, ScoreCell, SectionHeading, SortArrows, TimeManagementTable, WarningInline } from "@/components/performance/SubjectPerformance";
 import { PlacedFaqs } from "@/components/ui/PlacedFaqs";
 
-/* eslint-disable @next/next/no-img-element */
 
 function Report() {
   const id = useSearchParams().get("id");
@@ -163,7 +163,7 @@ function CatSummary({ session, percent, weakest }: { session: TestSession; perce
         Chance of Passing: <span className={tone}>{chance}</span>
       </h3>
       <div className="relative mb-6">
-        <img src={EXPERTS.emily.photo} alt="" className="absolute top-6 left-0 z-[1] size-12 rounded-full object-cover" />
+        <CoachPhoto className="absolute top-6 left-0 z-[1] size-12 rounded-full object-cover" />
         <p className="ml-9 rounded-lg bg-primary-light py-4 pr-6 pl-12 text-base leading-6 text-ink">{message}</p>
       </div>
       <AbilityChart session={session} />
@@ -182,9 +182,8 @@ function ScoreReport({ session }: { session: TestSession }) {
   const [open, setOpen] = useState<Set<string>>(() => new Set(stats.subjects.map((s) => s.id)));
   const [openCases, setOpenCases] = useState<Set<string>>(() => new Set(stats.caseIds));
   const good = sc.percent >= avgPct;
-  const message = good
-    ? "Great job! You scored above average. Keep reviewing the explanations to lock in what you learned."
-    : "Keep your head up! Review these solutions carefully and learn from your mistakes. I'm confident you'll bring this score up with hard work and practice.";
+  const copy = useCopy();
+  const message = good ? copy("review.coachGood") : copy("review.coachBad");
   const review = (index = 0) => {
     goTo(session.id, index);
     router.push(`/nclex/custom-test?id=${session.id}&review=1`);
@@ -264,7 +263,7 @@ function ScoreReport({ session }: { session: TestSession }) {
             </div>
           </div>
           <div className="relative mt-6">
-            <img src={EXPERTS.emily.photo} alt="" className="absolute top-1/2 left-0 size-12 -translate-y-1/2 rounded-full object-cover" />
+            <CoachPhoto className="absolute top-1/2 left-0 size-12 -translate-y-1/2 rounded-full object-cover" />
             <p className="ml-9 rounded-lg bg-primary-light py-3 pr-6 pl-8 text-base leading-6 text-ink">{message}</p>
           </div>
         </div>
@@ -342,7 +341,7 @@ function ScoreReport({ session }: { session: TestSession }) {
                     <td className="p-4 text-base leading-4 text-muted">{s.avg}%</td>
                     <td className="p-4 text-right">
                       <Link
-                        href={`/nclex/${s.id}`}
+                        href={subjectHref(s.id)}
                         onClick={(e) => e.stopPropagation()}
                         className="ml-auto flex size-8 items-center justify-center rounded-full bg-primary text-white hover:bg-primary-hover"
                       >
@@ -521,12 +520,12 @@ function buildStats(session: TestSession) {
 
   session.entries.forEach((e, index) => {
     const item = itemById(e.itemId);
-    const subject = subjectById(item.subject);
+    const subjectAvgTime = getSubjectRec(item.subject)?.stats.avgTimeSec ?? 70;
     const s = scoreItem(item, session.submitted[e.itemId] ? session.answers[e.itemId] : undefined);
     const avg = avgPoints(item);
     const time = session.timeSpent[e.itemId] ?? 0;
     avgEarned += avg;
-    avgTime += subject.avgTimeSec;
+    avgTime += subjectAvgTime;
 
     const row = bySubject.get(item.subject) ?? { id: item.subject, earned: 0, max: 0, avgEarned: 0, time: 0, count: 0, avg: 0, systems: new Map() };
     row.earned += s.earned;
@@ -555,7 +554,9 @@ function buildStats(session: TestSession) {
     g.rows.push({ index, subject: item.subject, system: item.system, earned: s.earned, max: s.max, time });
   });
 
-  const subjects = SUBJECTS.map((s) => bySubject.get(s.id))
+  const subjects = [...getAll("subjects")]
+    .sort((a, b) => a.order - b.order)
+    .map((s) => bySubject.get(s.id))
     .filter(<T,>(x: T | undefined): x is T => Boolean(x))
     .map((r) => ({
       ...r,

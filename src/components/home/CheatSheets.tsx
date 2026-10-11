@@ -3,7 +3,8 @@
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CHEAT_SHEET_SUBJECT_ORDER, CHEAT_SHEET_SUBJECT_SYSTEMS, CHEAT_SHEET_SYSTEMS } from "@/data/catalog";
+import { CHEAT_SHEET_SUBJECT_SYSTEMS, CHEAT_SHEET_SYSTEMS } from "@/data/catalog";
+import { SubjectIcon } from "@/components/ui/visuals";
 import type { CheatSheetRec } from "@/lib/admin/types";
 import { subjectName, useCheatSheets, useSubjects } from "@/lib/content";
 import { useStore } from "@/lib/store";
@@ -38,7 +39,7 @@ export function CheatSheetList({ sheets }: { sheets: CheatSheetRec[] }) {
             className="mb-2 flex cursor-pointer items-start rounded-lg border border-line bg-white px-4 py-3 shadow-card transition-[transform,border-color] duration-100 hover:scale-[1.01] hover:border-primary/40"
           >
             <div className="flex flex-col items-center justify-between">
-              <img src={`/assets/subjects/${s.subject}.png`} alt="" className="size-6" />
+              <SubjectIcon id={s.subject} size={24} />
             </div>
             <div className="flex min-w-0 flex-1 items-center">
               <div className="flex min-w-0 flex-1 flex-col justify-center px-4">
@@ -104,7 +105,8 @@ export function CheatSheetBrowser({ subject: fixedSubject }: { subject?: Subject
   const [system, setSystem] = useState(allLabel);
   const [q, setQ] = useState("");
   const term = q.trim().toLowerCase();
-  const rail = [...CHEAT_SHEET_SUBJECT_ORDER].filter((id) => subjects.some((s) => s.id === id));
+  // Subject rail in admin order (Admin > Subjects & Systems).
+  const rail = subjects.map((s) => s.id);
 
   const list = sheets
     .filter(
@@ -128,7 +130,7 @@ export function CheatSheetBrowser({ subject: fixedSubject }: { subject?: Subject
                   onClick={() => setSubject(id)}
                   className={clsx("flex h-8 cursor-pointer items-center rounded-lg border px-3 py-2 transition-colors md:w-full", on ? "border-primary bg-primary-light" : "border-line bg-white hover:bg-primary-light")}
                 >
-                  <span className="mr-1 flex size-4">{id === "all" ? <Star /> : <img src={`/assets/subjects/${id}.png`} alt="" className="size-4" />}</span>
+                  <span className="mr-1 flex size-4">{id === "all" ? <Star /> : <SubjectIcon id={id} size={16} />}</span>
                   <p className={clsx("text-sm leading-[14px] capitalize", on ? "font-bold text-primary" : "text-ink")}>
                     {id === "all" ? "all" : subjectName(id)}
                   </p>

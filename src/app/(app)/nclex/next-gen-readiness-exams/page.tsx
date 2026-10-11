@@ -3,7 +3,8 @@
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useReadinessExams } from "@/lib/content";
+import { useCopy, useReadinessExams } from "@/lib/content";
+import { readinessHref } from "@/lib/routes";
 import { useStore } from "@/lib/store";
 import { chanceOfPassing, scoreSession } from "@/lib/scoring";
 import { Button, Modal, PageHeader, UpgradeButton } from "@/components/ui/primitives";
@@ -17,20 +18,21 @@ export default function ReadinessPage() {
   const deleteSession = useStore((s) => s.deleteSession);
   const [confirm, setConfirm] = useState<string | null>(null);
   const exams = useReadinessExams();
+  const copy = useCopy();
 
   return (
     <>
       <PageHeader
         trail={[{ label: "Next Gen Readiness Exams" }]}
-        title="CAT Readiness Exams"
-        description="These readiness exams simulate the look, feel, and content of the real Next Gen NCLEX. Use them to gauge your readiness to pass the NCLEX!"
+        title={copy("readiness.title")}
+        description={copy("readiness.description")}
       />
       <div className="mt-4">
         {exams.map((e) => {
           const attempts = sessions.filter((s) => s.kind === "readiness" && s.sourceId === e.id);
           const attempt = attempts.at(-1);
           const unlocked = plan === "premium" || e.access === "free";
-          const intro = `/nclex/next-gen-readiness-exams/qbanks/${e.id}`;
+          const intro = readinessHref(e.id);
           const done = attempt?.status === "ended";
           const open = () => {
             if (!unlocked) return router.push("/nclex/upgrade");

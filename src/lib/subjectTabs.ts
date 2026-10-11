@@ -24,7 +24,10 @@ const ORDER: Record<SubjectId, SubjectTab[]> = {
 
 export const ALL_TABS = Object.keys(TAB_LABELS) as SubjectTab[];
 
+/** Default tabs for a subject created in the admin. */
+export const DEFAULT_TABS: SubjectTab[] = ["case-studies", "standalone", "videos", "cheat-sheets", "memory-tricks", "performance"];
+
 /** Seed tab order. At runtime use the subject's `tabs` from the content repository (admin-editable). */
 export function tabsFor(id: SubjectId): SubjectTab[] {
-  return ORDER[id];
+  return ORDER[id] ?? DEFAULT_TABS;
 }

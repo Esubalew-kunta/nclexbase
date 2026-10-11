@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Lesson } from "@/data/catalog";
 import { asLesson, useAll, useLessons } from "@/lib/content";
+import { withParam } from "@/lib/routes";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
 
@@ -21,7 +22,7 @@ function Player({ title, lessons, base, back }: { title: string; lessons: Lesson
   const index = Math.min(lessons.length, Math.max(1, Number(params.get("index")) || 1));
   const lesson = lessons[index - 1];
   const locked = plan === "free" && lesson?.locked;
-  const go = (i: number) => i >= 1 && i <= lessons.length && router.replace(`${base}?index=${i}`);
+  const go = (i: number) => i >= 1 && i <= lessons.length && router.replace(withParam(base, "index", i));
 
   return (
     <div className="flex h-dvh flex-col bg-primary-hover text-white">

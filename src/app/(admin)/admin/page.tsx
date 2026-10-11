@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, ClipboardList, FileText, Inbox
 import { adminHref } from "@/lib/admin/links";
 import { useAdminStore } from "@/lib/admin/store";
 import { COLLECTION_LABELS, type CollectionName } from "@/lib/admin/types";
-import { useAll, useConfig, useSubjects } from "@/lib/content";
+import { useAll, useSubjects } from "@/lib/content";
 import { AdminPage, Badge, fmtDateTime, Panel, stripHtml } from "@/components/admin/ui";
 import { validateItem } from "@/components/admin/items";
 
@@ -34,7 +34,7 @@ export default function Dashboard() {
   const messages = useAll("messages");
   const subjects = useSubjects(true);
   const audit = useAdminStore((s) => s.audit);
-  const announcement = useConfig().announcement;
+  const liveAnnouncements = useAll("announcements").filter((a) => a.status === "published").length;
 
   const pub = <T extends { status: string }>(l: T[]) => l.filter((x) => x.status === "published").length;
   const invalid = useMemo(() => questions.filter((q) => q.status !== "archived" && validateItem(q).length).length, [questions]);
@@ -138,7 +138,7 @@ export default function Dashboard() {
               { href: "/admin/questions?new=1", label: "New question", icon: Plus },
               { href: "/admin/memory-tricks?edit=new", label: "Upload a memory trick", icon: Plus },
               { href: "/admin/cheat-sheets?edit=new", label: "Add a cheat sheet", icon: Plus },
-              { href: "/admin/home", label: announcement.enabled ? "Edit the announcement (live)" : "Post an announcement", icon: Megaphone },
+              { href: "/admin/announcements", label: liveAnnouncements ? `Announcements (${liveAnnouncements} live)` : "Post an announcement", icon: Megaphone },
             ].map((a) => (
               <Link key={a.label} href={a.href} className="flex items-center gap-2 rounded-md border border-line px-3 py-2.5 text-sm font-medium text-ink hover:border-primary hover:bg-primary-light hover:text-primary">
                 <a.icon className="size-4 text-primary" />

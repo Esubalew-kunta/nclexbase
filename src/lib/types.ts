@@ -1,11 +1,5 @@
-export type SubjectId =
-  | "adult-health"
-  | "child-health"
-  | "fundamentals"
-  | "maternal-and-newborn-health"
-  | "mental-health"
-  | "pharmacology"
-  | "management-of-care";
+/** Subject slug. Seeded ones are the 7 NCLEX subjects; the admin can add more (Admin > Subjects & Systems). */
+export type SubjectId = string;
 
 export interface Expert {
   id: string;

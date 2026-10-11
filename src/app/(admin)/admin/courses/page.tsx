@@ -7,10 +7,10 @@ import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 import { crud, today } from "@/lib/admin/crud";
 import { newId } from "@/lib/admin/store";
 import type { CourseRec, LessonRec, Status } from "@/lib/admin/types";
-import { useAll } from "@/lib/content";
+import { getAll, useAll } from "@/lib/content";
 import { AccessBadge, AdminPage, Badge, Btn, confirmDialog, Drawer, Field, IconBtn, Input, Panel, Segmented, StatusBadge, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { accessFilter, BulkBar, DataTable, ListEmpty, ListToolbar, statusFilter, useEditParam, useList, useSelection, type Column } from "@/components/admin/list";
-import { HistoryButton, StatusBulkActions, StatusPicker } from "@/components/admin/parts";
+import { DeleteRecordButton, HistoryButton, StatusBulkActions, StatusPicker } from "@/components/admin/parts";
 
 const courseApi = crud("courses");
 const api = crud("lessons");
@@ -23,10 +23,20 @@ export default function CoursesAdmin() {
   const courseId = params.get("course") ?? courses[0]?.id;
   const course = courses.find((c) => c.id === courseId) ?? courses[0];
   const [editCourse, setEditCourse] = useState(false);
+  const [creating, setCreating] = useState(false);
   const pick = (id: string) => router.replace(`/admin/courses?course=${id}`);
 
   return (
-    <AdminPage title="Courses & Lessons" description="Crash Course videos for each subject and the Next Gen Strategy Course modules. Lesson order here is the order students see.">
+    <AdminPage
+      title="Courses & Lessons"
+      description="Crash Course videos for each subject and the Next Gen Strategy Course modules. Lesson order here is the order students see."
+      actions={
+        <Btn variant="primary" onClick={() => setCreating(true)}>
+          <Plus className="size-4" />
+          New Next Gen module
+        </Btn>
+      }
+    >
       <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
         <Panel title="Courses" bodyClassName="p-2">
           {(["subject", "ngn"] as const).map((kind) => (
@@ -69,7 +79,16 @@ export default function CoursesAdmin() {
           </div>
         )}
       </div>
-      {editCourse && course && <CourseEditor key={course.id} rec={course} onClose={() => setEditCourse(false)} />}
+      {editCourse && course && <CourseEditor key={course.id} rec={course} lessonCount={allLessons.filter((l) => l.course === course.id).length} onClose={() => setEditCourse(false)} />}
+      {creating && (
+        <CourseEditor
+          rec={{ id: newId("ngn"), kind: "ngn", title: "", runtime: "", status: "draft", order: courses.filter((c) => c.kind === "ngn").length, updatedAt: today() }}
+          isNew
+          lessonCount={0}
+          onClose={() => setCreating(false)}
+          onCreated={(id) => pick(id)}
+        />
+      )}
     </AdminPage>
   );
 }
@@ -196,6 +215,7 @@ function LessonEditor({ rec, course, nextOrder, onClose }: { rec: LessonRec | nu
       footer={
         <>
           {rec && <HistoryButton<LessonRec> historyKey={`lessons:${rec.id}`} onRestore={(v) => (api.restore(rec.id, v), onClose())} describe={(v) => v.title} />}
+          {rec && <DeleteRecordButton status={rec.status} noun="lesson" onDelete={() => (api.hardDelete([rec.id]), onClose())} />}
           <span className="flex-1" />
           <Btn onClick={close}>Cancel</Btn>
           <Btn onClick={() => save("draft")}>Save draft</Btn>
@@ -253,12 +273,25 @@ function LessonEditor({ rec, course, nextOrder, onClose }: { rec: LessonRec | nu
   );
 }
 
-function CourseEditor({ rec, onClose }: { rec: CourseRec; onClose: () => void }) {
+function CourseEditor({ rec, onClose, isNew, lessonCount, onCreated }: { rec: CourseRec; onClose: () => void; isNew?: boolean; lessonCount: number; onCreated?: (id: string) => void }) {
   const [f, setF] = useState(rec);
   const save = () => {
     if (!f.title.trim()) return toast("Add a course title.", "error");
-    courseApi.update({ ...f, title: f.title.trim() }, f.status !== rec.status ? (f.status === "published" ? "publish" : f.status === "draft" ? "unpublish" : "archive") : "update");
+    if (isNew) {
+      courseApi.create({ ...f, title: f.title.trim() });
+      onCreated?.(f.id);
+    } else courseApi.update({ ...f, title: f.title.trim() }, f.status !== rec.status ? (f.status === "published" ? "publish" : f.status === "draft" ? "unpublish" : "archive") : "update");
     toast("Course saved");
+    onClose();
+  };
+  const remove = () => {
+    // Lessons belong to the course, so they go with it.
+    const ids = getAll("lessons")
+      .filter((l) => l.course === rec.id)
+      .map((l) => l.id);
+    if (ids.length) api.hardDelete(ids);
+    courseApi.hardDelete([rec.id]);
+    toast("Course deleted");
     onClose();
   };
   return (
@@ -268,21 +301,24 @@ function CourseEditor({ rec, onClose }: { rec: CourseRec; onClose: () => void })
       title={`Course: ${rec.title}`}
       footer={
         <>
+          {!isNew && rec.kind === "ngn" && <DeleteRecordButton status={rec.status} noun={`module and its ${lessonCount} lessons`} onDelete={remove} />}
+          <span className="flex-1" />
           <Btn onClick={onClose}>Cancel</Btn>
           <Btn variant="primary" onClick={save}>
-            Save
+            {isNew ? "Create" : "Save"}
           </Btn>
         </>
       }
     >
       <div className="space-y-4">
+        {rec.kind === "subject" && <p className="rounded-md bg-background px-3 py-2 text-sm text-muted">This is a subject&apos;s crash course. It is created and deleted with its subject (Subjects & Systems).</p>}
         <Field label="Title" required>
           <Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
         </Field>
         <Field label="Runtime" hint="Shown on the course card, e.g. “8h 20m”.">
           <Input value={f.runtime} onChange={(e) => setF({ ...f, runtime: e.target.value })} className="w-40" />
         </Field>
-        <Field label="Status" hint="Unpublished courses disappear from the Crash Courses / Next Gen pages.">
+        <Field label="Status" hint="Unpublished courses disappear from the Crash Courses / Next Gen pages. Archive a module to be able to delete it.">
           <StatusPicker value={f.status} onChange={(v) => setF({ ...f, status: v })} />
         </Field>
       </div>

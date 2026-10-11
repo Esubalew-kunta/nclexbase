@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { LETTERS, questionForDate, todayISO } from "@/lib/daily";
-import { useConfig } from "@/lib/content";
+import { useConfig, useCopy } from "@/lib/content";
 import { useStore } from "@/lib/store";
 import { Button, Card, PageHeader } from "@/components/ui/primitives";
 
@@ -21,9 +21,10 @@ function QotdBody() {
   // only after hydration (the static HTML can't know either).
   const hydrated = useStore((s) => s.hydrated);
   useConfig();
+  const copy = useCopy();
   const [choice, setChoice] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
-  if (!hydrated) return <PageHeader trail={[{ label: "Question of the Day" }]} title="NCLEX® Question of the Day" />;
+  if (!hydrated) return <PageHeader trail={[{ label: "Question of the Day" }]} title={copy("qotd.title")} />;
   const { date, item } = questionForDate(requested);
   const isToday = date === todayISO();
 
@@ -31,7 +32,7 @@ function QotdBody() {
     <>
       <PageHeader
         trail={[{ label: "Question of the Day" }]}
-        title="NCLEX® Question of the Day"
+        title={copy("qotd.title")}
         description={`${isToday ? "Today's question" : "Question for"} · ${formatDay(date)}. Answer it, then read the rationale.`}
       />
       <Card className="p-6">

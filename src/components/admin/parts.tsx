@@ -5,7 +5,7 @@
 import clsx from "clsx";
 import { useRef, useState, type ReactNode } from "react";
 import { Archive, FileText, History, Trash2, UploadCloud } from "lucide-react";
-import { deleteStored, MAX_UPLOAD_MB, storePdf } from "@/lib/admin/files";
+import { deleteStored, MAX_IMAGE_MB, MAX_UPLOAD_MB, storeImage, storePdf, useFileUrl } from "@/lib/admin/files";
 import { useAdminStore } from "@/lib/admin/store";
 import type { Access, FileRef, Status, SubjectRec } from "@/lib/admin/types";
 import { useSubjects } from "@/lib/content";
@@ -265,5 +265,61 @@ export function StatusPicker({ value, onChange }: { value: Status; onChange: (s:
       <option value="published">Published</option>
       <option value="archived">Archived</option>
     </Select>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Image upload (subject icons, coach photo)                           */
+/* ------------------------------------------------------------------ */
+
+export function ImageDrop({ value, onChange, size = 64 }: { value: FileRef | string | null; onChange: (f: FileRef | null) => void; size?: number }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
+  const url = typeof value === "string" ? value : value?.url;
+  const { href } = useFileUrl(url || null);
+  const take = async (file: File | undefined) => {
+    if (!file) return;
+    setError("");
+    try {
+      onChange(await storeImage(file));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed.");
+    }
+  };
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <span className="flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-background" style={{ width: size, height: size }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {href ? <img src={href} alt="" className="size-full object-contain" /> : <span className="text-xs text-muted">None</span>}
+        </span>
+        <Btn onClick={() => input.current?.click()}>{url ? "Replace image" : "Upload image"}</Btn>
+        {url && (
+          <Btn variant="ghost" onClick={() => onChange(null)}>
+            Remove
+          </Btn>
+        )}
+      </div>
+      {error && <p className="mt-1 text-xs text-error">{error}</p>}
+      <p className="mt-1 text-xs text-muted">PNG, JPG, WebP, GIF or SVG, up to {MAX_IMAGE_MB} MB.</p>
+      <input ref={input} type="file" accept="image/*" className="hidden" onChange={(e) => (void take(e.target.files?.[0]), (e.target.value = ""))} />
+    </div>
+  );
+}
+
+/** Permanent delete inside an editor. Records with a status must be archived first (two-step delete). */
+export function DeleteRecordButton({ status, noun, onDelete }: { status?: Status; noun: string; onDelete: () => void }) {
+  if (status && status !== "archived") return null;
+  return (
+    <Btn
+      variant="danger"
+      onClick={async () => {
+        if (!(await confirmDialog({ title: `Delete this ${noun} permanently?`, body: "This can't be undone. Export a backup in Settings first if you might need it.", confirm: "Delete", danger: true }))) return;
+        onDelete();
+      }}
+    >
+      <Trash2 className="size-4" />
+      Delete
+    </Btn>
   );
 }

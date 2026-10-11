@@ -51,6 +51,18 @@ export async function storePdf(file: File): Promise<FileRef> {
   return { url: `idb:${key}`, name: file.name, pages: await countPdfPages(file), sizeKb: Math.max(1, Math.round(file.size / 1024)) };
 }
 
+export const MAX_IMAGE_MB = 2;
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"];
+
+/** Validate and store an image (subject icons, coach photo). */
+export async function storeImage(file: File): Promise<FileRef> {
+  if (!IMAGE_TYPES.includes(file.type)) throw new Error("Use a PNG, JPG, WebP, GIF or SVG image.");
+  if (file.size > MAX_IMAGE_MB * 1024 * 1024) throw new Error(`Images can be up to ${MAX_IMAGE_MB} MB.`);
+  const key = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  await tx("readwrite", (s) => s.put(file, key));
+  return { url: `idb:${key}`, name: file.name, pages: 0, sizeKb: Math.max(1, Math.round(file.size / 1024)) };
+}
+
 export async function deleteStored(url: string) {
   if (isStored(url)) await tx("readwrite", (s) => s.delete(url.slice(4)));
 }

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { asLesson, useCourses, usePublished, useSubjects } from "@/lib/content";
+import { asLesson, useCopy, useCourses, usePublished, useSubjects } from "@/lib/content";
+import { courseHref } from "@/lib/routes";
 import { PageHeader } from "@/components/ui/primitives";
 import { CourseList, LessonFilter } from "@/components/home/CourseList";
 
 export default function CrashCoursesPage() {
   const [filter, setFilter] = useState("");
+  const copy = useCopy();
   const subjects = useSubjects();
   const courseRecs = useCourses("subject");
   const lessons = usePublished("lessons");
@@ -16,14 +18,14 @@ export default function CrashCoursesPage() {
     .filter(({ c }) => c)
     .map(({ s, c }) => {
       const list = lessons.filter((l) => l.course === s.id);
-      return { id: s.id, title: c!.title, runtime: c!.runtime, count: list.length, lessons: list.map(asLesson), href: `/nclex/crash-courses/videos/${s.id}` };
+      return { id: s.id, title: c!.title, runtime: c!.runtime, count: list.length, lessons: list.map(asLesson), href: courseHref(s.id) };
     });
   return (
     <>
       <PageHeader
         trail={[{ label: "Crash Courses" }]}
-        title="Crash Course Videos"
-        description="Review the most tested NCLEX concepts with our videos and bite-sized quizzes! More lessons will be added weekly!"
+        title={copy("crash.title")}
+        description={copy("crash.description")}
       />
       <div className="mt-4">
         <LessonFilter value={filter} onChange={setFilter} />
