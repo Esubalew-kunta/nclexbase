@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowUp, ExternalLink, Eye, EyeOff, GitMerge, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ExternalLink, Eye, EyeOff, GitMerge, Pencil, Plus, Trash2, X } from "lucide-react";
 import { crud, slugify, today } from "@/lib/admin/crud";
 import type { CollectionName, SubjectRec, SystemRec } from "@/lib/admin/types";
 import { getAll, useAll, useSubjects } from "@/lib/content";
@@ -173,6 +173,8 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
   const router = useRouter();
   const [f, setF] = useState<SubjectRec>(rec);
   const [newSystem, setNewSystem] = useState("");
+  /** System being renamed in place, and its draft name. */
+  const [renaming, setRenaming] = useState<{ key: string; label: string } | null>(null);
   const [merge, setMerge] = useState<SystemRec | null>(null);
   const [mergeSubject, setMergeSubject] = useState(false);
   const questions = useAll("questions");
@@ -202,6 +204,15 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
     if (f.systems.some((s) => s.label.toLowerCase() === label.toLowerCase() || s.key.toLowerCase() === label.toLowerCase())) return toast("A system with that name already exists.", "error");
     setSystems([...f.systems, { key: label, label, visible: true }]);
     setNewSystem("");
+  };
+
+  const commitRename = () => {
+    if (!renaming) return;
+    const label = renaming.label.trim();
+    if (!label) return toast("Every system needs a name.", "error");
+    if (f.systems.some((s) => s.key !== renaming.key && s.label.toLowerCase() === label.toLowerCase())) return toast("A system with that name already exists.", "error");
+    setSys(renaming.key, { label });
+    setRenaming(null);
   };
 
   const removeSystem = async (s: SystemRec) => {
@@ -295,7 +306,7 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
       <Panel title="Systems (sub-subjects)" description="Used by the Standalone tab, Create Test, Memory Tricks, Performance and every system filter. Renaming keeps all linked content attached. Numbers are counted from published questions and recorded answers, so they can't be edited.">
         <div className="overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[820px] text-sm">
-            <thead className="bg-background text-left text-xs text-muted uppercase">
+            <thead className="bg-background text-left text-xs whitespace-nowrap text-muted uppercase">
               <tr>
                 <th className="w-10 px-3 py-2">#</th>
                 <th className="px-3 py-2">Name</th>
@@ -304,7 +315,7 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
                 <th className="w-20 px-3 py-2" title="Average score over every recorded answer">Avg %</th>
                 <th className="px-3 py-2">Used by</th>
                 <th className="px-3 py-2">Visible</th>
-                <th className="w-32 px-3 py-2" />
+                <th className="w-40 px-3 py-2" />
               </tr>
             </thead>
             <tbody>
@@ -315,11 +326,39 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
                   <tr key={s.key} className="border-t border-line">
                     <td className="px-3 py-1.5 text-xs text-muted tabular-nums">{i + 1}</td>
                     <td className="px-3 py-1.5">
-                      <Input value={s.label} aria-label={`Name of system ${i + 1}`} onChange={(e) => setSys(s.key, { label: e.target.value })} className="h-8" />
+                      {renaming?.key === s.key ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={renaming.label}
+                            autoFocus
+                            aria-label={`New name for ${s.label}`}
+                            onChange={(e) => setRenaming({ key: s.key, label: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") commitRename();
+                              if (e.key === "Escape") setRenaming(null);
+                            }}
+                            className="h-8 min-w-[200px]"
+                          />
+                          <IconBtn label="Apply name" onClick={commitRename}>
+                            <Check className="size-4" />
+                          </IconBtn>
+                          <IconBtn label="Cancel rename" onClick={() => setRenaming(null)}>
+                            <X className="size-4" />
+                          </IconBtn>
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/admin/questions?subject=${encodeURIComponent(rec.id)}&system=${encodeURIComponent(s.key)}`}
+                          title={`Questions in ${s.label}`}
+                          className="text-sm font-medium text-primary hover:underline"
+                        >
+                          {s.label}
+                        </Link>
+                      )}
                       {s.label !== s.key && <span className="mt-0.5 block text-[11px] text-muted">Originally “{s.key}”</span>}
                     </td>
                     <SystemNumbers st={st} />
-                    <td className="px-3 py-1.5 text-xs text-muted">
+                    <td className="px-3 py-1.5 text-xs whitespace-nowrap text-muted">
                       {u ? (
                         <>
                           <Link href={`/admin/questions?subject=${encodeURIComponent(rec.id)}&system=${encodeURIComponent(s.key)}`} className="hover:text-primary hover:underline">
@@ -339,6 +378,9 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
                     </td>
                     <td className="px-3 py-1.5">
                       <div className="flex justify-end">
+                        <IconBtn label={`Rename ${s.label}`} onClick={() => setRenaming({ key: s.key, label: s.label })}>
+                          <Pencil className="size-4" />
+                        </IconBtn>
                         <IconBtn label="Move up" disabled={i === 0} onClick={() => setSystems(move(f.systems, i, -1))}>
                           <ArrowUp className="size-4" />
                         </IconBtn>
