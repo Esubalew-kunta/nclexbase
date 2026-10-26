@@ -387,7 +387,7 @@ export function useSelection(ids: string[]) {
   };
 }
 
-function TickBox({ checked, indeterminate, onChange, label }: { checked: boolean; indeterminate?: boolean; onChange: () => void; label: string }) {
+export function TickBox({ checked, indeterminate, onChange, label }: { checked: boolean; indeterminate?: boolean; onChange: () => void; label: string }) {
   return (
     <button
       type="button"

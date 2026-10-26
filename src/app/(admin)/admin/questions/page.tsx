@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MoveRight, Plus } from "lucide-react";
+import { FileJson, MoveRight, Plus } from "lucide-react";
 import { crud } from "@/lib/admin/crud";
 import type { QuestionRec } from "@/lib/admin/types";
 import type { ItemType } from "@/lib/types";
@@ -115,10 +115,16 @@ export default function QuestionsAdmin() {
       title="Question Bank"
       description="Every question: standalone, inside case studies, and in the readiness exams. Standalone questions can be added, published or archived here; case and readiness questions are edited here but belong to their case or exam."
       actions={
-        <Btn variant="primary" onClick={() => setCreating(true)}>
-          <Plus className="size-4" />
-          New question
-        </Btn>
+        <>
+          <Btn onClick={() => router.push("/admin/questions/import")}>
+            <FileJson className="size-4" />
+            Bulk import (JSON)
+          </Btn>
+          <Btn variant="primary" onClick={() => setCreating(true)}>
+            <Plus className="size-4" />
+            New question
+          </Btn>
+        </>
       }
     >
       <ListToolbar list={list} placeholder="Search stem, options, rationale, topic, id" />
