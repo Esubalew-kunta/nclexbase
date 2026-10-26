@@ -1,12 +1,14 @@
 "use client";
 
+import clsx from "clsx";
 import { useState } from "react";
 import { Check, Copy, Gift, Users } from "lucide-react";
 import { useAll, useConfig } from "@/lib/content";
 import { fmtDay } from "@/lib/payments";
-import { useMyReferralCode } from "@/lib/promo";
+import { referrerStatus, sortedTiers, useMyReferralCode } from "@/lib/promo";
 import { useStore } from "@/lib/store";
 import { AccountShell, PanelCard } from "@/components/home/AccountShell";
+import { ButtonLink } from "@/components/ui/primitives";
 
 /** "j***@gmail.com": friends' emails are only partly shown. */
 const mask = (email: string) => {
@@ -20,10 +22,12 @@ export default function ReferPage() {
   const hydrated = useStore((s) => s.hydrated);
   const code = useMyReferralCode();
   const referrals = useAll("referrals").filter((r) => r.referrerEmail.toLowerCase() === email.toLowerCase());
+  useAll("payments");
+  const status = referrerStatus(email);
+  const available = new Set(status.available.map((r) => r.id));
+  const tiers = sortedTiers(cfg.tiers);
   const [copied, setCopied] = useState(false);
   const link = hydrated ? `${window.location.origin}/auth/join?ref=${code}` : "";
-  const rewarded = referrals.filter((r) => r.status === "rewarded");
-  const days = rewarded.reduce((n, r) => n + (r.rewardDays ?? 0), 0);
 
   const copy = async () => {
     try {
@@ -35,7 +39,7 @@ export default function ReferPage() {
     }
   };
 
-  if (!cfg.enabled)
+  if (!cfg.enabled || !tiers.length)
     return (
       <AccountShell active="refer">
         <PanelCard title="Refer a Friend">
@@ -47,19 +51,22 @@ export default function ReferPage() {
   return (
     <AccountShell active="refer">
       <PanelCard title="Refer a Friend">
-        <div className="mb-5 grid gap-3 sm:grid-cols-2">
-          <div className="flex gap-3 rounded-lg bg-primary-light p-4">
-            <Gift className="mt-0.5 size-5 shrink-0 text-primary" />
-            <p className="text-base text-ink">
-              Your friend gets <b>{cfg.friendPercent}% off</b> their first plan.
-            </p>
-          </div>
-          <div className="flex gap-3 rounded-lg bg-gold/10 p-4">
-            <Gift className="mt-0.5 size-5 shrink-0 text-gold" />
-            <p className="text-base text-ink">
-              You get <b>{cfg.rewardDays} days of free Pro</b> when their payment is confirmed.
-            </p>
-          </div>
+        <p className="mb-4 text-base text-ink">
+          Invite friends with your link. When they buy Pro, you get a discount on your next plan. The more friends who go Pro, the bigger the discount.
+          {cfg.friendPercent > 0 && ` Your friends also get ${cfg.friendPercent}% off their first plan.`}
+        </p>
+        <div className="mb-5 flex flex-wrap gap-2">
+          {tiers.map((t) => {
+            const reached = status.available.length >= t.friends;
+            return (
+              <div key={t.friends} className={clsx("rounded-lg border px-4 py-3", reached ? "border-success/40 bg-success/5" : "border-line bg-background")}>
+                <p className="text-sm text-muted">
+                  {t.friends} friend{t.friends === 1 ? "" : "s"} go Pro
+                </p>
+                <p className="text-xl font-bold text-ink">{t.percent}% off</p>
+              </div>
+            );
+          })}
         </div>
         <p className="mb-2 text-sm font-medium text-muted">Your invite link</p>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -74,19 +81,41 @@ export default function ReferPage() {
         </p>
       </PanelCard>
 
-      <PanelCard title="Your Referrals">
+      <PanelCard title="Your Reward">
         <div className="mb-4 flex flex-wrap gap-6">
-          <Stat label="Friends joined" value={referrals.length} />
-          <Stat label="Became Pro" value={rewarded.length} />
-          <Stat label="Free days earned" value={days} />
+          <Stat label="Friends joined" value={status.joined} />
+          <Stat label="Went Pro" value={status.paid} />
+          <Stat label="Counting toward your discount" value={status.available.length} />
         </div>
+        {status.reward ? (
+          <div className="flex flex-col gap-3 rounded-lg bg-success/10 p-4 sm:flex-row sm:items-center">
+            <Gift className="size-6 shrink-0 text-success" />
+            <p className="flex-1 text-base text-ink">
+              Your next plan is <b>{status.reward.percent}% off</b>. It&apos;s applied automatically at checkout.
+              {status.next && ` Reach ${status.next.friends} friends for ${status.next.percent}% off instead.`}
+            </p>
+            <ButtonLink href="/nclex/upgrade">Use it now</ButtonLink>
+          </div>
+        ) : (
+          status.next && (
+            <p className="rounded-lg bg-primary-light p-4 text-base text-ink">
+              {status.next.more} more friend{status.next.more === 1 ? "" : "s"} who go{status.next.more === 1 ? "es" : ""} Pro and your next plan is <b>{status.next.percent}% off</b>.
+            </p>
+          )
+        )}
+        <p className="mt-3 text-sm text-muted">Using a discount uses up that tier&apos;s number of friends; any extra friends keep counting toward your next discount.</p>
+      </PanelCard>
+
+      <PanelCard title="Your Referrals">
         {referrals.length ? (
           <ul className="divide-y divide-line">
             {referrals.map((r) => (
               <li key={r.id} className="flex items-center gap-3 py-2 text-base">
                 <Users className="size-4 text-muted" />
                 <span className="flex-1 text-ink">{mask(r.friendEmail)}</span>
-                <span className="text-sm text-muted">{r.status === "rewarded" ? `+${r.rewardDays} days (until ${fmtDay(r.rewardUntil!)})` : `Joined ${fmtDay(r.joinedAt)}`}</span>
+                <span className="text-sm text-muted">
+                  {r.status === "joined" ? `Joined ${fmtDay(r.joinedAt)}` : available.has(r.id) ? `Went Pro ${fmtDay(r.paidAt ?? r.updatedAt)}` : "Went Pro · used for a discount"}
+                </span>
               </li>
             ))}
           </ul>

@@ -7,8 +7,8 @@ import { Check, CheckCircle2, Clock, Copy, FileText, Gift, ImageIcon, Landmark, 
 import { MAX_RECEIPT_MB, deleteStored, storeReceipt } from "@/lib/admin/files";
 import type { FileRef, PaymentMethodRec, PaymentRec, PlanRec } from "@/lib/admin/types";
 import { useConfig, usePlans } from "@/lib/content";
-import { fmtDay, formatPrice, planLabel, submitPayment, useMyPayments, usePaymentMethods } from "@/lib/payments";
-import { checkPromo, discounted, redeemAccess, referralDiscount } from "@/lib/promo";
+import { DISCOUNT_LABEL, fmtDay, formatPrice, planLabel, submitPayment, useMyPayments, usePaymentMethods } from "@/lib/payments";
+import { bestDiscount, checkPromo, discounted, redeemAccess, type Discount } from "@/lib/promo";
 import type { PromoCodeRec } from "@/lib/admin/types";
 import { useStore } from "@/lib/store";
 import { Button, ButtonLink, Card, PageHeader } from "@/components/ui/primitives";
@@ -22,6 +22,7 @@ export default function CheckoutPage() {
 }
 
 function Checkout() {
+  const params = useSearchParams();
   const hydrated = useStore((s) => s.hydrated);
   const plan = useStore((s) => s.user.plan);
   const payments = useMyPayments();
@@ -29,7 +30,8 @@ function Checkout() {
   const header = <PageHeader trail={[{ label: "Upgrade", href: "/nclex/upgrade" }, { label: "Payment" }]} title="Complete your payment" />;
   if (!hydrated) return header;
   if (latest?.status === "pending") return <PendingView p={latest} />;
-  if (latest?.status === "approved" && plan === "premium") return <ApprovedView p={latest} />;
+  // Pro students who picked a plan are renewing (time is added after their current access).
+  if (latest?.status === "approved" && plan === "premium" && !params.get("plan")) return <ApprovedView p={latest} />;
   return (
     <>
       {header}
@@ -69,16 +71,18 @@ function PaymentForm({ rejected }: { rejected?: PaymentRec }) {
   const user = useStore((s) => s.user);
   const plan = plans.find((p) => p.id === planId);
   const method = methods.find((m) => m.id === methodId);
-  // A discount code wins over the referral discount; they never stack.
-  const referral = promo ? null : referralDiscount(user.email, user.referredBy);
-  const percent = promo?.kind === "percent" && (!promo.plans.length || !plan || promo.plans.includes(plan.id)) ? promo.percent : (referral?.percent ?? 0);
-  const priceOf = (p: { price: number }) => (percent ? discounted(p.price, percent) : p.price);
+  // The largest available discount applies (promo code, referral reward or invited-friend discount); they never stack.
+  const discountFor = (planId?: string) => bestDiscount({ email: user.email, referredBy: user.referredBy, promo, planId });
+  const { chosen: discount, options } = discountFor(plan?.id);
+  const priceOf = (p: { id: string; price: number }) => {
+    const d = discountFor(p.id).chosen;
+    return d ? discounted(p.price, d.percent) : p.price;
+  };
 
   const submit = () => {
     if (!plan || !method || !receipt) return;
-    if (promo && promo.plans.length && !promo.plans.includes(plan.id)) return;
     setBusy(true);
-    submitPayment({ plan, method, receipt, transactionId: txn, promo: promo ?? undefined, referral });
+    submitPayment({ plan, method, receipt, transactionId: txn, discount, promo });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -135,11 +139,9 @@ function PaymentForm({ rejected }: { rejected?: PaymentRec }) {
             setActivated({ code: c.code, ...r });
           }}
         />
-        {referral && (
-          <p className="mt-3 flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-sm text-ink">
-            <Gift className="size-4 text-success" />
-            You were invited by a friend: <b>{referral.percent}% off</b> your first payment is already applied.
-          </p>
+        {discount && discount.source !== "promo" && <DiscountNote d={discount} />}
+        {promo && discount && discount.source !== "promo" && options.some((o) => o.source === "promo") && (
+          <p className="mt-2 text-sm text-muted">Your {discount.percent}% discount is bigger than code {promo.code}, so it&apos;s used instead (discounts don&apos;t combine).</p>
         )}
       </Step>
 
@@ -190,6 +192,23 @@ function PaymentForm({ rejected }: { rejected?: PaymentRec }) {
         )}
       </Step>
     </div>
+  );
+}
+
+function DiscountNote({ d }: { d: Discount }) {
+  return (
+    <p className="mt-3 flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-sm text-ink">
+      <Gift className="size-4 shrink-0 text-success" />
+      {d.source === "reward" ? (
+        <span>
+          Referral reward: <b>{d.percent}% off</b> for the {d.referralIds?.length} friends you invited who went Pro. Already applied.
+        </span>
+      ) : (
+        <span>
+          You were invited by a friend: <b>{d.percent}% off</b> your first plan is already applied.
+        </span>
+      )}
+    </p>
   );
 }
 
@@ -411,7 +430,7 @@ function PendingView({ p }: { p: PaymentRec }) {
         <dl className="mt-6 divide-y divide-line rounded-xl border border-line px-4 text-left text-[15px]">
           <Detail label="Reference" value={<span className="font-mono">{p.reference}</span>} />
           <Detail label="Plan" value={p.planLabel} />
-          <Detail label="Amount" value={`${formatPrice(p.amount, p.currency)}${p.discount ? ` (${p.discount.percent}% off)` : ""}`} />
+          <Detail label="Amount" value={`${formatPrice(p.amount, p.currency)}${p.discount ? ` (${p.discount.percent}% off, ${DISCOUNT_LABEL[p.discount.source](p.discount)})` : ""}`} />
           <Detail label="Paid with" value={p.methodName} />
           <Detail label="Receipt" value={p.receipt.name} />
           <Detail label="Submitted" value={new Date(p.submittedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })} />
@@ -443,9 +462,12 @@ function ApprovedView({ p }: { p: PaymentRec }) {
           <Detail label="Reference" value={<span className="font-mono">{p.reference}</span>} />
           {p.accessUntil && <Detail label="Access until" value={fmtDay(p.accessUntil)} />}
         </dl>
-        <ButtonLink href="/nclex" className="mt-6">
-          Start studying
-        </ButtonLink>
+        <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
+          <ButtonLink href="/nclex">Start studying</ButtonLink>
+          <ButtonLink href="/nclex/upgrade" variant="secondary">
+            Add more time
+          </ButtonLink>
+        </div>
       </Card>
     </div>
   );

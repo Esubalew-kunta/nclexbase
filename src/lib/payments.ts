@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { discounted, monthsLater, nextAccessStart, recordDiscountUse, rewardReferrer } from "@/lib/promo";
+import { discounted, markReferralPaid, monthsLater, nextAccessStart, recordDiscountUse, referrerStatus, type Discount } from "@/lib/promo";
 import { getAll, getConfig, useAll } from "@/lib/content";
 import { useStore } from "@/lib/store";
 import { newId, useAdminStore } from "@/lib/admin/store";
@@ -21,6 +21,12 @@ export function formatPrice(amount: number, currency = getConfig().payments.curr
 }
 
 export const planLabel = (p: Pick<PlanRec, "months">) => `${p.months} Month${p.months > 1 ? "s" : ""} of Access`;
+
+export const DISCOUNT_LABEL: Record<Discount["source"], (d: Discount) => string> = {
+  promo: (d) => `code ${d.code}`,
+  referral: () => "invited by a friend",
+  reward: (d) => `referral reward (${d.referralIds?.length ?? 0} friends)`,
+};
 
 const newReference = () => `PAY-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 const nowIso = () => new Date().toISOString();
@@ -45,12 +51,12 @@ function queue(n: Omit<NotificationRec, "id" | "status" | "createdAt" | "updated
 }
 
 /** Student submits a receipt. Creates a pending payment and queues the admin's Telegram alert. */
-export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; receipt: FileRef; transactionId: string; promo?: PromoCodeRec; referral?: { code: string; percent: number } | null }): PaymentRec {
+/** `discount` comes from bestDiscount() (lib/promo); `promo` is recorded as used only when it is the one applied. */
+export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; receipt: FileRef; transactionId: string; discount: Discount | null; promo?: PromoCodeRec | null }): PaymentRec {
   const user = useStore.getState().user;
   const cfg = getConfig().payments;
   const at = nowIso();
-  // A promo code wins over the referral discount; they never stack.
-  const discount = input.promo?.kind === "percent" ? { source: "promo" as const, code: input.promo.code, percent: input.promo.percent } : input.referral ? { source: "referral" as const, ...input.referral } : undefined;
+  const discount = input.discount ?? undefined;
   const rec: PaymentRec = {
     id: newId("pay"),
     reference: newReference(),
@@ -83,7 +89,7 @@ export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; 
       body: [
         `New payment waiting for approval`,
         `Student: ${rec.userName} (${rec.userEmail})`,
-        `Plan: ${rec.planLabel} · ${formatPrice(rec.amount, rec.currency)}${discount ? ` (${discount.percent}% off with ${discount.source === "promo" ? `code ${discount.code}` : "a referral"})` : ""}`,
+        `Plan: ${rec.planLabel} · ${formatPrice(rec.amount, rec.currency)}${discount ? ` (${discount.percent}% off: ${DISCOUNT_LABEL[discount.source](discount)})` : ""}`,
         `Paid with: ${rec.methodName}${rec.transactionId ? ` · Transaction ${rec.transactionId}` : ""}`,
         `Reference: ${rec.reference}`,
         `Review: ${typeof window === "undefined" ? "" : window.location.origin}/admin/payments?edit=${rec.id}`,
@@ -125,18 +131,26 @@ export function approvePayment(p: PaymentRec, message = "") {
     },
     `Approval email queued for ${p.userEmail}`,
   );
-  const ref = rewardReferrer(p.userEmail, p.id);
-  if (ref?.rewardUntil)
+  // The friend now counts toward their referrer's discount on the referrer's next plan.
+  const ref = markReferralPaid(p.userEmail, p.id);
+  if (ref) {
+    const st = referrerStatus(ref.referrerEmail);
+    const lines = st.reward
+      ? [`You now have ${st.available.length} invited friend${st.available.length === 1 ? "" : "s"} who went Pro, so your next plan is ${st.reward.percent}% off. It's applied automatically at checkout.`]
+      : st.next
+        ? [`${st.next.more} more friend${st.next.more === 1 ? "" : "s"} who go Pro and you'll get ${st.next.percent}% off your next plan.`]
+        : [];
     queue(
       {
         channel: "email",
         to: ref.referrerEmail,
-        subject: `You earned ${ref.rewardDays} free days of NCLEXBase Pro`,
-        body: [`Hi,`, ``, `A friend you invited just joined NCLEXBase Pro. As a thank-you, you get ${ref.rewardDays} days of Pro, through ${fmtDay(ref.rewardUntil)}.`, ``, `Keep sharing your link to earn more.`, ``, `The NCLEXBase team`].join("\n"),
+        subject: "A friend you invited joined NCLEXBase Pro",
+        body: [`Hi,`, ``, `A friend you invited just joined NCLEXBase Pro. Thank you for sharing!`, ...lines, ``, `The NCLEXBase team`].join("\n"),
         paymentId: p.id,
       },
-      `Referral reward email queued for ${ref.referrerEmail}`,
+      `Referral email queued for ${ref.referrerEmail}`,
     );
+  }
 }
 
 /** Admin rejects: the student sees the reason and can upload a new receipt. */

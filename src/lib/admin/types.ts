@@ -198,8 +198,12 @@ export interface PaymentRec {
   amount: number;
   /** Plan price before any discount. */
   listPrice?: number;
-  /** Promo code or referral discount applied at checkout. */
-  discount?: { source: "promo" | "referral"; code: string; percent: number };
+  /**
+   * Discount applied at checkout (the largest one available; they never stack).
+   * promo = a discount code · referral = invited friend's first-plan discount ·
+   * reward = referrer's discount for friends who paid (`referralIds` are the friends it used up).
+   */
+  discount?: { source: "promo" | "referral" | "reward"; code: string; percent: number; referralIds?: string[] };
   currency: string;
   methodId: string;
   methodName: string;
@@ -290,19 +294,20 @@ export interface RedemptionRec {
   updatedAt: string;
 }
 
-/** A friend who joined with a student's referral link. */
+/**
+ * A friend who joined with a student's referral link. Becomes "paid" when the friend's payment
+ * is approved; paid friends count toward the referrer's discount until a payment uses them up.
+ */
 export interface ReferralRec {
   id: string;
   referrerEmail: string;
   referrerCode: string;
   friendEmail: string;
   joinedAt: string;
-  /** joined → paid (friend's payment approved, referrer rewarded). */
-  status: "joined" | "rewarded";
+  status: "joined" | "paid";
+  /** The friend's approved payment. */
   paymentId?: string;
-  rewardDays?: number;
-  rewardFrom?: string;
-  rewardUntil?: string;
+  paidAt?: string;
   updatedAt: string;
 }
 

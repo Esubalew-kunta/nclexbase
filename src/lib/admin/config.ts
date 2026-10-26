@@ -27,10 +27,10 @@ export interface SiteConfig {
   };
   referrals: {
     enabled: boolean;
-    /** Discount the invited friend gets on their first payment. */
+    /** Discount the invited friend gets on their first payment (0 = none). */
     friendPercent: number;
-    /** Free Pro days the referrer earns when that payment is approved. */
-    rewardDays: number;
+    /** Referrer's discount on their next plan: reach `friends` friends who paid → `percent` off. */
+    tiers: { friends: number; percent: number }[];
   };
   qotd: {
     /** Date (YYYY-MM-DD) → question id. Days with no entry have no Question of the Day. */
@@ -234,7 +234,7 @@ export const DEFAULT_CONFIG: SiteConfig = {
     ],
   },
   payments: { currency: "ETB", reviewTime: "within 24 hours", telegram: { enabled: false, chatId: "" } },
-  referrals: { enabled: true, friendPercent: 10, rewardDays: 14 },
+  referrals: { enabled: true, friendPercent: 10, tiers: [{ friends: 2, percent: 15 }, { friends: 4, percent: 30 }] },
   qotd: { schedule: {}, autoDays: {}, months: {}, remind: { period: "week", days: 5 }, emailSubject: "Your NCLEX Question of the Day", senderName: "NCLEXBase.com" },
   exam: {
     defaults: { textSize: 16, answerStats: true, shortcuts: false, restrictions: true, gridView: false, hoverPreview: true, timer: true },

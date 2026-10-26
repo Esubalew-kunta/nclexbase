@@ -11,7 +11,7 @@ import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import Link from "next/link";
 import { formatPrice } from "@/lib/payments";
-import { accessEnd } from "@/lib/promo";
+import { accessEnd, referrerStatus } from "@/lib/promo";
 import { todayISO } from "@/lib/daily";
 import { AccessBadge, AdminPage, Badge, Btn, confirmDialog, Drawer, Field, fmtDate, Input, Meta, Segmented, toast } from "@/components/admin/ui";
 import { BulkBar, DataTable, ListEmpty, ListToolbar, useEditParam, useList, useSelection, type Column } from "@/components/admin/list";
@@ -287,12 +287,16 @@ function AccessSummary({ email }: { email: string }) {
   const rows = [
     ...payments.filter((p) => same(p.userEmail)).map((p) => ({ at: p.submittedAt, text: `${p.planLabel} · ${formatPrice(p.amount, p.currency)} · ${p.methodName}`, tag: p.status, href: `/admin/payments?edit=${p.id}` })),
     ...redemptions.filter((r) => same(r.email)).map((r) => ({ at: r.at, text: `Code ${r.code}${r.kind === "access" ? ` · free Pro until ${r.accessUntil}` : ` · ${r.percent}% off`}`, tag: "code", href: `/admin/promo-codes` })),
-    ...referrals.filter((r) => same(r.referrerEmail) && r.status === "rewarded").map((r) => ({ at: r.updatedAt, text: `Referral reward · ${r.rewardDays} days until ${r.rewardUntil}`, tag: "referral", href: "/admin/referrals" })),
+    ...referrals.filter((r) => same(r.referrerEmail) && r.status === "paid").map((r) => ({ at: r.paidAt ?? r.updatedAt, text: `Invited ${r.friendEmail}, who went Pro`, tag: "referral", href: "/admin/referrals" })),
   ].sort((a, b) => b.at.localeCompare(a.at));
   const end = accessEnd(email);
+  const reward = referrerStatus(email).reward;
   return (
     <div className="rounded-md border border-line p-3">
-      <p className="mb-2 text-sm font-semibold text-ink">Payments &amp; access {end && <span className="font-normal text-muted">· Pro until {fmtDate(end)}</span>}</p>
+      <p className="mb-2 text-sm font-semibold text-ink">
+        Payments &amp; access {end && <span className="font-normal text-muted">· Pro until {fmtDate(end)}</span>}
+        {reward && <span className="font-normal text-success"> · referral reward: {reward.percent}% off next plan</span>}
+      </p>
       {rows.length ? (
         <ul className="space-y-1.5 text-sm">
           {rows.map((r, i) => (

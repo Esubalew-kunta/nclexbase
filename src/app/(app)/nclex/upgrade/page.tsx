@@ -4,8 +4,9 @@ import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, CheckCircle2, Clock, ShieldCheck } from "lucide-react";
-import { useConfig, usePlans } from "@/lib/content";
+import { useAll, useConfig, usePlans } from "@/lib/content";
 import { fmtDay, formatPrice, useMyPayments } from "@/lib/payments";
+import { accessEnd, referrerStatus } from "@/lib/promo";
 import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/ui/primitives";
 
@@ -16,6 +17,12 @@ export default function UpgradePage() {
   const plans = usePlans();
   const { headline, subhead, included } = useConfig().upgrade;
   const latest = useMyPayments()[0];
+  const email = useStore((s) => s.user.email);
+  useAll("referrals");
+  useAll("payments");
+  useAll("redemptions");
+  const reward = referrerStatus(email).reward;
+  const until = accessEnd(email);
   const pending = latest?.status === "pending";
   const buy = (planId: string) => router.push(`/nclex/checkout?plan=${encodeURIComponent(planId)}`);
 
@@ -31,10 +38,20 @@ export default function UpgradePage() {
           <span className="text-sm font-semibold text-primary">View status</span>
         </Link>
       )}
+      {!pending && reward && (
+        <div className="mb-5 flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3 text-ink">
+          <CheckCircle2 className="size-5 shrink-0 text-success" />
+          <span>
+            Referral reward: your next plan is <b>{reward.percent}% off</b>. It&apos;s applied automatically at checkout.
+          </span>
+        </div>
+      )}
       {!pending && userPlan === "premium" && (
         <div className="mb-5 flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3 text-ink">
           <CheckCircle2 className="size-5 shrink-0 text-success" />
-          <span>You have NCLEXBase Pro{latest?.status === "approved" && latest.accessUntil ? ` until ${fmtDay(latest.accessUntil)}` : ""}.</span>
+          <span>
+            You have NCLEXBase Pro{until ? ` until ${fmtDay(until)}` : ""}. Buying another plan adds its months after that.
+          </span>
         </div>
       )}
       <div className={clsx("grid gap-4", plans.length >= 3 ? "lg:grid-cols-3" : plans.length === 2 ? "lg:grid-cols-2" : "max-w-md")}>
@@ -58,13 +75,13 @@ export default function UpgradePage() {
             <p className="mt-3 text-muted">{p.blurb}</p>
             <button
               onClick={() => buy(p.id)}
-              disabled={pending || userPlan === "premium"}
+              disabled={pending}
               className={clsx(
                 "mt-5 h-12 cursor-pointer rounded-full disabled:cursor-not-allowed disabled:opacity-50 font-semibold transition-[background,filter,transform] duration-[50ms] active:translate-y-[2px] active:shadow-none",
                 p.featured ? "bg-gold text-ink shadow-premium hover:brightness-95" : "bg-primary text-white shadow-press hover:bg-primary-hover",
               )}
             >
-              Get {p.months} Month{p.months > 1 ? "s" : ""} of Access
+              {userPlan === "premium" ? "Add" : "Get"} {p.months} Month{p.months > 1 ? "s" : ""} of Access
             </button>
             <p className="mt-2 text-center text-sm text-muted">Pay by bank or mobile wallet transfer</p>
             <div className="mt-5 border-t border-line pt-4">

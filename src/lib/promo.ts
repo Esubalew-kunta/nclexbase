@@ -5,10 +5,10 @@ import { addDays, todayISO } from "@/lib/daily";
 import { getAll, getConfig, useAll } from "@/lib/content";
 import { useStore } from "@/lib/store";
 import { newId, useAdminStore } from "@/lib/admin/store";
-import type { PromoCodeRec, RedemptionRec, ReferralRec } from "@/lib/admin/types";
+import type { PaymentRec, PromoCodeRec, RedemptionRec, ReferralRec } from "@/lib/admin/types";
 
 /*
- * Pro access from every source (approved payments, free-access promo codes, referral rewards),
+ * Pro access from every source (approved payments and free-access promo codes),
  * promo code checks, and referrals. Static build: all of it lives in this browser's admin data.
  */
 
@@ -22,7 +22,7 @@ const nowIso = () => new Date().toISOString();
 export interface AccessWindow {
   from: string;
   until: string;
-  source: "payment" | "promo" | "referral";
+  source: "payment" | "promo";
 }
 
 /** Every period of Pro access granted to this email. */
@@ -30,7 +30,6 @@ export function accessWindows(email: string): AccessWindow[] {
   const out: AccessWindow[] = [];
   for (const p of getAll("payments")) if (same(p.userEmail, email) && p.status === "approved" && p.accessUntil) out.push({ from: (p.reviewedAt ?? p.submittedAt).slice(0, 10), until: p.accessUntil, source: "payment" });
   for (const r of getAll("redemptions")) if (same(r.email, email) && r.kind === "access" && r.accessFrom && r.accessUntil) out.push({ from: r.accessFrom, until: r.accessUntil, source: "promo" });
-  for (const r of getAll("referrals")) if (same(r.referrerEmail, email) && r.status === "rewarded" && r.rewardFrom && r.rewardUntil) out.push({ from: r.rewardFrom, until: r.rewardUntil, source: "referral" });
   return out;
 }
 
@@ -65,7 +64,6 @@ export function useAccessSync() {
   const hydrated = useStore((s) => s.hydrated);
   const payments = useAll("payments");
   const redemptions = useAll("redemptions");
-  const referrals = useAll("referrals");
   useEffect(() => {
     if (!hydrated || !email) return;
     const windows = accessWindows(email);
@@ -73,7 +71,7 @@ export function useAccessSync() {
     const today = todayISO();
     const want = windows.some((w) => w.from <= today && today <= w.until) ? "premium" : "free";
     if (plan !== want) useStore.getState().setPlan(want);
-  }, [hydrated, email, plan, payments, redemptions, referrals]);
+  }, [hydrated, email, plan, payments, redemptions]);
 }
 
 /* ------------------------------------------------------------------ */
@@ -166,7 +164,7 @@ export function recordReferralJoin(code: string, friendEmail: string): boolean {
   return true;
 }
 
-/** The referral discount this student can use now (first payment only), or null. */
+/** The invited friend's discount (first payment only), or null. */
 export function referralDiscount(email: string, referredBy: string | undefined): { code: string; percent: number } | null {
   const cfg = getConfig().referrals;
   if (!cfg.enabled || !referredBy || cfg.friendPercent <= 0) return null;
@@ -176,16 +174,69 @@ export function referralDiscount(email: string, referredBy: string | undefined):
   return { code: referredBy, percent: cfg.friendPercent };
 }
 
-/** Called when a payment is approved: reward the friend's referrer once. Returns the referral, if any. */
-export function rewardReferrer(friendEmail: string, paymentId: string): ReferralRec | null {
+/** Admin tiers, smallest first, ignoring empty rows. */
+export const sortedTiers = (tiers: { friends: number; percent: number }[]) => tiers.filter((t) => t.friends > 0 && t.percent > 0).sort((a, b) => a.friends - b.friends);
+
+/** Referral ids already used by a payment that wasn't rejected (pending payments hold theirs). */
+function usedReferralIds(): Set<string> {
+  return new Set(getAll("payments").flatMap((p) => (p.status !== "rejected" && p.discount?.source === "reward" ? (p.discount.referralIds ?? []) : [])));
+}
+
+export interface ReferrerStatus {
+  /** Friends who joined with the link. */
+  joined: number;
+  /** Friends whose payment was approved. */
+  paid: number;
+  /** Paid friends not used for a discount yet, oldest first. */
+  available: ReferralRec[];
+  /** The discount those friends unlock now (null below the first tier). */
+  reward: { percent: number; friends: number; referralIds: string[] } | null;
+  /** The next tier up, if any. */
+  next: { percent: number; friends: number; more: number } | null;
+}
+
+/** Where a referrer stands: how many friends paid, and the discount on their next plan. */
+export function referrerStatus(email: string): ReferrerStatus {
   const cfg = getConfig().referrals;
+  const mine = getAll("referrals").filter((r) => same(r.referrerEmail, email));
+  const used = usedReferralIds();
+  const available = mine.filter((r) => r.status === "paid" && !used.has(r.id)).sort((a, b) => (a.paidAt ?? "").localeCompare(b.paidAt ?? ""));
+  const tiers = cfg.enabled ? sortedTiers(cfg.tiers) : [];
+  const reached = tiers.filter((t) => t.friends <= available.length).at(-1);
+  const up = tiers.find((t) => t.friends > available.length);
+  return {
+    joined: mine.length,
+    paid: mine.filter((r) => r.status === "paid").length,
+    available,
+    // Uses exactly the tier's number of friends; any extra carry over to the next discount.
+    reward: reached ? { percent: reached.percent, friends: reached.friends, referralIds: available.slice(0, reached.friends).map((r) => r.id) } : null,
+    next: up ? { percent: up.percent, friends: up.friends, more: up.friends - available.length } : null,
+  };
+}
+
+/** Called when a payment is approved: the friend now counts toward their referrer's discount. */
+export function markReferralPaid(friendEmail: string, paymentId: string): ReferralRec | null {
   const ref = getAll("referrals").find((r) => same(r.friendEmail, friendEmail) && r.status === "joined");
-  if (!cfg.enabled || !ref || cfg.rewardDays <= 0) return null;
-  const from = nextAccessStart(ref.referrerEmail);
-  const until = addDays(from, cfg.rewardDays - 1);
-  const next: ReferralRec = { ...ref, status: "rewarded", paymentId, rewardDays: cfg.rewardDays, rewardFrom: from, rewardUntil: until };
-  useAdminStore.getState().save("referrals", [next], { action: "update", label: `${ref.referrerEmail} earned ${cfg.rewardDays} Pro days (referral)`, previous: [ref] });
-  const users = getAll("users").filter((u) => same(u.email, ref.referrerEmail) && u.plan !== "premium");
-  if (users.length) useAdminStore.getState().save("users", users.map((u) => ({ ...u, plan: "premium" as const })), { action: "update", label: `Gave Premium to ${ref.referrerEmail} (referral reward)`, previous: users });
+  if (!ref) return null;
+  const next: ReferralRec = { ...ref, status: "paid", paymentId, paidAt: nowIso() };
+  useAdminStore.getState().save("referrals", [next], { action: "update", label: `${friendEmail} paid; counts toward ${ref.referrerEmail}'s referral discount`, previous: [ref] });
   return next;
+}
+
+export type Discount = NonNullable<PaymentRec["discount"]>;
+
+/**
+ * The discount a payment gets: the largest of the promo code, the referrer's reward and the
+ * invited friend's discount. They never stack; on a tie the promo code is used.
+ */
+export function bestDiscount(opts: { email: string; referredBy?: string; promo: PromoCodeRec | null; planId?: string }): { chosen: Discount | null; options: Discount[] } {
+  const options: Discount[] = [];
+  const { promo } = opts;
+  if (promo?.kind === "percent" && (!promo.plans.length || !opts.planId || promo.plans.includes(opts.planId))) options.push({ source: "promo", code: promo.code, percent: promo.percent });
+  const reward = referrerStatus(opts.email).reward;
+  if (reward) options.push({ source: "reward", code: "REFERRALS", percent: reward.percent, referralIds: reward.referralIds });
+  const invite = referralDiscount(opts.email, opts.referredBy);
+  if (invite) options.push({ source: "referral", code: invite.code, percent: invite.percent });
+  const chosen = options.reduce<Discount | null>((best, d) => (!best || d.percent > best.percent ? d : best), null);
+  return { chosen, options };
 }
