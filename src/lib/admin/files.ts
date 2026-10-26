@@ -75,6 +75,21 @@ export async function storeVideo(file: File): Promise<{ url: string; name: strin
   return { url: `idb:${key}`, name: file.name, sizeKb: Math.max(1, Math.round(file.size / 1024)) };
 }
 
+export const MAX_RECEIPT_MB = 10;
+const RECEIPT_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+
+/** Validate and store a payment receipt (one PDF or image). */
+export async function storeReceipt(file: File): Promise<FileRef> {
+  const pdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  if (!RECEIPT_TYPES.includes(file.type) && !pdf) throw new Error("Upload a PDF or an image (JPG, PNG or WebP).");
+  if (file.size > MAX_RECEIPT_MB * 1024 * 1024) throw new Error(`This file is ${(file.size / 1048576).toFixed(1)} MB. The limit is ${MAX_RECEIPT_MB} MB.`);
+  const key = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  await tx("readwrite", (s) => s.put(file, key));
+  return { url: `idb:${key}`, name: file.name, pages: pdf ? await countPdfPages(file) : 0, sizeKb: Math.max(1, Math.round(file.size / 1024)) };
+}
+
+export const isPdfRef = (f: FileRef) => f.name.toLowerCase().endsWith(".pdf");
+
 export async function deleteStored(url: string) {
   if (isStored(url)) await tx("readwrite", (s) => s.delete(url.slice(4)));
 }

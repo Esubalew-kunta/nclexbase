@@ -2,25 +2,41 @@
 
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import { Check, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { Check, CheckCircle2, Clock, ShieldCheck } from "lucide-react";
 import { useConfig, usePlans } from "@/lib/content";
+import { fmtDay, formatPrice, useMyPayments } from "@/lib/payments";
 import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/ui/primitives";
 
 export default function UpgradePage() {
   const router = useRouter();
-  const setPlan = useStore((s) => s.setPlan);
+  const userPlan = useStore((s) => s.user.plan);
   // Plans, prices and the feature list: Admin > Plans & Access.
   const plans = usePlans();
   const { headline, subhead, included } = useConfig().upgrade;
-  const buy = () => {
-    setPlan("premium");
-    router.push("/nclex");
-  };
+  const latest = useMyPayments()[0];
+  const pending = latest?.status === "pending";
+  const buy = (planId: string) => router.push(`/nclex/checkout?plan=${encodeURIComponent(planId)}`);
 
   return (
     <>
       <PageHeader trail={[{ label: "Upgrade" }]} title={headline} description={subhead} />
+      {pending && (
+        <Link href="/nclex/checkout" className="mb-5 flex items-center gap-3 rounded-lg border border-gold/60 bg-gold/10 px-4 py-3 text-ink hover:border-gold">
+          <Clock className="size-5 shrink-0 text-gold" />
+          <span className="flex-1">
+            Your payment <b className="font-mono">{latest.reference}</b> for {latest.planLabel} is being verified. We&apos;ll email you as soon as your Pro access is active.
+          </span>
+          <span className="text-sm font-semibold text-primary">View status</span>
+        </Link>
+      )}
+      {!pending && userPlan === "premium" && (
+        <div className="mb-5 flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3 text-ink">
+          <CheckCircle2 className="size-5 shrink-0 text-success" />
+          <span>You have NCLEXBase Pro{latest?.status === "approved" && latest.accessUntil ? ` until ${fmtDay(latest.accessUntil)}` : ""}.</span>
+        </div>
+      )}
       <div className={clsx("grid gap-4", plans.length >= 3 ? "lg:grid-cols-3" : plans.length === 2 ? "lg:grid-cols-2" : "max-w-md")}>
         {plans.map((p) => (
           <div key={p.id} className={clsx("relative flex flex-col rounded-2xl border bg-white p-6 shadow-card", p.featured ? "border-gold ring-2 ring-gold" : "border-line")}>
@@ -31,26 +47,26 @@ export default function UpgradePage() {
               {p.months} Month{p.months > 1 ? "s" : ""} of Access
             </h2>
             <div className="mt-3 flex items-end gap-2">
-              {p.was > p.price && <span className="text-lg text-muted line-through">${p.was}</span>}
-              <span className="text-4xl font-bold text-ink">${p.price}</span>
-              <span className="pb-1 text-muted">USD</span>
+              {p.was > p.price && <span className="text-lg text-muted line-through">{formatPrice(p.was)}</span>}
+              <span className="text-4xl font-bold text-ink">{formatPrice(p.price)}</span>
             </div>
             {p.was > p.price && (
               <span className="mt-2 w-fit rounded-full bg-success/10 px-2.5 py-0.5 text-sm font-semibold text-success">
-                Save ${p.was - p.price} · {Math.round((1 - p.price / p.was) * 100)}% OFF
+                Save {formatPrice(p.was - p.price)} · {Math.round((1 - p.price / p.was) * 100)}% OFF
               </span>
             )}
             <p className="mt-3 text-muted">{p.blurb}</p>
             <button
-              onClick={buy}
+              onClick={() => buy(p.id)}
+              disabled={pending || userPlan === "premium"}
               className={clsx(
-                "mt-5 h-12 cursor-pointer rounded-full font-semibold transition-[background,filter,transform] duration-[50ms] active:translate-y-[2px] active:shadow-none",
+                "mt-5 h-12 cursor-pointer rounded-full disabled:cursor-not-allowed disabled:opacity-50 font-semibold transition-[background,filter,transform] duration-[50ms] active:translate-y-[2px] active:shadow-none",
                 p.featured ? "bg-gold text-ink shadow-premium hover:brightness-95" : "bg-primary text-white shadow-press hover:bg-primary-hover",
               )}
             >
               Get {p.months} Month{p.months > 1 ? "s" : ""} of Access
             </button>
-            <p className="mt-2 text-center text-sm text-muted">or 4 payments of ${(p.price / 4).toFixed(2)}</p>
+            <p className="mt-2 text-center text-sm text-muted">Pay by bank or mobile wallet transfer</p>
             <div className="mt-5 border-t border-line pt-4">
               <div className="mb-2 font-semibold text-ink">What&apos;s included:</div>
               {p.guarantee && (
@@ -75,7 +91,6 @@ export default function UpgradePage() {
           </div>
         ))}
       </div>
-      <p className="mt-6 text-center text-sm text-muted">Prototype: choosing a plan switches this device to Premium. No payment is taken.</p>
     </>
   );
 }

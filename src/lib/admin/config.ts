@@ -17,6 +17,14 @@ export interface SiteConfig {
   readinessBands: { high: number; borderline: number };
   schedule: ScheduleRules;
   upgrade: { headline: string; subhead: string; included: string[] };
+  payments: {
+    /** Shown next to every price, e.g. "ETB" or "USD". */
+    currency: string;
+    /** How long a review usually takes, shown after a student submits. */
+    reviewTime: string;
+    /** Admin alerts for new payments. Sending needs the backend; until then alerts wait in the Notifications log. */
+    telegram: { enabled: boolean; chatId: string };
+  };
   qotd: {
     /** Date (YYYY-MM-DD) → question id. Days with no entry have no Question of the Day. */
     schedule: Record<string, string>;
@@ -218,6 +226,7 @@ export const DEFAULT_CONFIG: SiteConfig = {
       "Mobile App Access",
     ],
   },
+  payments: { currency: "ETB", reviewTime: "within 24 hours", telegram: { enabled: false, chatId: "" } },
   qotd: { schedule: {}, autoDays: {}, months: {}, remind: { period: "week", days: 5 }, emailSubject: "Your NCLEX Question of the Day", senderName: "NCLEXBase.com" },
   exam: {
     defaults: { textSize: 16, answerStats: true, shortcuts: false, restrictions: true, gridView: false, hoverPreview: true, timer: true },

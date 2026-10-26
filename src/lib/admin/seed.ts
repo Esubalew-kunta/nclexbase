@@ -7,7 +7,7 @@ import { PLANS_SEED } from "@/data/plans";
 import faqsJson from "@/data/live/faqs.json";
 import { tabsFor } from "@/lib/subjectTabs";
 import type { SubjectId } from "@/lib/types";
-import type { AnnouncementRec, CaseRec, CheatSheetRec, CodeRec, Collections, CourseRec, FaqPlacement, FaqRec, LessonRec, MessageRec, QuestionRec, ReadinessRec, SubjectRec, UserRec } from "./types";
+import type { AnnouncementRec, CaseRec, CheatSheetRec, CodeRec, Collections, CourseRec, FaqPlacement, FaqRec, LessonRec, MessageRec, PaymentMethodRec, QuestionRec, ReadinessRec, SubjectRec, UserRec } from "./types";
 
 /*
  * Turns today's static data (src/data/*) into admin records. These are the starting
@@ -182,6 +182,12 @@ const messages = (): MessageRec[] => [
   },
 ];
 
+/** Starts as drafts with no account details: the admin fills them in and publishes (Admin > Payments > Methods). */
+const paymentMethods = (): PaymentMethodRec[] => [
+  { id: "pm-cbe", name: "Commercial Bank of Ethiopia (CBE)", kind: "bank", accountName: "", accountNumber: "", instructions: "Use the CBE app, *889# or any branch.", status: "draft", order: 0, updatedAt: SEEDED },
+  { id: "pm-telebirr", name: "telebirr", kind: "wallet", accountName: "", accountNumber: "", instructions: "Send money from the telebirr app or *127#.", status: "draft", order: 1, updatedAt: SEEDED },
+];
+
 const announcements = (): AnnouncementRec[] => [
   {
     id: "ann-memory-tricks",
@@ -216,4 +222,7 @@ export const SEED: SeedFactories = {
   codes,
   messages,
   announcements,
+  paymentMethods,
+  payments: () => [],
+  notifications: () => [],
 };

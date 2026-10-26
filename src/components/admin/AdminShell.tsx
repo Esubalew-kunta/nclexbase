@@ -32,6 +32,7 @@ import {
   Target,
   Type,
   Users,
+  Wallet,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -51,6 +52,7 @@ interface NavItem {
 
 const openMessages = () => getAll("messages").filter((m) => m.status === "open").length;
 /** 1 while the next week/month has days without a Question of the Day (see lib/daily.ts). */
+const pendingPayments = () => getAll("payments").filter((p) => p.status === "pending").length;
 const qotdReminder = () => (planReminder() ? 1 : 0);
 
 export const ADMIN_NAV: { title: string; items: NavItem[] }[] = [
@@ -84,6 +86,7 @@ export const ADMIN_NAV: { title: string; items: NavItem[] }[] = [
     title: "People",
     items: [
       { href: "/admin/users", label: "Users", icon: Users },
+      { href: "/admin/payments", label: "Payments", icon: Wallet, badge: pendingPayments },
       { href: "/admin/codes", label: "Institution Codes", icon: KeyRound },
       { href: "/admin/inbox", label: "Support Inbox", icon: Inbox, badge: openMessages },
     ],
@@ -103,6 +106,7 @@ function Nav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = norm(usePathname());
   useAdminStore((s) => s.data.messages); // refresh the inbox badge
   useAdminStore((s) => s.config.qotd); // and the Question of the Day reminder
+  useAdminStore((s) => s.data.payments); // and pending payments
   return (
     <nav className="flex-1 overflow-y-auto px-3 pb-4 [scrollbar-width:thin]" aria-label="Admin">
       {ADMIN_NAV.map((g) => (

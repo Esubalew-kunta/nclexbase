@@ -168,6 +168,66 @@ export interface PlanRec {
   updatedAt: string;
 }
 
+/** Where students send money for a plan: a bank account or a mobile wallet (Admin > Payments > Methods). */
+export interface PaymentMethodRec {
+  id: string;
+  /** Shown to students, e.g. "Commercial Bank of Ethiopia" or "telebirr". */
+  name: string;
+  kind: "bank" | "wallet";
+  accountName: string;
+  accountNumber: string;
+  /** Optional extra steps shown under the account details. */
+  instructions: string;
+  status: Status;
+  order: number;
+  updatedAt: string;
+}
+
+export type PaymentStatus = "pending" | "approved" | "rejected";
+
+/** A student's payment: the receipt they uploaded and the admin's decision. Details are copied in at submit time. */
+export interface PaymentRec {
+  id: string;
+  /** Short code students and admins can quote, e.g. "PAY-7F3K2Q". */
+  reference: string;
+  userEmail: string;
+  userName: string;
+  planId: string;
+  planLabel: string;
+  months: number;
+  amount: number;
+  currency: string;
+  methodId: string;
+  methodName: string;
+  methodKind: PaymentMethodRec["kind"];
+  accountNumber: string;
+  /** The receipt (PDF or image). */
+  receipt: FileRef;
+  /** Transaction ID the student typed (optional). */
+  transactionId: string;
+  status: PaymentStatus;
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectReason?: string;
+  /** Last day of access, set on approval. */
+  accessUntil?: string;
+  updatedAt: string;
+}
+
+/** Messages waiting to go out (Telegram alerts to admins, emails to students). Sending needs the backend. */
+export interface NotificationRec {
+  id: string;
+  channel: "telegram" | "email";
+  to: string;
+  subject: string;
+  body: string;
+  status: "queued" | "sent";
+  paymentId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UserRec {
   id: string;
   name: string;
@@ -236,6 +296,9 @@ export interface Collections {
   codes: CodeRec;
   messages: MessageRec;
   announcements: AnnouncementRec;
+  paymentMethods: PaymentMethodRec;
+  payments: PaymentRec;
+  notifications: NotificationRec;
 }
 
 export type CollectionName = keyof Collections;
@@ -255,4 +318,7 @@ export const COLLECTION_LABELS: Record<CollectionName, string> = {
   codes: "Institution code",
   messages: "Message",
   announcements: "Announcement",
+  paymentMethods: "Payment method",
+  payments: "Payment",
+  notifications: "Notification",
 };
