@@ -1,9 +1,9 @@
 "use client";
 
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowUp, CheckCircle2, Copy, ExternalLink, Landmark, Plus, Smartphone, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, ChevronLeft, ChevronRight, Copy, ExternalLink, Landmark, Plus, Smartphone, XCircle } from "lucide-react";
 import { crud, today } from "@/lib/admin/crud";
 import { isPdfRef, useFileUrl } from "@/lib/admin/files";
 import { newId, useAdminStore } from "@/lib/admin/store";
@@ -13,7 +13,7 @@ import { useStore } from "@/lib/store";
 import Link from "next/link";
 import { approvePayment, fmtDay, formatPrice, rejectPayment } from "@/lib/payments";
 import { AdminPage, Badge, Btn, confirmDialog, Dialog, Drawer, Field, fmtDateTime, IconBtn, Input, Meta, Panel, Segmented, Switch, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
-import { DataTable, ListEmpty, ListToolbar, useEditParam, useList, type Column } from "@/components/admin/list";
+import { ListEmpty, ListToolbar, useEditParam, useList } from "@/components/admin/list";
 import { DeleteRecordButton, StatusPicker } from "@/components/admin/parts";
 import { PdfFrame } from "@/components/ui/files";
 
@@ -77,34 +77,140 @@ function PaymentsTab() {
     },
     defaultSort: { key: "submitted", dir: "desc" },
   });
-  const columns: Column<PaymentRec>[] = [
-    {
-      key: "student",
-      label: "Student",
-      sort: "student",
-      render: (p) => (
-        <div>
-          <p className="font-medium">
-            <StudentLink name={p.userName} email={p.userEmail} />
-          </p>
-          <p className="text-xs text-muted">{p.userEmail}</p>
-        </div>
-      ),
-    },
-    { key: "plan", label: "Plan", render: (p) => p.planLabel },
-    { key: "amount", label: "Amount", sort: "amount", render: (p) => <span className="font-semibold tabular-nums">{formatPrice(p.amount, p.currency)}</span> },
-    { key: "method", label: "Method", render: (p) => <span className="text-sm">{p.methodName}</span> },
-    { key: "ref", label: "Reference", render: (p) => <span className="font-mono text-xs">{p.reference}</span> },
-    { key: "submitted", label: "Submitted", sort: "submitted", render: (p) => <span className="text-xs text-muted">{dt(p.submittedAt)}</span> },
-    { key: "status", label: "Status", render: (p) => <Badge tone={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status]}</Badge> },
-  ];
   const open = rows.find((p) => p.id === edit.id);
   return (
     <>
       <ListToolbar list={list} placeholder="Search name, email, reference, transaction ID" />
-      <DataTable list={list} columns={columns} rowId={(p) => p.id} onRowClick={(p) => edit.open(p.id)} empty={<ListEmpty list={list} noun="payments" />} />
+      {list.filtered.length ? <GroupedPayments rows={list.filtered} onOpen={(p) => edit.open(p.id)} /> : <div className="rounded-lg border border-line bg-white">{<ListEmpty list={list} noun="payments" />}</div>}
       {open && <ReviewDrawer key={open.id + open.status} p={open} onClose={edit.close} />}
     </>
+  );
+}
+
+const GROUPS_PER_PAGE = 25;
+
+/**
+ * One collapsible row per student (closed by default), so repeat submissions sit together.
+ * Groups keep the list's sort and filters; the newest payment decides the summary.
+ */
+function GroupedPayments({ rows, onOpen }: { rows: PaymentRec[]; onOpen: (p: PaymentRec) => void }) {
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [page, setPage] = useState(1);
+  const groups = useMemo(() => {
+    const m = new Map<string, PaymentRec[]>();
+    for (const p of rows) {
+      const k = p.userEmail.trim().toLowerCase();
+      m.set(k, [...(m.get(k) ?? []), p]);
+    }
+    return [...m.entries()].map(([key, list]) => ({ key, list, latest: [...list].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0] }));
+  }, [rows]);
+  const pages = Math.max(1, Math.ceil(groups.length / GROUPS_PER_PAGE));
+  const cur = Math.min(page, pages);
+  const shown = groups.slice((cur - 1) * GROUPS_PER_PAGE, cur * GROUPS_PER_PAGE);
+  const toggle = (k: string) =>
+    setExpanded((s) => {
+      const n = new Set(s);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
+      return n;
+    });
+  const allOpen = shown.length > 0 && shown.every((g) => expanded.has(g.key));
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-line bg-white">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[820px] text-sm">
+          <thead className="bg-background text-left text-xs font-semibold tracking-wide whitespace-nowrap text-muted uppercase">
+            <tr className="border-b border-line">
+              <th className="w-10 px-3 py-2.5">
+                <IconBtn label={allOpen ? "Collapse all" : "Expand all"} onClick={() => setExpanded(allOpen ? new Set() : new Set(shown.map((g) => g.key)))}>
+                  <ChevronRight className={clsx("size-4 transition-transform", allOpen && "rotate-90")} />
+                </IconBtn>
+              </th>
+              <th className="px-3 py-2.5">Student</th>
+              <th className="px-3 py-2.5">Plan</th>
+              <th className="px-3 py-2.5">Amount</th>
+              <th className="px-3 py-2.5">Method</th>
+              <th className="px-3 py-2.5">Reference</th>
+              <th className="px-3 py-2.5">Submitted</th>
+              <th className="px-3 py-2.5">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((g) => {
+              const isOpen = expanded.has(g.key);
+              const counts = (["pending", "approved", "rejected"] as const).map((st) => [st, g.list.filter((p) => p.status === st).length] as const).filter(([, n]) => n);
+              return (
+                <Fragment key={g.key}>
+                  <tr onClick={() => toggle(g.key)} aria-expanded={isOpen} className={clsx("cursor-pointer border-b border-line", isOpen ? "bg-primary-light/60" : "hover:bg-background")}>
+                    <td className="px-3 py-2.5">
+                      <ChevronRight className={clsx("size-4 text-muted transition-transform", isOpen && "rotate-90 text-primary")} />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <p className="font-medium">
+                        <StudentLink name={g.latest.userName} email={g.latest.userEmail} />
+                      </p>
+                      <p className="text-xs text-muted">{g.latest.userEmail}</p>
+                    </td>
+                    <td className="px-3 py-2.5" colSpan={4}>
+                      <span className="text-sm text-ink">
+                        {g.list.length} payment{g.list.length === 1 ? "" : "s"}
+                      </span>
+                      <span className="ml-2 text-xs text-muted">latest: {g.latest.planLabel} · {formatPrice(g.latest.amount, g.latest.currency)}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-muted">{dt(g.latest.submittedAt)}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-wrap gap-1">
+                        {counts.map(([st, n]) => (
+                          <Badge key={st} tone={STATUS_TONE[st]}>
+                            {n > 1 ? `${n} ` : ""}
+                            {STATUS_LABEL[st]}
+                          </Badge>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                  {isOpen &&
+                    g.list.map((p) => (
+                      <tr key={p.id} onClick={() => onOpen(p)} className="cursor-pointer border-b border-line bg-background/60 hover:bg-primary-light">
+                        <td />
+                        <td className="py-2 pr-3 pl-6 text-xs text-muted">↳ {p.transactionId ? `Txn ${p.transactionId}` : "Payment"}</td>
+                        <td className="px-3 py-2">{p.planLabel}</td>
+                        <td className="px-3 py-2 font-semibold tabular-nums">
+                          {formatPrice(p.amount, p.currency)}
+                          {p.discount && <span className="ml-1 text-xs font-normal text-muted">({p.discount.percent}% off)</span>}
+                        </td>
+                        <td className="px-3 py-2">{p.methodName}</td>
+                        <td className="px-3 py-2 font-mono text-xs">{p.reference}</td>
+                        <td className="px-3 py-2 text-xs text-muted">{dt(p.submittedAt)}</td>
+                        <td className="px-3 py-2">
+                          <Badge tone={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status]}</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-sm text-muted">
+        <span>
+          {groups.length} student{groups.length === 1 ? "" : "s"} · {rows.length} payment{rows.length === 1 ? "" : "s"}
+        </span>
+        {pages > 1 && (
+          <span className="flex items-center gap-1">
+            <IconBtn label="Previous page" disabled={cur === 1} onClick={() => setPage(cur - 1)}>
+              <ChevronLeft className="size-4" />
+            </IconBtn>
+            {cur} / {pages}
+            <IconBtn label="Next page" disabled={cur === pages} onClick={() => setPage(cur + 1)}>
+              <ChevronRight className="size-4" />
+            </IconBtn>
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
