@@ -16,6 +16,7 @@ import { AdminPage, Badge, Btn, confirmDialog, Dialog, Drawer, Field, fmtDateTim
 import { ListEmpty, ListToolbar, useEditParam, useList } from "@/components/admin/list";
 import { DeleteRecordButton, StatusPicker } from "@/components/admin/parts";
 import { PdfFrame } from "@/components/ui/files";
+import { PaymentStats } from "@/components/admin/PaymentStats";
 
 type Tab = "payments" | "methods" | "notifications" | "settings";
 const TABS: { value: Tab; label: string }[] = [
@@ -80,6 +81,7 @@ function PaymentsTab() {
   const open = rows.find((p) => p.id === edit.id);
   return (
     <>
+      <PaymentStats />
       <ListToolbar list={list} placeholder="Search name, email, reference, transaction ID" />
       {list.filtered.length ? <GroupedPayments rows={list.filtered} onOpen={(p) => edit.open(p.id)} /> : <div className="rounded-lg border border-line bg-white">{<ListEmpty list={list} noun="payments" />}</div>}
       {open && <ReviewDrawer key={open.id + open.status} p={open} onClose={edit.close} />}
