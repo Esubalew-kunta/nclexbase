@@ -18,11 +18,13 @@ export interface SiteConfig {
   schedule: ScheduleRules;
   upgrade: { headline: string; subhead: string; included: string[] };
   qotd: {
-    /** Date (YYYY-MM-DD) → question id pinned by the admin. */
+    /** Date (YYYY-MM-DD) → question id. Days with no entry have no Question of the Day. */
     schedule: Record<string, string>;
-    /** Automatic selection plans: how many questions from which subject/system in a week or month. */
-    plans: QotdPlan[];
-    /** Remind the admin to plan the next week or month this many days before the current one ends. */
+    /** Days filled by "Auto-select" (the rest of `schedule` was picked by hand). */
+    autoDays: Record<string, true>;
+    /** The subjects/systems last used to auto-fill each month ("YYYY-MM"). */
+    months: Record<string, QotdMonth>;
+    /** Remind the admin this many days before the current week/month ends if the next one has empty days. */
     remind: { period: "week" | "month" | "off"; days: number };
     emailSubject: string;
     senderName: string;
@@ -34,23 +36,10 @@ export interface SiteConfig {
   copy: Record<string, string>;
 }
 
-/** One line of a plan: `count` questions from a subject (and optionally one system). */
-export interface QotdQuota {
-  id: string;
-  /** Empty = any subject. */
-  subject: string;
-  /** Null = any system of the subject. */
-  system: string | null;
-  count: number;
-}
-
-/** A week (starts Monday) or calendar month. Unplanned days are filled from every subject. */
-export interface QotdPlan {
-  id: string;
-  period: "week" | "month";
-  /** First day: a Monday for weeks, the 1st for months (YYYY-MM-DD). */
-  start: string;
-  quotas: QotdQuota[];
+/** Auto-select settings for one month: the subjects to draw from, each limited to some systems or all of them. */
+export interface QotdMonth {
+  subjects: { id: string; systems: string[] | null }[];
+  filledAt: string;
 }
 
 export type HomeSection = "schedule" | "subjects" | "questionTypes" | "resources" | "faqs";
@@ -229,7 +218,7 @@ export const DEFAULT_CONFIG: SiteConfig = {
       "Mobile App Access",
     ],
   },
-  qotd: { schedule: {}, plans: [], remind: { period: "week", days: 5 }, emailSubject: "Your NCLEX Question of the Day", senderName: "NCLEXBase.com" },
+  qotd: { schedule: {}, autoDays: {}, months: {}, remind: { period: "week", days: 5 }, emailSubject: "Your NCLEX Question of the Day", senderName: "NCLEXBase.com" },
   exam: {
     defaults: { textSize: 16, answerStats: true, shortcuts: false, restrictions: true, gridView: false, hoverPreview: true, timer: true },
     askAi: true,

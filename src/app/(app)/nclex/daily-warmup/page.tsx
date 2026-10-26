@@ -77,7 +77,7 @@ export default function DailyWarmupPage() {
         </p>
       </Card>
       <h2 className="mb-3 text-2xl leading-[30px] font-bold text-ink">Today&apos;s email</h2>
-      <EmailPreview item={item} date={date} link={link} />
+      {item ? <EmailPreview item={item} date={date} link={link} /> : <Card className="p-6 text-base text-muted">There is no question scheduled for today, so no email goes out.</Card>}
     </>
   );
 }

@@ -50,7 +50,7 @@ interface NavItem {
 }
 
 const openMessages = () => getAll("messages").filter((m) => m.status === "open").length;
-/** 1 while the next week/month still needs a Question of the Day plan (see lib/daily.ts). */
+/** 1 while the next week/month has days without a Question of the Day (see lib/daily.ts). */
 const qotdReminder = () => (planReminder() ? 1 : 0);
 
 export const ADMIN_NAV: { title: string; items: NavItem[] }[] = [

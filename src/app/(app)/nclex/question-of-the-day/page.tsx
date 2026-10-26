@@ -27,6 +27,16 @@ function QotdBody() {
   if (!hydrated) return <PageHeader trail={[{ label: "Question of the Day" }]} title={copy("qotd.title")} />;
   const { date, item } = questionForDate(requested);
   const isToday = date === todayISO();
+  if (!item)
+    return (
+      <>
+        <PageHeader trail={[{ label: "Question of the Day" }]} title={copy("qotd.title")} description={formatDay(date)} />
+        <Card className="p-8 text-center">
+          <h4 className="text-xl font-bold text-ink">No question {isToday ? "today" : "for this day"}</h4>
+          <p className="mt-2 text-base text-muted">There isn&apos;t a Question of the Day for {isToday ? "today" : formatDay(date)} yet. Check back soon.</p>
+        </Card>
+      </>
+    );
 
   return (
     <>

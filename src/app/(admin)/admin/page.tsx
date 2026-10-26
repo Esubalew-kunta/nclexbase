@@ -72,7 +72,7 @@ export default function Dashboard() {
         <Link href="/admin/qotd" className="mb-4 flex items-center gap-3 rounded-lg border border-gold/60 bg-gold/10 px-4 py-3 text-sm text-ink hover:border-gold">
           <AlertTriangle className="size-5 shrink-0 text-gold" />
           <span className="min-w-0 flex-1">
-            Question of the Day: <b>{periodLabel(qotd.start, qotd.period)}</b> has no plan yet ({qotd.daysLeft} day{qotd.daysLeft === 1 ? "" : "s"} left in this {qotd.period}).
+            Question of the Day: <b>{periodLabel(qotd.start, qotd.period)}</b> has {qotd.empty} day{qotd.empty === 1 ? "" : "s"} without a question ({qotd.daysLeft} day{qotd.daysLeft === 1 ? "" : "s"} left in this {qotd.period}).
           </span>
           <ArrowRight className="size-4 text-primary" />
         </Link>
