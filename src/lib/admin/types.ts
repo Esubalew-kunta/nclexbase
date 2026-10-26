@@ -23,22 +23,6 @@ export interface SystemRec {
   key: string;
   label: string;
   visible: boolean;
-  /** Standalone questions shown for this system ("0 of N questions used"). */
-  count: number;
-  /** Questions counted on the Performance page (standalone + case + readiness). */
-  perfTotal: number;
-  /** Average score of all students, % (Performance page). */
-  avg: number;
-}
-
-/** Numbers shown on student pages. Seeded from the live catalog; the admin can type them or recount from the bank. */
-export interface SubjectStats {
-  questionCount: number;
-  standaloneCount: number;
-  perfTotal: number;
-  avgScore: number;
-  /** Average seconds per question for this subject (time-management tables). */
-  avgTimeSec: number;
 }
 
 export interface SubjectRec {
@@ -51,7 +35,6 @@ export interface SubjectRec {
   systems: SystemRec[];
   /** Uploaded icon image; seeded subjects fall back to their built-in icon. */
   icon: FileRef | null;
-  stats: SubjectStats;
   updatedAt: string;
 }
 

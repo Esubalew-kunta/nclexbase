@@ -4,7 +4,8 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useState } from "react";
-import { getAll, getSubjectRec, subjectName, useCopy } from "@/lib/content";
+import { getAll, subjectName, useCopy } from "@/lib/content";
+import { getStats } from "@/lib/stats";
 import { CoachPhoto } from "@/components/ui/CoachPhoto";
 import { subjectHref } from "@/lib/routes";
 import { caseForItem, itemById } from "@/lib/bank";
@@ -517,13 +518,14 @@ function buildStats(session: TestSession) {
   const bySubject = new Map<SubjectId, { id: SubjectId; earned: number; max: number; avgEarned: number; time: number; count: number; avg: number; systems: Map<string, { name: string; earned: number; max: number; avgEarned: number }> }>();
   const groups: { caseId?: string; subject: SubjectId; system: string; earned: number; max: number; time: number; rows: { index: number; subject: SubjectId; system: string; earned: number; max: number; time: number }[] }[] = [];
   const caseIds: string[] = [];
+  const recorded = getStats();
 
   session.entries.forEach((e, index) => {
     const item = itemById(e.itemId);
-    const subjectAvgTime = getSubjectRec(item.subject)?.stats.avgTimeSec ?? 70;
     const s = scoreItem(item, session.submitted[e.itemId] ? session.answers[e.itemId] : undefined);
     const avg = avgPoints(item);
     const time = session.timeSpent[e.itemId] ?? 0;
+    const subjectAvgTime = recorded.subject(item.subject).avgTimeSec ?? time;
     avgEarned += avg;
     avgTime += subjectAvgTime;
 

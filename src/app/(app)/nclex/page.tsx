@@ -6,6 +6,7 @@ import { useConfig, useCopy, useFaqs, usePublished, useSubjects } from "@/lib/co
 import { subjectHref } from "@/lib/routes";
 import { greeting, useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
+import { useStats } from "@/lib/stats";
 import { FaqList, SectionTitle } from "@/components/ui/primitives";
 import { HomeRow, LessonsBlock, SubjectIcon, TypeIcon, UsageBlock } from "@/components/ui/visuals";
 import { QuickActions } from "@/components/home/QuickActions";
@@ -14,6 +15,7 @@ import { UserAvatar } from "@/components/shell/TopBar";
 
 export default function HomePage() {
   const progress = useProgress();
+  const stats = useStats();
   const hydrated = useStore((s) => s.hydrated);
   const subjects = useSubjects();
   const lessons = usePublished("lessons");
@@ -36,7 +38,7 @@ export default function HomePage() {
         {subjects.map((s) => (
           <HomeRow key={s.id} href={subjectHref(s.id)} icon={<SubjectIcon id={s.id} />} title={s.name}>
             <div className="flex flex-col gap-2 xl:flex-row xl:gap-4">
-              <UsageBlock className="flex-1" usage={{ total: s.stats.questionCount, ...progress.subjectCounts(s.id) }} />
+              <UsageBlock className="flex-1" usage={{ total: stats.subject(s.id).studyable, ...progress.subjectCounts(s.id) }} />
               <LessonsBlock className="flex-1" done={0} total={lessonCount(s.id)} />
             </div>
           </HomeRow>

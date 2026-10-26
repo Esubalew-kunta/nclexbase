@@ -24,12 +24,9 @@ const subjects = (): SubjectRec[] =>
     order: i,
     visible: true,
     tabs: tabsFor(s.id),
-    systems: s.systems.map((sys) => {
-      const perf = s.perfSystems.find((p) => p.name === sys.name);
-      return { key: sys.name, label: sys.name, visible: true, count: sys.count, perfTotal: perf?.total ?? sys.count, avg: perf?.avg ?? s.avgScore };
-    }),
+    // Counts and averages are not stored: lib/stats.ts derives them from the bank and attempts.
+    systems: s.systems.map((sys) => ({ key: sys.name, label: sys.name, visible: true })),
     icon: null,
-    stats: { questionCount: s.questionCount, standaloneCount: s.standaloneCount, perfTotal: s.perfTotal, avgScore: s.avgScore, avgTimeSec: s.avgTimeSec },
     updatedAt: SEEDED,
   }));
 

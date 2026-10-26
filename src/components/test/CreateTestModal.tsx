@@ -7,6 +7,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { buildEntries, studyItems } from "@/lib/bank";
 import { useBank, useCaseRows, useConfig, useSubjects } from "@/lib/content";
 import { usedItemIds, useStore } from "@/lib/store";
+import { useStats } from "@/lib/stats";
 import type { Item, Pool, SubjectId } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
 import { Checkbox, CountPill, Modal, Toggle } from "@/components/ui/primitives";
@@ -66,6 +67,7 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
   const createSession = useStore((s) => s.createSession);
   const preset = useStore((s) => s.createTestPreset);
   const isFree = plan === "free";
+  const stats = useStats();
 
   const [tutor, setTutor] = useState(true);
   const [timed, setTimed] = useState(false);
@@ -97,16 +99,16 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
       children: caseRows.map((r) => ({ id: `case:${r.id}`, label: r.title, count: r.number <= 2 ? 5 : 6, locked: isFree })),
     },
     ...subjects.map((s) => {
-      // Names, systems and the counts shown all come from Admin > Subjects & Systems.
+      // Names and systems come from Admin > Subjects & Systems; counts are the published standalone questions.
       return {
         id: s.id,
         label: s.name,
-        count: s.stats.standaloneCount,
+        count: stats.subject(s.id).standalone,
         locked: isFree,
         subject: s.id,
         children: s.systems
           .filter((sys) => sys.visible)
-          .map((sys) => ({ id: `${s.id}:${sys.key}`, label: sys.label, count: sys.count, locked: isFree, system: sys.key })),
+          .map((sys) => ({ id: `${s.id}:${sys.key}`, label: sys.label, count: stats.system(s.id, sys.key).standalone, locked: isFree, system: sys.key })),
       };
     }),
   ];

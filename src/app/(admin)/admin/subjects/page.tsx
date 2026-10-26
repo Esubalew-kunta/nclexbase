@@ -1,18 +1,35 @@
 "use client";
 
 import clsx from "clsx";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowUp, Eye, EyeOff, GitMerge, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, Eye, EyeOff, GitMerge, Plus, Trash2 } from "lucide-react";
 import { crud, slugify, today } from "@/lib/admin/crud";
 import type { CollectionName, SubjectRec, SystemRec } from "@/lib/admin/types";
 import { getAll, useAll, useSubjects } from "@/lib/content";
+import { formatAvg, useStats, type Stats } from "@/lib/stats";
+import { formatDuration } from "@/lib/scoring";
 import { ALL_TABS, TAB_LABELS, type SubjectTab } from "@/lib/subjectTabs";
+import { subjectHref } from "@/lib/routes";
 import { AdminPage, Badge, Btn, confirmDialog, Dialog, Field, IconBtn, Input, Panel, Select, Switch, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { HistoryButton, ImageDrop } from "@/components/admin/parts";
 import { SubjectIcon } from "@/components/ui/visuals";
 
 const api = crud("subjects");
+
+/** Where each subject page tab's content is managed, filtered to this subject. */
+const tabAdminHref = (tab: SubjectTab, id: string) => {
+  const q = encodeURIComponent(id);
+  return {
+    "case-studies": `/admin/cases?subject=${q}`,
+    standalone: `/admin/questions?subject=${q}&source=standalone`,
+    videos: `/admin/courses?course=${q}`,
+    "cheat-sheets": `/admin/cheat-sheets?subject=${q}`,
+    "memory-tricks": `/admin/memory-tricks?subject=${q}`,
+    performance: `/admin/subjects?open=${q}#numbers`,
+  }[tab];
+};
 
 const move = <T,>(arr: T[], i: number, d: number) => {
   const j = i + d;
@@ -30,11 +47,8 @@ function useSubjectUsage(id: string) {
   const sheets = useAll("cheatSheets");
   const lessons = useAll("lessons");
   return useMemo(() => {
-    const qs = questions.filter((q) => q.subject === id);
     return {
-      questions: qs.length,
-      standalone: qs.filter((q) => q.source.kind === "standalone" && q.status === "published").length,
-      studyable: qs.filter((q) => q.source.kind !== "readiness" && q.status === "published").length,
+      questions: questions.filter((q) => q.subject === id).length,
       cases: cases.filter((c) => c.subject === id).length,
       tricks: tricks.filter((t) => t.subject === id).length,
       sheets: sheets.filter((c) => c.subject === id).length,
@@ -124,7 +138,6 @@ function NewSubjectDialog({ onClose }: { onClose: () => void }) {
       tabs: ["standalone", "videos", "cheat-sheets", "memory-tricks", "performance"],
       systems: [],
       icon: null,
-      stats: { questionCount: 0, standaloneCount: 0, perfTotal: 0, avgScore: 60, avgTimeSec: 70 },
       updatedAt: today(),
     };
     api.create(rec);
@@ -165,6 +178,8 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
   const questions = useAll("questions");
   const tricks = useAll("memoryTricks");
   const usageAll = useSubjectUsage(rec.id);
+  const stats = useStats();
+  const totals = stats.subject(rec.id);
   const dirty = !sameRecord(f, rec);
   useUnsavedGuard(dirty);
 
@@ -178,7 +193,6 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
 
   const setSystems = (systems: SystemRec[]) => setF((x) => ({ ...x, systems }));
   const setSys = (key: string, patch: Partial<SystemRec>) => setSystems(f.systems.map((x) => (x.key === key ? { ...x, ...patch } : x)));
-  const setStat = (k: keyof SubjectRec["stats"], v: number) => setF((x) => ({ ...x, stats: { ...x.stats, [k]: Math.max(0, v) } }));
   const hiddenTabs = ALL_TABS.filter((t) => !f.tabs.includes(t));
   const inUse = usageAll.questions + usageAll.cases + usageAll.tricks + usageAll.sheets + usageAll.lessons;
 
@@ -186,7 +200,7 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
     const label = newSystem.trim();
     if (!label) return;
     if (f.systems.some((s) => s.label.toLowerCase() === label.toLowerCase() || s.key.toLowerCase() === label.toLowerCase())) return toast("A system with that name already exists.", "error");
-    setSystems([...f.systems, { key: label, label, visible: true, count: 0, perfTotal: 0, avg: f.stats.avgScore }]);
+    setSystems([...f.systems, { key: label, label, visible: true }]);
     setNewSystem("");
   };
 
@@ -211,23 +225,6 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
     if (getAll("courses").some((c) => c.id === rec.id)) crud("courses").hardDelete([rec.id]);
     router.replace("/admin/subjects");
   };
-
-  const statRow = (k: keyof SubjectRec["stats"], label: string, bank?: number, hint?: string) => (
-    <div className="grid items-center gap-2 sm:grid-cols-[1fr_120px_auto]">
-      <span className="text-sm text-ink">
-        {label}
-        {hint && <span className="block text-xs text-muted">{hint}</span>}
-      </span>
-      <Input type="number" min={0} value={f.stats[k]} onChange={(e) => setStat(k, Number(e.target.value) || 0)} aria-label={label} />
-      {bank !== undefined ? (
-        <Btn variant="ghost" onClick={() => setStat(k, bank)} title="Use the number of published items in the bank">
-          Use bank ({bank})
-        </Btn>
-      ) : (
-        <span />
-      )}
-    </div>
-  );
 
   return (
     <div className="space-y-4">
@@ -259,12 +256,17 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
         </div>
       </Panel>
 
-      <Panel title="Subject page tabs" description="Tabs students see on this subject's page, in order. The first tab is where the subject link opens.">
+      <Panel title="Subject page tabs" description="Tabs students see on this subject's page, in order. The first tab is where the subject link opens. Click a tab to manage its content for this subject.">
         <ul className="divide-y divide-line rounded-md border border-line">
           {f.tabs.map((t, i) => (
             <li key={t} className="flex items-center gap-2 px-3 py-2">
               <span className="w-6 text-xs text-muted tabular-nums">{i + 1}</span>
-              <span className="flex-1 text-sm text-ink">{TAB_LABELS[t]}</span>
+              <Link href={tabAdminHref(t, rec.id)} className="flex-1 text-sm font-medium text-primary hover:underline" title={`Manage ${TAB_LABELS[t]} for ${rec.name}`}>
+                {TAB_LABELS[t]}
+              </Link>
+              <Link href={subjectHref(rec.id, t)} target="_blank" aria-label={`Open ${TAB_LABELS[t]} as a student`} title="Open as a student" className="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-primary-light hover:text-primary">
+                <ExternalLink className="size-4" />
+              </Link>
               <IconBtn label="Move up" disabled={i === 0} onClick={() => setF({ ...f, tabs: move(f.tabs, i, -1) })}>
                 <ArrowUp className="size-4" />
               </IconBtn>
@@ -290,16 +292,16 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
         )}
       </Panel>
 
-      <Panel title="Systems (sub-subjects)" description="Used by the Standalone tab, Create Test, Memory Tricks, Performance and every system filter. Renaming keeps all linked content attached. Numbers are what students see.">
+      <Panel title="Systems (sub-subjects)" description="Used by the Standalone tab, Create Test, Memory Tricks, Performance and every system filter. Renaming keeps all linked content attached. Numbers are counted from published questions and recorded answers, so they can't be edited.">
         <div className="overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[820px] text-sm">
             <thead className="bg-background text-left text-xs text-muted uppercase">
               <tr>
                 <th className="w-10 px-3 py-2">#</th>
                 <th className="px-3 py-2">Name</th>
-                <th className="w-24 px-3 py-2" title="Standalone questions shown for this system">Questions</th>
-                <th className="w-24 px-3 py-2" title="Questions counted on the Performance page">Perf. total</th>
-                <th className="w-20 px-3 py-2" title="Average score of all students, %">Avg %</th>
+                <th className="w-24 px-3 py-2" title="Published standalone questions in this system">Questions</th>
+                <th className="w-24 px-3 py-2" title="Published standalone, case study and readiness questions in this system">Perf. total</th>
+                <th className="w-20 px-3 py-2" title="Average score over every recorded answer">Avg %</th>
                 <th className="px-3 py-2">Used by</th>
                 <th className="px-3 py-2">Visible</th>
                 <th className="w-32 px-3 py-2" />
@@ -308,6 +310,7 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
             <tbody>
               {f.systems.map((s, i) => {
                 const u = usage.get(s.key);
+                const st = stats.system(rec.id, s.key);
                 return (
                   <tr key={s.key} className="border-t border-line">
                     <td className="px-3 py-1.5 text-xs text-muted tabular-nums">{i + 1}</td>
@@ -315,19 +318,17 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
                       <Input value={s.label} aria-label={`Name of system ${i + 1}`} onChange={(e) => setSys(s.key, { label: e.target.value })} className="h-8" />
                       {s.label !== s.key && <span className="mt-0.5 block text-[11px] text-muted">Originally “{s.key}”</span>}
                     </td>
-                    <td className="px-3 py-1.5">
-                      <Input type="number" min={0} value={s.count} aria-label="Questions" onChange={(e) => setSys(s.key, { count: Math.max(0, Number(e.target.value) || 0) })} className="h-8" />
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <Input type="number" min={0} value={s.perfTotal} aria-label="Performance total" onChange={(e) => setSys(s.key, { perfTotal: Math.max(0, Number(e.target.value) || 0) })} className="h-8" />
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <Input type="number" min={0} max={100} value={s.avg} aria-label="Average score" onChange={(e) => setSys(s.key, { avg: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} className="h-8" />
-                    </td>
+                    <SystemNumbers st={st} />
                     <td className="px-3 py-1.5 text-xs text-muted">
                       {u ? (
                         <>
-                          {u.questions} q · {u.tricks} tricks
+                          <Link href={`/admin/questions?subject=${encodeURIComponent(rec.id)}&system=${encodeURIComponent(s.key)}`} className="hover:text-primary hover:underline">
+                            {u.questions} q
+                          </Link>
+                          {" · "}
+                          <Link href={`/admin/memory-tricks?subject=${encodeURIComponent(rec.id)}&system=${encodeURIComponent(s.key)}`} className="hover:text-primary hover:underline">
+                            {u.tricks} tricks
+                          </Link>
                         </>
                       ) : (
                         <Badge tone="teal">New</Badge>
@@ -371,15 +372,17 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
         </div>
       </Panel>
 
-      <Panel title="Numbers shown to students" description="These mirror the full product catalog. Type your own, or use the count of published items currently in the bank.">
-        <div className="space-y-2">
-          {statRow("questionCount", "Questions (Home)", usageAll.studyable, "“0 of N questions used” on Home")}
-          {statRow("standaloneCount", "Standalone questions", usageAll.standalone, "Standalone page, subject tab and Create Test")}
-          {statRow("perfTotal", "Questions on Performance", usageAll.questions)}
-          {statRow("avgScore", "Average score of all students (%)")}
-          {statRow("avgTimeSec", "Average seconds per question", undefined, "Time Management tables")}
-        </div>
-      </Panel>
+      <div id="numbers" className="scroll-mt-20">
+        <Panel title="Numbers students see" description="Counted from published questions and recorded answers, so they update on their own. Publish, archive or move questions to change them.">
+          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Fact label="Questions (Home)" hint="Standalone + published case studies" value={totals.studyable} />
+            <Fact label="Standalone questions" hint="Standalone page, subject tab, Create Test" value={totals.standalone} />
+            <Fact label="Questions on Performance" hint="Also counts readiness exam questions" value={totals.perfTotal} />
+            <Fact label="Average score" hint={`${totals.attempts} recorded answer${totals.attempts === 1 ? "" : "s"}`} value={formatAvg(totals.avg)} />
+            <Fact label="Average time per question" hint="Time Management tables" value={totals.avgTimeSec == null ? "—" : formatDuration(totals.avgTimeSec)} />
+          </dl>
+        </Panel>
+      </div>
 
       <Panel title="Delete or merge this subject">
         <p className="mb-3 text-sm text-muted">
@@ -410,6 +413,30 @@ function SubjectEditor({ rec }: { rec: SubjectRec }) {
         />
       )}
       {mergeSubject && <MergeSubjectDialog from={rec} onClose={() => setMergeSubject(false)} />}
+    </div>
+  );
+}
+
+/** Read-only cells: these numbers come from lib/stats, never from the record. */
+function SystemNumbers({ st }: { st: Stats }) {
+  const cell = "px-3 py-1.5 text-sm text-ink tabular-nums";
+  return (
+    <>
+      <td className={cell}>{st.standalone}</td>
+      <td className={cell}>{st.perfTotal}</td>
+      <td className={cell} title={`${st.attempts} recorded answer${st.attempts === 1 ? "" : "s"}`}>
+        {formatAvg(st.avg)}
+      </td>
+    </>
+  );
+}
+
+function Fact({ label, hint, value }: { label: string; hint: string; value: number | string }) {
+  return (
+    <div>
+      <dt className="text-sm text-ink">{label}</dt>
+      <dd className="text-2xl font-semibold text-ink tabular-nums">{value}</dd>
+      <dd className="text-xs text-muted">{hint}</dd>
     </div>
   );
 }

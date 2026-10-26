@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useConfig, useSubjects } from "@/lib/content";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
+import { useStats } from "@/lib/stats";
 import type { SubjectId } from "@/lib/types";
 import { Button, UpgradeButton } from "@/components/ui/primitives";
 import { NumberedRow, UsageBlock } from "@/components/ui/visuals";
@@ -14,6 +15,7 @@ export default function StandalonePage() {
   const plan = useStore((s) => s.user.plan);
   const setUi = useStore((s) => s.setUi);
   const progress = useProgress();
+  const stats = useStats();
   const subjects = useSubjects();
   const freeQuestions = useConfig().freeTier.freeQuestions;
   const create = (subject?: SubjectId) => setUi({ createTestOpen: true, createTestPreset: subject ? { subject } : null });
@@ -34,7 +36,7 @@ export default function StandalonePage() {
             onClick={() => (plan === "free" ? router.push("/nclex/upgrade") : create(s.id))}
             action={plan === "free" ? <UpgradeButton /> : <Button onClick={(e) => (e.stopPropagation(), create(s.id))}>Create Test</Button>}
           >
-            <UsageBlock usage={{ total: s.stats.standaloneCount, ...progress.standaloneFor(s.id) }} />
+            <UsageBlock usage={{ total: stats.subject(s.id).standalone, ...progress.standaloneFor(s.id) }} />
           </NumberedRow>
         ))}
       </div>

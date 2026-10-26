@@ -7,6 +7,7 @@ import { subjectName, useSubjects } from "@/lib/content";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import { formatDuration } from "@/lib/scoring";
+import { formatAvg, useStats, type StatsIndex } from "@/lib/stats";
 import type { SubjectId } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
 import { SubjectIcon } from "@/components/ui/visuals";
@@ -25,19 +26,19 @@ export function SortArrows() {
   );
 }
 
-/** 100px bar with a gray tick marking the average/target. */
-function MiniBar({ children, tick }: { children: ReactNode; tick: number }) {
+/** 100px bar with a gold tick marking the average/target (no tick until there is an average). */
+function MiniBar({ children, tick }: { children: ReactNode; tick: number | null }) {
   return (
     <div className="relative w-[100px]">
       <div className="flex h-[10px] overflow-hidden rounded-lg bg-primary-light shadow-[inset_0_1px_3px_0_rgba(14,90,92,0.1)]">
         {children}
       </div>
-      <div className="absolute -top-px -bottom-px w-0.5 bg-gold" style={{ left: `${tick}%` }} />
+      {tick != null && <div className="absolute -top-px -bottom-px w-0.5 bg-gold" style={{ left: `${tick}%` }} />}
     </div>
   );
 }
 
-export function ScoreCell({ pct, avg }: { pct: number; avg: number }) {
+export function ScoreCell({ pct, avg }: { pct: number; avg: number | null }) {
   return (
     <div className="flex items-center gap-2">
       <p className="min-w-[42px] text-base leading-4 whitespace-nowrap">{pct} %</p>
@@ -94,18 +95,22 @@ const th = "p-3 px-4 text-left text-base leading-4 font-semibold text-muted";
 /* Subject Performance (subjects expand into systems)                  */
 /* ------------------------------------------------------------------ */
 
-/** Performance numbers for a subject from Admin > Subjects & Systems (averages are editable there). */
-function subjectView(subjects: SubjectRec[], id: SubjectId) {
+/** Performance numbers for a subject: systems from Admin > Subjects & Systems, counts and averages from lib/stats. */
+function subjectView(subjects: SubjectRec[], stats: StatsIndex, id: SubjectId) {
   const rec = subjects.find((s) => s.id === id);
+  const st = stats.subject(id);
   return {
     id,
     name: rec?.name ?? id,
-    avgScore: rec?.stats.avgScore ?? 0,
-    perfTotal: rec?.stats.perfTotal ?? 0,
-    avgTimeSec: rec?.stats.avgTimeSec ?? 70,
+    avgScore: st.avg,
+    perfTotal: st.perfTotal,
+    avgTimeSec: st.avgTimeSec,
     perfSystems: (rec?.systems ?? [])
       .filter((x) => x.visible)
-      .map((x) => ({ key: x.key, name: x.label, avg: x.avg, total: x.perfTotal }))
+      .map((x) => {
+        const s = stats.system(id, x.key);
+        return { key: x.key, name: x.label, avg: s.avg, total: s.perfTotal };
+      })
       .sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
@@ -113,12 +118,13 @@ function subjectView(subjects: SubjectRec[], id: SubjectId) {
 export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subjects: SubjectId[]; defaultExpanded?: boolean }) {
   const progress = useProgress();
   const all = useSubjects(true);
+  const stats = useStats();
   const [open, setOpen] = useState<Set<SubjectId>>(() => new Set(defaultExpanded ? subjects : []));
   const [sort, setSort] = useState<{ key: "name" | "score"; dir: 1 | -1 } | null>(null);
   const allOpen = open.size === subjects.length;
 
   const rows = subjects.map((id) => {
-    const s = subjectView(all, id);
+    const s = subjectView(all, stats, id);
     const stat = progress.bySubject.get(id);
     const counts = progress.subjectCounts(id);
     return { id, s, pct: stat?.max ? Math.round((stat.earned / stat.max) * 100) : 0, counts };
@@ -189,7 +195,7 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
                       <ScoreCell pct={pct} avg={s.avgScore} />
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-base leading-4 text-muted">{s.avgScore} %</p>
+                      <p className="text-base leading-4 text-muted">{formatAvg(s.avgScore)}</p>
                     </td>
                     <td className="px-4 py-3">
                       <UsageCell total={s.perfTotal} {...counts} />
@@ -208,14 +214,14 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
                           <td className="px-4 py-3 text-muted">
                             <div className="ml-7 flex items-center gap-2 text-ink">
                               <p className="truncate text-base leading-4">{sys.name}</p>
-                              {sp < sys.avg && <Warning />}
+                              {sys.avg != null && sp < sys.avg && <Warning />}
                             </div>
                           </td>
                           <td className="px-4 py-3">
                             <ScoreCell pct={sp} avg={sys.avg} />
                           </td>
                           <td className="px-4 py-3">
-                            <p className="text-base leading-4 text-muted">{sys.avg} %</p>
+                            <p className="text-base leading-4 text-muted">{formatAvg(sys.avg)}</p>
                           </td>
                           <td className="px-4 py-3">
                             <UsageCell used={v?.used ?? 0} total={sys.total} />
@@ -243,6 +249,7 @@ export function useSubjectPerformanceTable({ subjects, defaultExpanded }: { subj
 export function TimeManagementTable({ subjects, perQuestion }: { subjects: SubjectId[]; perQuestion?: Partial<Record<SubjectId, number>> }) {
   const progress = useProgress();
   const all = useSubjects(true);
+  const stats = useStats();
   return (
     <div className="overflow-auto">
       <table className="w-full min-w-[640px] overflow-hidden rounded-lg bg-white text-ink">
@@ -260,10 +267,11 @@ export function TimeManagementTable({ subjects, perQuestion }: { subjects: Subje
             <td className="w-12 rounded-tr-lg p-4" />
           </tr>
           {subjects.map((id) => {
-            const s = subjectView(all, id);
+            const s = subjectView(all, stats, id);
             const stat = progress.bySubject.get(id);
             const per = perQuestion ? perQuestion[id] : stat?.answered ? stat.time / stat.answered : undefined;
-            const slow = per != null && per > s.avgTimeSec;
+            const avg = s.avgTimeSec;
+            const slow = per != null && avg != null && per > avg;
             return (
               <tr key={id} className="border-b border-line bg-white last:border-0">
                 <td className="py-4 pr-4 pl-6" />
@@ -279,13 +287,13 @@ export function TimeManagementTable({ subjects, perQuestion }: { subjects: Subje
                     {per != null && (
                       <span
                         className={clsx("ml-2 h-2 rounded-sm", slow ? "bg-error" : "bg-success")}
-                        style={{ width: Math.max(4, Math.min(100, (per / s.avgTimeSec) * 12)) }}
+                        style={{ width: Math.max(4, Math.min(100, (per / Math.max(1, avg ?? per)) * 12)) }}
                       />
                     )}
                   </div>
                 </td>
                 <td className="p-4">
-                  <span className="text-base leading-4 text-muted">{formatDuration(s.avgTimeSec)}</span>
+                  <span className="text-base leading-4 text-muted">{avg == null ? "--" : formatDuration(avg)}</span>
                 </td>
                 <td className="p-4" />
               </tr>
