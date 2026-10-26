@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { useConfig } from "@/lib/content";
+import { recordReferralJoin } from "@/lib/promo";
 import { AuthField, AuthLink, AuthShell, AuthSubmit, PasswordField } from "@/components/shell/AuthShell";
 
 /** Mock sign-up (live: app.bootcamp.com/auth#/join). Starts a fresh free account in this browser. */
@@ -20,6 +21,9 @@ export default function JoinPage() {
     if (!ready) return;
     useStore.getState().resetAll();
     useStore.setState((s) => ({ user: { ...s.user, name: "", email: email.trim(), plan: "free", signedIn: true } }));
+    // Join links from Refer a friend carry ?ref=CODE.
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) recordReferralJoin(ref, email.trim());
     router.push("/nclex");
   };
 

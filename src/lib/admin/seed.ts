@@ -7,7 +7,7 @@ import { PLANS_SEED } from "@/data/plans";
 import faqsJson from "@/data/live/faqs.json";
 import { tabsFor } from "@/lib/subjectTabs";
 import type { SubjectId } from "@/lib/types";
-import type { AnnouncementRec, CaseRec, CheatSheetRec, CodeRec, Collections, CourseRec, FaqPlacement, FaqRec, LessonRec, MessageRec, PaymentMethodRec, QuestionRec, ReadinessRec, SubjectRec, UserRec } from "./types";
+import type { AnnouncementRec, CaseRec, CheatSheetRec, Collections, CourseRec, FaqPlacement, FaqRec, LessonRec, MessageRec, PaymentMethodRec, PromoCodeRec, QuestionRec, ReadinessRec, SubjectRec, UserRec } from "./types";
 
 /*
  * Turns today's static data (src/data/*) into admin records. These are the starting
@@ -128,10 +128,9 @@ const faqs = (): FaqRec[] => {
 
 const plans = () => PLANS_SEED.map((p, i) => ({ ...p, status: "published" as const, order: i, updatedAt: SEEDED }));
 
-/* Mock people for the Users / Codes / Inbox tabs (no backend yet). */
+/* Mock people for the Users / Inbox tabs (no backend yet). */
 const FIRST = ["Amara", "Bethany", "Carlos", "Dana", "Elijah", "Fatima", "Grace", "Hana", "Isaac", "Jade", "Kofi", "Lena", "Mateo", "Nia", "Omar", "Priya", "Quinn", "Rosa", "Samuel", "Tess", "Uma", "Victor", "Wren", "Yusuf"];
 const LAST = ["Okafor", "Nguyen", "Ramirez", "Kim", "Brooks", "Haddad", "Patel", "Tanaka", "Mensah", "Rivera", "Cohen", "Ali"];
-const SCHOOLS = ["", "", "Lakeside College of Nursing", "", "Riverside University", "", "Lakeside College of Nursing", ""];
 
 const users = (): UserRec[] =>
   FIRST.map((f, i) => {
@@ -144,7 +143,6 @@ const users = (): UserRec[] =>
       email: `${f}.${l}`.toLowerCase() + "@example.com",
       plan: i % 3 === 0 ? "free" : "premium",
       status: i === 9 ? "disabled" : "active",
-      institution: SCHOOLS[i % SCHOOLS.length],
       createdAt: created.toISOString().slice(0, 10),
       lastActive: last.toISOString().slice(0, 10),
       answered: (i * 137) % 1400,
@@ -153,10 +151,10 @@ const users = (): UserRec[] =>
     };
   });
 
-const codes = (): CodeRec[] => [
-  { id: "code-1", code: "LAKESIDE-2026", institution: "Lakeside College of Nursing", seats: 120, used: 47, expiresAt: "2027-06-30", status: "active", updatedAt: SEEDED },
-  { id: "code-2", code: "RIVERSIDE-RN", institution: "Riverside University", seats: 60, used: 60, expiresAt: "2026-12-31", status: "active", updatedAt: SEEDED },
-  { id: "code-3", code: "PILOT-FALL25", institution: "Pilot cohort", seats: 25, used: 11, expiresAt: "2026-01-31", status: "disabled", updatedAt: SEEDED },
+/** Two examples, one of each kind, both disabled until the admin turns them on. */
+const promoCodes = (): PromoCodeRec[] => [
+  { id: "promo-1", code: "WELCOME10", kind: "percent", percent: 10, accessFrom: "", accessUntil: "", validFrom: "", validUntil: "", maxUses: 0, plans: [], note: "Example discount code", status: "disabled", updatedAt: SEEDED },
+  { id: "promo-2", code: "EXAMWEEK", kind: "access", percent: 0, accessFrom: "2026-11-01", accessUntil: "2026-11-07", validFrom: "", validUntil: "2026-11-07", maxUses: 100, plans: [], note: "Example free-access week", status: "disabled", updatedAt: SEEDED },
 ];
 
 const messages = (): MessageRec[] => [
@@ -219,7 +217,10 @@ export const SEED: SeedFactories = {
   faqs,
   plans,
   users,
-  codes,
+  promoCodes,
+  redemptions: () => [],
+  referrals: () => [],
+  referralCodes: () => [],
   messages,
   announcements,
   paymentMethods,

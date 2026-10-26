@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { useCopy } from "@/lib/content";
 import { PageHeader, UnderlineTabs } from "@/components/ui/primitives";
 
-export function AccountShell({ active, children }: { active: "profile" | "redeem-code"; children: ReactNode }) {
+export function AccountShell({ active, children }: { active: "profile" | "redeem" | "refer"; children: ReactNode }) {
   const email = useStore((s) => s.user.email);
   const hydrated = useStore((s) => s.hydrated);
   const copy = useCopy();
@@ -21,7 +21,8 @@ export function AccountShell({ active, children }: { active: "profile" | "redeem
       <UnderlineTabs
         tabs={[
           { label: "Profile", href: "/nclex/account/profile" },
-          { label: "Redeem Institutional Code", href: "/nclex/account/redeem-code" },
+          { label: "Redeem a Code", href: "/nclex/account/redeem" },
+          { label: "Refer a Friend", href: "/nclex/account/refer" },
         ]}
         active={`/nclex/account/${active}`}
       />

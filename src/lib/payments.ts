@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { addDays, todayISO } from "@/lib/daily";
+import { discounted, monthsLater, nextAccessStart, recordDiscountUse, rewardReferrer } from "@/lib/promo";
 import { getAll, getConfig, useAll } from "@/lib/content";
 import { useStore } from "@/lib/store";
 import { newId, useAdminStore } from "@/lib/admin/store";
-import type { FileRef, NotificationRec, PaymentMethodRec, PaymentRec, PlanRec } from "@/lib/admin/types";
+import type { FileRef, NotificationRec, PaymentMethodRec, PaymentRec, PlanRec, PromoCodeRec } from "@/lib/admin/types";
 
 /*
  * Manual payments: the student sends money to one of the admin's accounts, uploads the
@@ -45,10 +45,12 @@ function queue(n: Omit<NotificationRec, "id" | "status" | "createdAt" | "updated
 }
 
 /** Student submits a receipt. Creates a pending payment and queues the admin's Telegram alert. */
-export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; receipt: FileRef; transactionId: string }): PaymentRec {
+export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; receipt: FileRef; transactionId: string; promo?: PromoCodeRec; referral?: { code: string; percent: number } | null }): PaymentRec {
   const user = useStore.getState().user;
   const cfg = getConfig().payments;
   const at = nowIso();
+  // A promo code wins over the referral discount; they never stack.
+  const discount = input.promo?.kind === "percent" ? { source: "promo" as const, code: input.promo.code, percent: input.promo.percent } : input.referral ? { source: "referral" as const, ...input.referral } : undefined;
   const rec: PaymentRec = {
     id: newId("pay"),
     reference: newReference(),
@@ -57,7 +59,9 @@ export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; 
     planId: input.plan.id,
     planLabel: planLabel(input.plan),
     months: input.plan.months,
-    amount: input.plan.price,
+    amount: discount ? discounted(input.plan.price, discount.percent) : input.plan.price,
+    listPrice: input.plan.price,
+    discount,
     currency: cfg.currency,
     methodId: input.method.id,
     methodName: input.method.name,
@@ -70,6 +74,7 @@ export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; 
     updatedAt: at.slice(0, 10),
   };
   useAdminStore.getState().save("payments", [rec], { action: "create", label: `Payment ${rec.reference} submitted by ${rec.userEmail}` });
+  if (input.promo && discount?.source === "promo") recordDiscountUse(input.promo, rec.id);
   queue(
     {
       channel: "telegram",
@@ -78,7 +83,7 @@ export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; 
       body: [
         `New payment waiting for approval`,
         `Student: ${rec.userName} (${rec.userEmail})`,
-        `Plan: ${rec.planLabel} · ${formatPrice(rec.amount, rec.currency)}`,
+        `Plan: ${rec.planLabel} · ${formatPrice(rec.amount, rec.currency)}${discount ? ` (${discount.percent}% off with ${discount.source === "promo" ? `code ${discount.code}` : "a referral"})` : ""}`,
         `Paid with: ${rec.methodName}${rec.transactionId ? ` · Transaction ${rec.transactionId}` : ""}`,
         `Reference: ${rec.reference}`,
         `Review: ${typeof window === "undefined" ? "" : window.location.origin}/admin/payments?edit=${rec.id}`,
@@ -91,13 +96,11 @@ export function submitPayment(input: { plan: PlanRec; method: PaymentMethodRec; 
 }
 
 /** Admin approves: the student gets Premium until `accessUntil`, and an email is queued. */
-export function approvePayment(p: PaymentRec) {
+export function approvePayment(p: PaymentRec, message = "") {
   const admin = useAdminStore.getState().session?.email ?? "admin";
-  const start = [todayISO(), ...getAll("payments").filter((x) => x.id !== p.id && x.status === "approved" && sameEmail(x.userEmail, p.userEmail) && x.accessUntil).map((x) => x.accessUntil!)].sort().at(-1)!;
-  // Access stacks on top of any time the student still has left.
-  const from = start > todayISO() ? addDays(start, 1) : todayISO();
-  const until = monthsLater(from, p.months);
-  const next: PaymentRec = { ...p, status: "approved", reviewedAt: nowIso(), reviewedBy: admin, rejectReason: undefined, accessUntil: until };
+  // Access stacks on top of any time the student still has left (payments, codes, referral rewards).
+  const until = monthsLater(nextAccessStart(p.userEmail), p.months);
+  const next: PaymentRec = { ...p, status: "approved", reviewedAt: nowIso(), reviewedBy: admin, rejectReason: undefined, adminMessage: message.trim() || undefined, accessUntil: until };
   useAdminStore.getState().save("payments", [next], { action: "update", label: `Approved payment ${p.reference} (${p.userEmail})`, previous: [p] });
   grantPremium(p.userEmail);
   queue(
@@ -113,6 +116,7 @@ export function approvePayment(p: PaymentRec) {
         `Access until: ${fmtDay(until)}`,
         ``,
         `Every question, case study, readiness exam and resource is now unlocked. Sign in and keep going.`,
+        ...(message.trim() ? [``, `Message from our team: ${message.trim()}`] : []),
         ``,
         `Good luck with your studies,`,
         `The NCLEXBase team`,
@@ -121,12 +125,24 @@ export function approvePayment(p: PaymentRec) {
     },
     `Approval email queued for ${p.userEmail}`,
   );
+  const ref = rewardReferrer(p.userEmail, p.id);
+  if (ref?.rewardUntil)
+    queue(
+      {
+        channel: "email",
+        to: ref.referrerEmail,
+        subject: `You earned ${ref.rewardDays} free days of NCLEXBase Pro`,
+        body: [`Hi,`, ``, `A friend you invited just joined NCLEXBase Pro. As a thank-you, you get ${ref.rewardDays} days of Pro, through ${fmtDay(ref.rewardUntil)}.`, ``, `Keep sharing your link to earn more.`, ``, `The NCLEXBase team`].join("\n"),
+        paymentId: p.id,
+      },
+      `Referral reward email queued for ${ref.referrerEmail}`,
+    );
 }
 
 /** Admin rejects: the student sees the reason and can upload a new receipt. */
-export function rejectPayment(p: PaymentRec, reason: string) {
+export function rejectPayment(p: PaymentRec, reason: string, message = "") {
   const admin = useAdminStore.getState().session?.email ?? "admin";
-  const next: PaymentRec = { ...p, status: "rejected", reviewedAt: nowIso(), reviewedBy: admin, rejectReason: reason.trim() };
+  const next: PaymentRec = { ...p, status: "rejected", reviewedAt: nowIso(), reviewedBy: admin, rejectReason: reason.trim(), adminMessage: message.trim() || undefined };
   useAdminStore.getState().save("payments", [next], { action: "update", label: `Rejected payment ${p.reference} (${p.userEmail})`, previous: [p] });
   queue(
     {
@@ -138,6 +154,7 @@ export function rejectPayment(p: PaymentRec, reason: string) {
         ``,
         `We reviewed your payment (${p.reference}) for ${p.planLabel} but couldn't confirm it.`,
         `Reason: ${reason.trim()}`,
+        ...(message.trim() ? [``, `Message from our team: ${message.trim()}`] : []),
         ``,
         `Please sign in and upload a new receipt from the Upgrade page. If you think this is a mistake, reply to this email.`,
         ``,
@@ -157,10 +174,5 @@ function grantPremium(email: string) {
   if (users.length) useAdminStore.getState().save("users", users.map((u) => ({ ...u, plan: "premium" as const })), { action: "update", label: `Gave Premium to ${email} (payment approved)`, previous: users });
 }
 
-function monthsLater(from: string, months: number): string {
-  const [y, m, d] = from.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1 + months, d));
-  return addDays(dt.toISOString().slice(0, 10), -1);
-}
 
 export const fmtDay = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });

@@ -14,7 +14,8 @@ import {
   HelpCircle,
   Home,
   Inbox,
-  KeyRound,
+  Gift,
+  TicketPercent,
   LayoutDashboard,
   ListTree,
   LogOut,
@@ -87,7 +88,8 @@ export const ADMIN_NAV: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/users", label: "Users", icon: Users },
       { href: "/admin/payments", label: "Payments", icon: Wallet, badge: pendingPayments },
-      { href: "/admin/codes", label: "Institution Codes", icon: KeyRound },
+      { href: "/admin/promo-codes", label: "Promo Codes", icon: TicketPercent },
+      { href: "/admin/referrals", label: "Referrals", icon: Gift },
       { href: "/admin/inbox", label: "Support Inbox", icon: Inbox, badge: openMessages },
     ],
   },
@@ -177,7 +179,7 @@ function buildJumps(): Jump[] {
   for (const u of getAll("users")) out.push({ label: u.name, sub: `User · ${u.email}`, href: `/admin/users?edit=${u.id}` });
   for (const a of getAll("announcements")) out.push({ label: a.message, sub: "Announcement", href: `/admin/announcements?edit=${a.id}` });
   for (const c of getAll("courses")) out.push({ label: c.title, sub: "Course", href: `/admin/courses?course=${c.id}` });
-  for (const c of getAll("codes")) out.push({ label: c.code, sub: `Code · ${c.institution}`, href: `/admin/codes?edit=${c.id}` });
+  for (const c of getAll("promoCodes")) out.push({ label: c.code, sub: `Promo code · ${c.kind === "percent" ? `${c.percent}% off` : "free Pro access"}`, href: `/admin/promo-codes?edit=${c.id}` });
   return out;
 }
 

@@ -8,7 +8,9 @@ import { crud, today } from "@/lib/admin/crud";
 import { isPdfRef, useFileUrl } from "@/lib/admin/files";
 import { newId, useAdminStore } from "@/lib/admin/store";
 import type { NotificationRec, PaymentMethodRec, PaymentRec, PaymentStatus } from "@/lib/admin/types";
-import { useAll, useConfig } from "@/lib/content";
+import { getAll, useAll, useConfig } from "@/lib/content";
+import { useStore } from "@/lib/store";
+import Link from "next/link";
 import { approvePayment, fmtDay, formatPrice, rejectPayment } from "@/lib/payments";
 import { AdminPage, Badge, Btn, confirmDialog, Dialog, Drawer, Field, fmtDateTime, IconBtn, Input, Meta, Panel, Segmented, Switch, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { DataTable, ListEmpty, ListToolbar, useEditParam, useList, type Column } from "@/components/admin/list";
@@ -82,7 +84,9 @@ function PaymentsTab() {
       sort: "student",
       render: (p) => (
         <div>
-          <p className="font-medium">{p.userName}</p>
+          <p className="font-medium">
+            <StudentLink name={p.userName} email={p.userEmail} />
+          </p>
           <p className="text-xs text-muted">{p.userEmail}</p>
         </div>
       ),
@@ -130,15 +134,30 @@ function Receipt({ p }: { p: PaymentRec }) {
   );
 }
 
+/** The student's page in Admin > Users: the student on this browser, or a matching user record. */
+function useProfileHref(email: string): string | null {
+  const local = useStore((s) => s.user.email);
+  useAll("users");
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  if (same(local, email)) return "/admin/users?edit=local-student";
+  const u = getAll("users").find((x) => same(x.email, email));
+  return u ? `/admin/users?edit=${encodeURIComponent(u.id)}` : null;
+}
+
+function StudentLink({ name, email }: { name: string; email: string }) {
+  const href = useProfileHref(email);
+  if (!href) return <>{name}</>;
+  return (
+    <Link href={href} onClick={(e) => e.stopPropagation()} className="font-medium text-primary hover:underline" title="Open this student's profile">
+      {name}
+    </Link>
+  );
+}
+
 const REJECT_REASONS = ["The receipt is unclear or unreadable.", "The amount doesn't match the plan price.", "We couldn't find this transfer in our account.", "The receipt appears to be for a different payment."];
 
 function ReviewDrawer({ p, onClose }: { p: PaymentRec; onClose: () => void }) {
-  const [rejecting, setRejecting] = useState(false);
-  const approve = async () => {
-    if (!(await confirmDialog({ title: `Approve ${p.reference}?`, body: `${p.userName} gets Premium for ${p.months} month${p.months === 1 ? "" : "s"} and an email confirming it.`, confirm: "Approve payment" }))) return;
-    approvePayment(p);
-    toast(`Approved. ${p.userName} is now Premium.`);
-  };
+  const [deciding, setDeciding] = useState<"approve" | "reject" | null>(null);
   return (
     <Drawer
       open
@@ -153,11 +172,11 @@ function ReviewDrawer({ p, onClose }: { p: PaymentRec; onClose: () => void }) {
       footer={
         p.status === "pending" ? (
           <>
-            <Btn variant="danger" onClick={() => setRejecting(true)}>
+            <Btn variant="danger" onClick={() => setDeciding("reject")}>
               <XCircle className="size-4" />
               Reject
             </Btn>
-            <Btn variant="primary" onClick={approve}>
+            <Btn variant="primary" onClick={() => setDeciding("approve")}>
               <CheckCircle2 className="size-4" />
               Approve
             </Btn>
@@ -170,12 +189,17 @@ function ReviewDrawer({ p, onClose }: { p: PaymentRec; onClose: () => void }) {
       <div className="space-y-4">
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
           <Meta label="Student">
-            {p.userName}
+            <StudentLink name={p.userName} email={p.userEmail} />
             <span className="block text-xs text-muted">{p.userEmail}</span>
           </Meta>
           <Meta label="Plan">{p.planLabel}</Meta>
           <Meta label="Amount to find">
             <span className="text-lg font-bold">{formatPrice(p.amount, p.currency)}</span>
+            {p.discount && (
+              <span className="block text-xs text-muted">
+                {p.discount.percent}% off {p.listPrice !== undefined ? formatPrice(p.listPrice, p.currency) : ""} · {p.discount.source === "promo" ? `code ${p.discount.code}` : "referral"}
+              </span>
+            )}
           </Meta>
           <Meta label="Paid with">
             {p.methodName}
@@ -190,16 +214,18 @@ function ReviewDrawer({ p, onClose }: { p: PaymentRec; onClose: () => void }) {
             {p.status === "approved" ? "Approved" : "Rejected"} by {p.reviewedBy} on {dt(p.reviewedAt)}.
             {p.accessUntil && ` Premium until ${fmtDay(p.accessUntil)}.`}
             {p.rejectReason && <span className="block text-muted">Reason: {p.rejectReason}</span>}
+            {p.adminMessage && <span className="block text-muted">Message sent: {p.adminMessage}</span>}
           </div>
         )}
       </div>
-      {rejecting && (
-        <RejectDialog
+      {deciding && (
+        <DecisionDialog
           p={p}
-          onClose={() => setRejecting(false)}
+          kind={deciding}
+          onClose={() => setDeciding(null)}
           onDone={() => {
-            setRejecting(false);
-            toast(`Rejected. ${p.userName} can upload a new receipt.`);
+            setDeciding(null);
+            toast(deciding === "approve" ? `Approved. ${p.userName} is now Premium.` : `Rejected. ${p.userName} can upload a new receipt.`);
           }}
         />
       )}
@@ -207,33 +233,54 @@ function ReviewDrawer({ p, onClose }: { p: PaymentRec; onClose: () => void }) {
   );
 }
 
-function RejectDialog({ p, onClose, onDone }: { p: PaymentRec; onClose: () => void; onDone: () => void }) {
+/** Approve or reject, with an optional message to the student (shown on their payment page and in the email). */
+function DecisionDialog({ p, kind, onClose, onDone }: { p: PaymentRec; kind: "approve" | "reject"; onClose: () => void; onDone: () => void }) {
   const [reason, setReason] = useState(REJECT_REASONS[0]);
+  const [message, setMessage] = useState("");
+  const approve = kind === "approve";
+  const run = () => {
+    if (approve) approvePayment(p, message);
+    else rejectPayment(p, reason, message);
+    onDone();
+  };
   return (
     <Dialog
       open
       onClose={onClose}
-      title={`Reject ${p.reference}`}
+      title={`${approve ? "Approve" : "Reject"} ${p.reference}`}
       footer={
         <>
           <Btn onClick={onClose}>Cancel</Btn>
-          <Btn variant="danger" disabled={!reason.trim()} onClick={() => (rejectPayment(p, reason), onDone())}>
-            Reject payment
+          <Btn variant={approve ? "primary" : "danger"} disabled={!approve && !reason.trim()} onClick={run}>
+            {approve ? "Approve payment" : "Reject payment"}
           </Btn>
         </>
       }
     >
-      <p className="mb-3 text-sm text-muted">The student sees this reason and can upload a new receipt.</p>
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {REJECT_REASONS.map((r) => (
-          <button key={r} type="button" onClick={() => setReason(r)} className={clsx("cursor-pointer rounded-full border px-2.5 py-1 text-xs", reason === r ? "border-primary bg-primary-light text-primary" : "border-line text-ink hover:border-faint")}>
-            {r}
-          </button>
-        ))}
+      <div className="space-y-4">
+        {approve ? (
+          <p className="text-sm text-muted">
+            {p.userName} gets Premium for {p.months} month{p.months === 1 ? "" : "s"} and an email confirming it.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-muted">The student sees the reason and can upload a new receipt.</p>
+            <div className="flex flex-wrap gap-1.5">
+              {REJECT_REASONS.map((r) => (
+                <button key={r} type="button" onClick={() => setReason(r)} className={clsx("cursor-pointer rounded-full border px-2.5 py-1 text-xs", reason === r ? "border-primary bg-primary-light text-primary" : "border-line text-ink hover:border-faint")}>
+                  {r}
+                </button>
+              ))}
+            </div>
+            <Field label="Reason" required>
+              <TextArea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} />
+            </Field>
+          </>
+        )}
+        <Field label="Message to the student (optional)" hint="Shown on their payment page and added to the email.">
+          <TextArea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder={approve ? "e.g. Thanks for choosing NCLEXBase. Good luck on your exam!" : "e.g. Please upload the full receipt showing the transaction number."} />
+        </Field>
       </div>
-      <Field label="Reason" required>
-        <TextArea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
-      </Field>
     </Dialog>
   );
 }

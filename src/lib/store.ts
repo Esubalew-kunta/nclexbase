@@ -39,7 +39,8 @@ export interface SchedulePrefs {
 
 interface PersistedState {
   /** `signedIn`: prototype session (see lib/demo.ts); student pages send signed-out visitors to /auth/signin. */
-  user: { name: string; email: string; plan: "free" | "premium"; signedIn?: boolean; redeemed?: { code: string; institution: string; at: string } };
+  /** `referredBy`: referral code from the join link (?ref=), used for the friend's discount. */
+  user: { name: string; email: string; plan: "free" | "premium"; signedIn?: boolean; referredBy?: string };
   sessions: TestSession[];
   tags: Record<string, MasteryTag>;
   bookmarks: Record<string, boolean>;

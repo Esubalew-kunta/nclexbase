@@ -3,11 +3,13 @@
 import clsx from "clsx";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useRef, useState, type ReactNode } from "react";
-import { Check, CheckCircle2, Clock, Copy, FileText, ImageIcon, Landmark, Loader2, Smartphone, UploadCloud, X, XCircle } from "lucide-react";
+import { Check, CheckCircle2, Clock, Copy, FileText, Gift, ImageIcon, Landmark, Loader2, Smartphone, TicketPercent, UploadCloud, X, XCircle } from "lucide-react";
 import { MAX_RECEIPT_MB, deleteStored, storeReceipt } from "@/lib/admin/files";
-import type { FileRef, PaymentMethodRec, PaymentRec } from "@/lib/admin/types";
+import type { FileRef, PaymentMethodRec, PaymentRec, PlanRec } from "@/lib/admin/types";
 import { useConfig, usePlans } from "@/lib/content";
 import { fmtDay, formatPrice, planLabel, submitPayment, useMyPayments, usePaymentMethods } from "@/lib/payments";
+import { checkPromo, discounted, redeemAccess, referralDiscount } from "@/lib/promo";
+import type { PromoCodeRec } from "@/lib/admin/types";
 import { useStore } from "@/lib/store";
 import { Button, ButtonLink, Card, PageHeader } from "@/components/ui/primitives";
 
@@ -62,15 +64,41 @@ function PaymentForm({ rejected }: { rejected?: PaymentRec }) {
   const [receipt, setReceipt] = useState<FileRef | null>(null);
   const [txn, setTxn] = useState("");
   const [busy, setBusy] = useState(false);
+  const [promo, setPromo] = useState<PromoCodeRec | null>(null);
+  const [activated, setActivated] = useState<{ code: string; from: string; until: string } | null>(null);
+  const user = useStore((s) => s.user);
   const plan = plans.find((p) => p.id === planId);
   const method = methods.find((m) => m.id === methodId);
+  // A discount code wins over the referral discount; they never stack.
+  const referral = promo ? null : referralDiscount(user.email, user.referredBy);
+  const percent = promo?.kind === "percent" && (!promo.plans.length || !plan || promo.plans.includes(plan.id)) ? promo.percent : (referral?.percent ?? 0);
+  const priceOf = (p: { price: number }) => (percent ? discounted(p.price, percent) : p.price);
 
   const submit = () => {
     if (!plan || !method || !receipt) return;
+    if (promo && promo.plans.length && !promo.plans.includes(plan.id)) return;
     setBusy(true);
-    submitPayment({ plan, method, receipt, transactionId: txn });
+    submitPayment({ plan, method, receipt, transactionId: txn, promo: promo ?? undefined, referral });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  if (activated)
+    return (
+      <div className="max-w-[620px]">
+        <Card className="p-6 text-center sm:p-8">
+          <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-success/10 text-success">
+            <Gift className="size-8" />
+          </span>
+          <h2 className="mt-4 text-2xl font-bold text-ink">Code {activated.code} activated</h2>
+          <p className="mt-2 text-base text-muted">
+            You have free NCLEXBase Pro {activated.from > new Date().toISOString().slice(0, 10) ? `from ${fmtDay(activated.from)} ` : ""}until {fmtDay(activated.until)}. No payment needed.
+          </p>
+          <ButtonLink href="/nclex" className="mt-6">
+            Start studying
+          </ButtonLink>
+        </Card>
+      </div>
+    );
 
   return (
     <div className="max-w-[760px] space-y-4">
@@ -80,6 +108,7 @@ function PaymentForm({ rejected }: { rejected?: PaymentRec }) {
           <div>
             <p className="font-semibold">We couldn&apos;t confirm your last payment ({rejected.reference}).</p>
             {rejected.rejectReason && <p className="mt-1 text-muted">Reason: {rejected.rejectReason}</p>}
+            {rejected.adminMessage && <p className="mt-2 rounded-md bg-white px-3 py-2 text-ink">Message from our team: {rejected.adminMessage}</p>}
             <p className="mt-1 text-muted">Please check the details below and upload a new receipt.</p>
           </div>
         </div>
@@ -90,10 +119,28 @@ function PaymentForm({ rejected }: { rejected?: PaymentRec }) {
           {plans.map((p) => (
             <ChoiceCard key={p.id} selected={p.id === planId} onClick={() => setPlanId(p.id)}>
               <span className="block font-semibold text-ink">{planLabel(p)}</span>
-              <span className="mt-1 block text-xl font-bold text-ink">{formatPrice(p.price)}</span>
+              <span className="mt-1 flex items-baseline gap-2">
+                <span className="text-xl font-bold text-ink">{formatPrice(priceOf(p))}</span>
+                {priceOf(p) !== p.price && <span className="text-sm text-muted line-through">{formatPrice(p.price)}</span>}
+              </span>
             </ChoiceCard>
           ))}
         </div>
+        <PromoField
+          plan={plan}
+          promo={promo}
+          onApply={setPromo}
+          onActivate={(c) => {
+            const r = redeemAccess(c);
+            setActivated({ code: c.code, ...r });
+          }}
+        />
+        {referral && (
+          <p className="mt-3 flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-sm text-ink">
+            <Gift className="size-4 text-success" />
+            You were invited by a friend: <b>{referral.percent}% off</b> your first payment is already applied.
+          </p>
+        )}
       </Step>
 
       <Step n={2} title="Choose how you'll pay" done={Boolean(method)} muted={!plan}>
@@ -118,7 +165,7 @@ function PaymentForm({ rejected }: { rejected?: PaymentRec }) {
       </Step>
 
       <Step n={3} title="Send the payment" done={Boolean(receipt)} muted={!method}>
-        {plan && method && <AccountDetails method={method} amount={formatPrice(plan.price)} />}
+        {plan && method && <AccountDetails method={method} amount={formatPrice(priceOf(plan))} />}
       </Step>
 
       <Step n={4} title="Upload your receipt" done={false} muted={!method}>
@@ -142,6 +189,74 @@ function PaymentForm({ rejected }: { rejected?: PaymentRec }) {
           </div>
         )}
       </Step>
+    </div>
+  );
+}
+
+/** "Have a promo code?" A discount applies to the price; a free-access code activates Pro right away. */
+function PromoField({ plan, promo, onApply, onActivate }: { plan?: PlanRec; promo: PromoCodeRec | null; onApply: (p: PromoCodeRec | null) => void; onActivate: (p: PromoCodeRec) => void }) {
+  const email = useStore((s) => s.user.email);
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [access, setAccess] = useState<PromoCodeRec | null>(null);
+  const apply = () => {
+    const r = checkPromo(code, email, plan?.id);
+    if (!r.ok) return setError(r.error);
+    setError("");
+    if (r.promo.kind === "access") return setAccess(r.promo);
+    onApply(r.promo);
+    setCode("");
+  };
+  if (promo)
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-sm text-ink">
+        <TicketPercent className="size-4 text-success" />
+        <span className="flex-1">
+          Code <b>{promo.code}</b>: {promo.percent}% off{promo.plans.length && plan && !promo.plans.includes(plan.id) ? " (not valid for this plan, pick another)" : ""}
+        </span>
+        <button type="button" onClick={() => onApply(null)} className="cursor-pointer font-semibold text-primary hover:underline">
+          Remove
+        </button>
+      </div>
+    );
+  if (access)
+    return (
+      <div className="mt-3 rounded-lg border border-success/40 bg-success/5 p-4">
+        <p className="text-ink">
+          <b>{access.code}</b> gives you free Pro access {access.accessFrom > new Date().toISOString().slice(0, 10) ? `from ${fmtDay(access.accessFrom)} ` : ""}until {fmtDay(access.accessUntil)}. No payment needed.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <Button onClick={() => onActivate(access)}>Activate free access</Button>
+          <Button variant="secondary" onClick={() => setAccess(null)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  if (!open)
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="mt-3 cursor-pointer text-sm font-semibold text-primary hover:underline">
+        Have a promo code?
+      </button>
+    );
+  return (
+    <div className="mt-3">
+      <div className="flex gap-2">
+        <input
+          value={code}
+          onChange={(e) => (setCode(e.target.value.toUpperCase()), setError(""))}
+          onKeyDown={(e) => e.key === "Enter" && apply()}
+          placeholder="Enter promo code"
+          aria-label="Promo code"
+          autoFocus
+          className="h-[42px] min-w-0 flex-1 rounded-xl border border-line px-4 font-mono text-base text-ink uppercase outline-none focus:border-faint"
+        />
+        <Button variant="secondary" onClick={apply} disabled={!code.trim()}>
+          Apply
+        </Button>
+      </div>
+      {error && <p className="mt-2 text-sm text-error">{error}</p>}
     </div>
   );
 }
@@ -296,7 +411,7 @@ function PendingView({ p }: { p: PaymentRec }) {
         <dl className="mt-6 divide-y divide-line rounded-xl border border-line px-4 text-left text-[15px]">
           <Detail label="Reference" value={<span className="font-mono">{p.reference}</span>} />
           <Detail label="Plan" value={p.planLabel} />
-          <Detail label="Amount" value={formatPrice(p.amount, p.currency)} />
+          <Detail label="Amount" value={`${formatPrice(p.amount, p.currency)}${p.discount ? ` (${p.discount.percent}% off)` : ""}`} />
           <Detail label="Paid with" value={p.methodName} />
           <Detail label="Receipt" value={p.receipt.name} />
           <Detail label="Submitted" value={new Date(p.submittedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })} />
@@ -322,6 +437,7 @@ function ApprovedView({ p }: { p: PaymentRec }) {
         </span>
         <h1 className="mt-4 text-2xl font-bold text-ink">You&apos;re NCLEXBase Pro</h1>
         <p className="mt-2 text-base leading-6 text-muted">Your payment was confirmed and everything is unlocked{p.accessUntil ? ` until ${fmtDay(p.accessUntil)}` : ""}.</p>
+        {p.adminMessage && <p className="mt-4 rounded-lg bg-primary-light px-4 py-3 text-left text-ink">Message from our team: {p.adminMessage}</p>}
         <dl className="mt-6 divide-y divide-line rounded-xl border border-line px-4 text-left text-[15px]">
           <Detail label="Plan" value={p.planLabel} />
           <Detail label="Reference" value={<span className="font-mono">{p.reference}</span>} />

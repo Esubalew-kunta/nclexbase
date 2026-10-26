@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
+import { useAccessSync } from "@/lib/promo";
 
 /** Prototype session gate: signed-out visitors go to /auth/signin (demo one-click sign-in lives there). */
 export function StudentGuard({ children }: { children: ReactNode }) {
@@ -11,6 +12,8 @@ export function StudentGuard({ children }: { children: ReactNode }) {
   const hydrated = useStore((s) => s.hydrated);
   const signedIn = useStore((s) => s.user.signedIn);
   const out = hydrated && !signedIn;
+  // Pro follows the student's access dates (payments, free-access codes, referral rewards).
+  useAccessSync();
   useEffect(() => {
     if (out) router.replace(`/auth/signin?next=${encodeURIComponent(pathname)}`);
   }, [out, pathname, router]);

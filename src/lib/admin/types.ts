@@ -196,6 +196,10 @@ export interface PaymentRec {
   planLabel: string;
   months: number;
   amount: number;
+  /** Plan price before any discount. */
+  listPrice?: number;
+  /** Promo code or referral discount applied at checkout. */
+  discount?: { source: "promo" | "referral"; code: string; percent: number };
   currency: string;
   methodId: string;
   methodName: string;
@@ -210,6 +214,8 @@ export interface PaymentRec {
   reviewedAt?: string;
   reviewedBy?: string;
   rejectReason?: string;
+  /** Optional note from the admin to the student, shown on their payment page and in the email. */
+  adminMessage?: string;
   /** Last day of access, set on approval. */
   accessUntil?: string;
   updatedAt: string;
@@ -234,7 +240,6 @@ export interface UserRec {
   email: string;
   plan: Access;
   status: "active" | "disabled";
-  institution: string;
   createdAt: string;
   lastActive: string;
   answered: number;
@@ -244,14 +249,69 @@ export interface UserRec {
   updatedAt: string;
 }
 
-export interface CodeRec {
+/**
+ * Promo code. "percent": a discount at checkout. "access": free Pro between two dates, redeemed
+ * on Account > Redeem a code (or at checkout).
+ */
+export interface PromoCodeRec {
   id: string;
   code: string;
-  institution: string;
-  seats: number;
-  used: number;
-  expiresAt: string;
+  kind: "percent" | "access";
+  /** Discount for "percent" codes (1-99). */
+  percent: number;
+  /** Pro access window for "access" codes (YYYY-MM-DD). */
+  accessFrom: string;
+  accessUntil: string;
+  /** When the code can be used; empty = no limit. */
+  validFrom: string;
+  validUntil: string;
+  /** Total redemptions allowed; 0 = unlimited. */
+  maxUses: number;
+  /** Plan ids a discount applies to; empty = every plan. */
+  plans: string[];
+  note: string;
   status: "active" | "disabled";
+  updatedAt: string;
+}
+
+/** One use of a promo code. Discount uses are tied to the payment and stop counting if it is rejected. */
+export interface RedemptionRec {
+  id: string;
+  codeId: string;
+  code: string;
+  kind: PromoCodeRec["kind"];
+  email: string;
+  name: string;
+  paymentId?: string;
+  percent?: number;
+  accessFrom?: string;
+  accessUntil?: string;
+  at: string;
+  updatedAt: string;
+}
+
+/** A friend who joined with a student's referral link. */
+export interface ReferralRec {
+  id: string;
+  referrerEmail: string;
+  referrerCode: string;
+  friendEmail: string;
+  joinedAt: string;
+  /** joined → paid (friend's payment approved, referrer rewarded). */
+  status: "joined" | "rewarded";
+  paymentId?: string;
+  rewardDays?: number;
+  rewardFrom?: string;
+  rewardUntil?: string;
+  updatedAt: string;
+}
+
+/** Who owns a referral code (the id is the code). Created the first time a student opens Refer a friend. */
+export interface ReferralCodeRec {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -293,7 +353,10 @@ export interface Collections {
   faqs: FaqRec;
   plans: PlanRec;
   users: UserRec;
-  codes: CodeRec;
+  promoCodes: PromoCodeRec;
+  redemptions: RedemptionRec;
+  referrals: ReferralRec;
+  referralCodes: ReferralCodeRec;
   messages: MessageRec;
   announcements: AnnouncementRec;
   paymentMethods: PaymentMethodRec;
@@ -315,7 +378,10 @@ export const COLLECTION_LABELS: Record<CollectionName, string> = {
   faqs: "FAQ",
   plans: "Plan",
   users: "User",
-  codes: "Institution code",
+  promoCodes: "Promo code",
+  redemptions: "Code redemption",
+  referrals: "Referral",
+  referralCodes: "Referral code",
   messages: "Message",
   announcements: "Announcement",
   paymentMethods: "Payment method",

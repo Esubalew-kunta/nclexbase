@@ -9,6 +9,9 @@ import type { UserRec } from "@/lib/admin/types";
 import { getAll, useAll } from "@/lib/content";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
+import Link from "next/link";
+import { formatPrice } from "@/lib/payments";
+import { accessEnd } from "@/lib/promo";
 import { todayISO } from "@/lib/daily";
 import { AccessBadge, AdminPage, Badge, Btn, confirmDialog, Drawer, Field, fmtDate, Input, Meta, Segmented, toast } from "@/components/admin/ui";
 import { BulkBar, DataTable, ListEmpty, ListToolbar, useEditParam, useList, useSelection, type Column } from "@/components/admin/list";
@@ -32,7 +35,6 @@ export default function UsersAdmin() {
       email: student.email,
       plan: student.plan,
       status: "active",
-      institution: student.redeemed?.institution ?? "",
       createdAt: sessions[0]?.createdAt?.slice(0, 10) ?? todayISO(),
       lastActive: todayISO(),
       answered: progress.used.size,
@@ -43,12 +45,11 @@ export default function UsersAdmin() {
     [student, sessions, progress],
   );
   const rows = useMemo(() => [local, ...mock], [local, mock]);
-  const institutions = [...new Set(rows.map((r) => r.institution).filter(Boolean))].sort();
 
   const list = useList<UserRec>({
     id: "users",
     rows,
-    search: (u) => `${u.id} ${u.name} ${u.email} ${u.institution}`,
+    search: (u) => `${u.id} ${u.name} ${u.email}`,
     filters: [
       {
         key: "plan",
@@ -68,7 +69,6 @@ export default function UsersAdmin() {
         ],
         match: (u, v) => u.status === v,
       },
-      { key: "institution", label: "Institution", options: [{ value: "__none", label: "No institution" }, ...institutions.map((i) => ({ value: i, label: i }))], match: (u, v) => (v === "__none" ? !u.institution : u.institution === v) },
       {
         key: "activity",
         label: "Last active",
@@ -92,8 +92,8 @@ export default function UsersAdmin() {
   const sel = useSelection(list.filtered.filter((u) => !u.local).map((u) => u.id));
 
   const exportCsv = () => {
-    const head = ["name", "email", "plan", "status", "institution", "joined", "last_active", "answered", "score_pct"];
-    const lines = list.filtered.map((u) => [u.name, u.email, u.plan, u.status, u.institution, u.createdAt, u.lastActive, u.answered, u.scorePct].map((x) => `"${String(x).replace(/"/g, '""')}"`).join(","));
+    const head = ["name", "email", "plan", "status", "joined", "last_active", "answered", "score_pct"];
+    const lines = list.filtered.map((u) => [u.name, u.email, u.plan, u.status, u.createdAt, u.lastActive, u.answered, u.scorePct].map((x) => `"${String(x).replace(/"/g, '""')}"`).join(","));
     const url = URL.createObjectURL(new Blob([[head.join(","), ...lines].join("\n")], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
@@ -119,7 +119,6 @@ export default function UsersAdmin() {
     },
     { key: "plan", label: "Plan", render: (u) => <AccessBadge access={u.plan} /> },
     { key: "status", label: "Status", render: (u) => (u.status === "active" ? <Badge tone="success">Active</Badge> : <Badge tone="error">Disabled</Badge>) },
-    { key: "inst", label: "Institution", render: (u) => <span className="text-sm text-muted">{u.institution || "—"}</span> },
     { key: "answered", label: "Answered", sort: "answered", render: (u) => <span className="tabular-nums">{u.answered}</span> },
     { key: "score", label: "Score", sort: "score", render: (u) => <span className="tabular-nums">{u.answered ? `${u.scorePct}%` : "—"}</span> },
     { key: "created", label: "Joined", sort: "created", render: (u) => <span className="text-xs text-muted">{fmtDate(u.createdAt)}</span> },
@@ -144,7 +143,7 @@ export default function UsersAdmin() {
         </>
       }
     >
-      <ListToolbar list={list} placeholder="Search name, email, institution" />
+      <ListToolbar list={list} placeholder="Search name or email" />
       <BulkBar count={sel.selected.size} onClear={sel.clear}>
         <Btn variant="premium" onClick={() => (api.patchMany([...sel.selected], { plan: "premium" }, "Upgraded to Premium"), toast("Updated"))}>
           Give Premium
@@ -170,7 +169,7 @@ export default function UsersAdmin() {
       {edit.id === "new" && (
         <UserDrawer
           isNew
-          rec={{ id: newId("u"), name: "", email: "", plan: "free", status: "active", institution: "", createdAt: todayISO(), lastActive: todayISO(), answered: 0, scorePct: 0, updatedAt: todayISO() }}
+          rec={{ id: newId("u"), name: "", email: "", plan: "free", status: "active", createdAt: todayISO(), lastActive: todayISO(), answered: 0, scorePct: 0, updatedAt: todayISO() }}
           onClose={edit.close}
         />
       )}
@@ -227,11 +226,6 @@ function UserDrawer({ rec, onClose, isNew }: { rec: UserRec; onClose: () => void
             <Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
           </Field>
         </div>
-        {!rec.local && (
-          <Field label="Institution">
-            <Input value={f.institution} onChange={(e) => setF({ ...f, institution: e.target.value })} />
-          </Field>
-        )}
         <div className="flex flex-wrap items-end gap-4">
           <Field label="Plan">
             <Segmented
@@ -256,6 +250,7 @@ function UserDrawer({ rec, onClose, isNew }: { rec: UserRec; onClose: () => void
             </Field>
           )}
         </div>
+        {!isNew && <AccessSummary email={rec.email} />}
         <div className="flex flex-wrap gap-2 border-t border-line pt-4">
           <Btn onClick={() => toast(`Password reset email would be sent to ${f.email} (needs the backend).`, "info")}>Send password reset</Btn>
           {rec.local && (
@@ -281,4 +276,38 @@ function UserDrawer({ rec, onClose, isNew }: { rec: UserRec; onClose: () => void
 /** Audit entry for actions on the local student (not a collection record). */
 function logLocal(label: string) {
   useAdminStore.getState().log({ action: "update", entity: "users", entityId: LOCAL, label });
+}
+
+/** Payments, codes and referral rewards for this student, newest first. */
+function AccessSummary({ email }: { email: string }) {
+  const payments = useAll("payments");
+  const redemptions = useAll("redemptions");
+  const referrals = useAll("referrals");
+  const same = (a: string) => a.trim().toLowerCase() === email.trim().toLowerCase();
+  const rows = [
+    ...payments.filter((p) => same(p.userEmail)).map((p) => ({ at: p.submittedAt, text: `${p.planLabel} · ${formatPrice(p.amount, p.currency)} · ${p.methodName}`, tag: p.status, href: `/admin/payments?edit=${p.id}` })),
+    ...redemptions.filter((r) => same(r.email)).map((r) => ({ at: r.at, text: `Code ${r.code}${r.kind === "access" ? ` · free Pro until ${r.accessUntil}` : ` · ${r.percent}% off`}`, tag: "code", href: `/admin/promo-codes` })),
+    ...referrals.filter((r) => same(r.referrerEmail) && r.status === "rewarded").map((r) => ({ at: r.updatedAt, text: `Referral reward · ${r.rewardDays} days until ${r.rewardUntil}`, tag: "referral", href: "/admin/referrals" })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
+  const end = accessEnd(email);
+  return (
+    <div className="rounded-md border border-line p-3">
+      <p className="mb-2 text-sm font-semibold text-ink">Payments &amp; access {end && <span className="font-normal text-muted">· Pro until {fmtDate(end)}</span>}</p>
+      {rows.length ? (
+        <ul className="space-y-1.5 text-sm">
+          {rows.map((r, i) => (
+            <li key={i} className="flex items-center gap-2">
+              <Badge tone={r.tag === "approved" ? "success" : r.tag === "pending" ? "warning" : r.tag === "rejected" ? "error" : "teal"}>{r.tag}</Badge>
+              <Link href={r.href} className="min-w-0 flex-1 truncate text-ink hover:text-primary hover:underline">
+                {r.text}
+              </Link>
+              <span className="text-xs text-muted">{fmtDate(r.at.slice(0, 10))}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted">No payments or codes yet.</p>
+      )}
+    </div>
+  );
 }
