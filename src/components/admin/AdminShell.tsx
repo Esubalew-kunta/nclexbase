@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { STORAGE_FULL_EVENT, useAdminStore } from "@/lib/admin/store";
 import { getAll } from "@/lib/content";
+import { planReminder } from "@/lib/daily";
 import { LogoMark } from "@/components/ui/Logo";
 import { ViewSwitch } from "@/components/shell/ViewSwitch";
 import { ConfirmHost, stripHtml, toast, Toaster } from "./ui";
@@ -49,6 +50,8 @@ interface NavItem {
 }
 
 const openMessages = () => getAll("messages").filter((m) => m.status === "open").length;
+/** 1 while the next week/month still needs a Question of the Day plan (see lib/daily.ts). */
+const qotdReminder = () => (planReminder() ? 1 : 0);
 
 export const ADMIN_NAV: { title: string; items: NavItem[] }[] = [
   { title: "Overview", items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }] },
@@ -63,7 +66,7 @@ export const ADMIN_NAV: { title: string; items: NavItem[] }[] = [
       { href: "/admin/cheat-sheets", label: "Cheat Sheets", icon: FileText },
       { href: "/admin/memory-tricks", label: "Memory Tricks", icon: Brain },
       { href: "/admin/faqs", label: "FAQs", icon: HelpCircle },
-      { href: "/admin/qotd", label: "Question of the Day", icon: CalendarDays },
+      { href: "/admin/qotd", label: "Question of the Day", icon: CalendarDays, badge: qotdReminder },
       { href: "/admin/study-guide", label: "Study Guide", icon: ScrollText },
     ],
   },
@@ -99,6 +102,7 @@ const norm = (p: string) => (p.length > 1 ? p.replace(/\/$/, "") : p);
 function Nav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = norm(usePathname());
   useAdminStore((s) => s.data.messages); // refresh the inbox badge
+  useAdminStore((s) => s.config.qotd); // and the Question of the Day reminder
   return (
     <nav className="flex-1 overflow-y-auto px-3 pb-4 [scrollbar-width:thin]" aria-label="Admin">
       {ADMIN_NAV.map((g) => (

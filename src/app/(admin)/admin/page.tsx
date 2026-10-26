@@ -6,7 +6,8 @@ import { AlertTriangle, ArrowRight, CheckCircle2, ClipboardList, FileText, Inbox
 import { adminHref } from "@/lib/admin/links";
 import { useAdminStore } from "@/lib/admin/store";
 import { COLLECTION_LABELS, type CollectionName } from "@/lib/admin/types";
-import { useAll, useSubjects } from "@/lib/content";
+import { useAll, useConfig, useSubjects } from "@/lib/content";
+import { periodLabel, planReminder } from "@/lib/daily";
 import { AdminPage, Badge, fmtDateTime, Panel, stripHtml } from "@/components/admin/ui";
 import { validateItem } from "@/components/admin/items";
 
@@ -63,9 +64,19 @@ export default function Dashboard() {
     { label: "FAQs not shown on any page", n: faqs.filter((f) => !f.placements.length && f.status === "published").length, href: "/admin/faqs" },
   ];
   const open = messages.filter((m) => m.status === "open").length;
+  const qotd = planReminder(useConfig().qotd);
 
   return (
     <AdminPage title="Dashboard" description="What's live, what needs attention, and what changed recently.">
+      {qotd && (
+        <Link href="/admin/qotd" className="mb-4 flex items-center gap-3 rounded-lg border border-gold/60 bg-gold/10 px-4 py-3 text-sm text-ink hover:border-gold">
+          <AlertTriangle className="size-5 shrink-0 text-gold" />
+          <span className="min-w-0 flex-1">
+            Question of the Day: <b>{periodLabel(qotd.start, qotd.period)}</b> has no plan yet ({qotd.daysLeft} day{qotd.daysLeft === 1 ? "" : "s"} left in this {qotd.period}).
+          </span>
+          <ArrowRight className="size-4 text-primary" />
+        </Link>
+      )}
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="Published questions" value={pub(questions)} sub={`${questions.length} total · ${questions.filter((q) => q.status === "draft").length} drafts`} href="/admin/questions" icon={ClipboardList} />
         <Kpi label="Memory tricks live" value={pub(tricks)} sub={`${totalSystems - emptySystems} of ${totalSystems} systems covered`} href="/admin/memory-tricks" icon={FileText} />
