@@ -5,7 +5,8 @@
 import clsx from "clsx";
 import { useRef, useState, type ReactNode } from "react";
 import { Archive, FileText, History, Trash2, UploadCloud } from "lucide-react";
-import { deleteStored, MAX_IMAGE_MB, MAX_UPLOAD_MB, storeImage, storePdf, useFileUrl } from "@/lib/admin/files";
+import { deleteStored, MAX_IMAGE_MB, MAX_UPLOAD_MB, MAX_VIDEO_MB, storeImage, storePdf, storeVideo, useFileUrl } from "@/lib/admin/files";
+import type { ExplanationVideo } from "@/lib/types";
 import { useAdminStore } from "@/lib/admin/store";
 import type { Access, FileRef, Status, SubjectRec } from "@/lib/admin/types";
 import { useSubjects } from "@/lib/content";
@@ -96,6 +97,85 @@ export function FileDrop({ value, onChange }: { value: FileRef | null; onChange:
       <Dialog open={preview && Boolean(value)} onClose={() => setPreview(false)} title={value?.name ?? ""} width={900}>
         {value && <PdfFrame file={value} title={value.name} className="h-[65dvh]" />}
       </Dialog>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Video upload (question explanation videos)                          */
+/* ------------------------------------------------------------------ */
+
+export function VideoDrop({ value, onChange }: { value: ExplanationVideo | undefined; onChange: (v: ExplanationVideo | undefined) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const { href, missing } = useFileUrl(value?.url ?? null);
+
+  const take = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    setError("");
+    try {
+      // A replaced video keeps its visibility; a first upload starts visible.
+      onChange({ ...(await storeVideo(file)), visible: value?.visible ?? true });
+      toast(`Uploaded ${file.name}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div>
+      {value ? (
+        <div className="space-y-2 rounded-md border border-line bg-background p-3">
+          {href ? (
+            <video src={href} controls preload="metadata" className="aspect-video w-full rounded bg-black" />
+          ) : (
+            <p className="text-sm text-muted">{missing ? "The video file is missing from this browser. Upload it again." : "Loading video…"}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="min-w-0 flex-1 truncate text-sm text-ink">
+              {value.name} <span className="text-xs text-muted">· {value.sizeKb >= 1024 ? `${(value.sizeKb / 1024).toFixed(1)} MB` : `${value.sizeKb} KB`}</span>
+            </p>
+            <Btn onClick={() => input.current?.click()} disabled={busy}>
+              {busy ? "Uploading…" : "Replace"}
+            </Btn>
+            <Btn
+              variant="danger"
+              onClick={async () => {
+                if (await confirmDialog({ title: "Remove this video?", body: "Students won't see a video for this question. Save the question to apply.", confirm: "Remove video", danger: true })) onChange(undefined);
+              }}
+            >
+              Remove
+            </Btn>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          onDragOver={(e) => (e.preventDefault(), setOver(true))}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setOver(false);
+            void take(e.dataTransfer.files[0]);
+          }}
+          className={clsx(
+            "flex w-full cursor-pointer flex-col items-center rounded-md border-2 border-dashed px-4 py-7 text-center transition-colors",
+            over ? "border-primary bg-primary-light" : "border-line bg-background hover:border-primary/50",
+          )}
+        >
+          <UploadCloud className="mb-2 size-7 text-primary" />
+          <span className="text-sm font-semibold text-ink">{busy ? "Uploading…" : "Drop a video here or click to choose"}</span>
+          <span className="mt-0.5 text-xs text-muted">MP4, WebM, OGG or MOV, up to {MAX_VIDEO_MB} MB. Without a video, students see only the written explanation.</span>
+        </button>
+      )}
+      {error && <p className="mt-1 text-xs text-error">{error}</p>}
+      <input ref={input} type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" className="hidden" onChange={(e) => (void take(e.target.files?.[0]), (e.target.value = ""))} />
     </div>
   );
 }

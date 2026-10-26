@@ -63,6 +63,18 @@ export async function storeImage(file: File): Promise<FileRef> {
   return { url: `idb:${key}`, name: file.name, pages: 0, sizeKb: Math.max(1, Math.round(file.size / 1024)) };
 }
 
+export const MAX_VIDEO_MB = 200;
+const VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
+
+/** Validate and store a video (question explanation videos). */
+export async function storeVideo(file: File): Promise<{ url: string; name: string; sizeKb: number }> {
+  if (!VIDEO_TYPES.includes(file.type)) throw new Error("Use an MP4, WebM, OGG or MOV video.");
+  if (file.size > MAX_VIDEO_MB * 1024 * 1024) throw new Error(`This video is ${(file.size / 1048576).toFixed(0)} MB. The limit is ${MAX_VIDEO_MB} MB.`);
+  const key = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  await tx("readwrite", (s) => s.put(file, key));
+  return { url: `idb:${key}`, name: file.name, sizeKb: Math.max(1, Math.round(file.size / 1024)) };
+}
+
 export async function deleteStored(url: string) {
   if (isStored(url)) await tx("readwrite", (s) => s.delete(url.slice(4)));
 }

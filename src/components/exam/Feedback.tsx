@@ -8,7 +8,8 @@ import { subjectName, systemLabel, useConfig } from "@/lib/content";
 import { subjectHref } from "@/lib/routes";
 import { useStore } from "@/lib/store";
 import { avgPoints, formatClock, scoreItem, scoringRule } from "@/lib/scoring";
-import type { Answer, Item } from "@/lib/types";
+import { useFileUrl } from "@/lib/admin/files";
+import type { Answer, ExplanationVideo, Item } from "@/lib/types";
 import { Html } from "./items/shared";
 
 export function Feedback({ item, answer, seconds }: { item: Item; answer: Answer | undefined; seconds: number }) {
@@ -39,17 +40,7 @@ export function Feedback({ item, answer, seconds }: { item: Item; answer: Answer
 
       <section>
         <SectionHead icon={FileText}>Explanation</SectionHead>
-        {!item.rationale.raw && (
-        <div className="relative mb-6 flex aspect-video items-center justify-center overflow-hidden rounded border-b-4 border-gold bg-gradient-to-br from-primary-hover to-primary text-white">
-          <div className="text-center">
-            <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-white/15 backdrop-blur">
-              <CirclePlay className="size-9" />
-            </span>
-            <p className="mt-3 text-sm text-white/80">Video explanation · {item.topic}</p>
-          </div>
-          <span className="absolute bottom-2 left-3 text-xs text-white/60">Video explanations are placeholders in this prototype.</span>
-        </div>
-        )}
+        <VideoExplanation video={item.video} title={item.topic} />
         <div className="prose-exam rounded-lg border border-line bg-primary-light px-5 pt-5 pb-1 leading-7">
           <Html html={item.rationale.explanation} />
           {item.rationale.incorrect && (
@@ -229,4 +220,11 @@ function AskAi({ item }: { item: Item }) {
       <p className="mt-1.5 text-xs text-muted">AI answers are simulated from the explanation in this prototype.</p>
     </section>
   );
+}
+
+/** Uploaded explanation video. Nothing renders when there is none, it is hidden, or its file is gone. */
+function VideoExplanation({ video, title }: { video: ExplanationVideo | undefined; title: string }) {
+  const { href } = useFileUrl(video?.visible ? video.url : null);
+  if (!video?.visible || !href) return null;
+  return <video src={href} controls preload="metadata" aria-label={`Video explanation: ${title}`} className="mb-6 aspect-video w-full rounded border-b-4 border-gold bg-black" />;
 }

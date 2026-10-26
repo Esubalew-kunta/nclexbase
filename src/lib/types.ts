@@ -41,6 +41,15 @@ export interface Rationale {
   takeaway: string[];
 }
 
+/** Video explanation uploaded in the admin. `url` is a public path or `idb:<key>` for browser uploads. */
+export interface ExplanationVideo {
+  url: string;
+  name: string;
+  sizeKb: number;
+  /** The admin can hide an uploaded video without deleting it. */
+  visible: boolean;
+}
+
 interface ItemBase {
   id: string;
   /** Context line above the stem, e.g. "The nurse reviews the client's Laboratory Results from 1200." */
@@ -57,6 +66,8 @@ interface ItemBase {
   avgPercent: number;
   linkedVideo?: string;
   linkedSheet?: string;
+  /** Shown above the written explanation only when uploaded and visible. */
+  video?: ExplanationVideo;
 }
 
 export interface McqItem extends ItemBase {

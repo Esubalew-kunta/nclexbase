@@ -9,8 +9,8 @@ import { newId } from "@/lib/admin/store";
 import type { QuestionRec, Status } from "@/lib/admin/types";
 import type { Item, ItemType } from "@/lib/types";
 import { useAll, useSubjects } from "@/lib/content";
-import { AdminPage, Badge, Btn, confirmDialog, EmptyState, Field, IconBtn, Input, Panel, Segmented, Select, StatusBadge, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
-import { HistoryButton, StatusPicker, SubjectSelect, SystemSelect } from "@/components/admin/parts";
+import { AdminPage, Badge, Btn, confirmDialog, EmptyState, Field, IconBtn, Input, Panel, Segmented, Select, StatusBadge, Switch, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
+import { HistoryButton, StatusPicker, SubjectSelect, SystemSelect, VideoDrop } from "@/components/admin/parts";
 import { AnswerSetup, blankItem, ItemPreview, TYPE_LABELS, validateItem } from "@/components/admin/items";
 
 const api = crud("questions");
@@ -202,6 +202,15 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
                 </div>
               </Field>
             </div>
+          </Panel>
+
+          <Panel
+            title="Video explanation"
+            description="Optional. Shown above the written explanation. Questions without a video show no video area at all."
+            actions={q.video && <Switch checked={q.video.visible} onChange={(v) => set({ video: { ...q.video!, visible: v } })} label="Show to students" />}
+          >
+            <VideoDrop value={q.video} onChange={(video) => set({ video })} />
+            {q.video && !q.video.visible && <p className="mt-2 text-xs text-muted">Hidden: students don&apos;t see this video until you switch it back on and save.</p>}
           </Panel>
 
           <Panel title="Linked study material" description="Cards shown under the explanation.">
