@@ -120,9 +120,10 @@ function GroupedPayments({ rows, onOpen }: { rows: PaymentRec[]; onOpen: (p: Pay
 
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-white">
-      <div className="overflow-x-auto">
+      {/* Rows scroll inside the box; the header stays in view. */}
+      <div className="max-h-[60dvh] overflow-auto">
         <table className="w-full min-w-[820px] text-sm">
-          <thead className="bg-background text-left text-xs font-semibold tracking-wide whitespace-nowrap text-muted uppercase">
+          <thead className="sticky top-0 z-[1] bg-background text-left text-xs font-semibold tracking-wide whitespace-nowrap text-muted uppercase shadow-[0_1px_0_0_var(--color-line)]">
             <tr className="border-b border-line">
               <th className="w-10 px-3 py-2.5">
                 <IconBtn label={allOpen ? "Collapse all" : "Expand all"} onClick={() => setExpanded(allOpen ? new Set() : new Set(shown.map((g) => g.key)))}>

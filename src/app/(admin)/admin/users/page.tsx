@@ -164,7 +164,7 @@ export default function UsersAdmin() {
           Delete
         </Btn>
       </BulkBar>
-      <DataTable list={list} columns={columns} rowId={(u) => u.id} onRowClick={(u) => edit.open(u.id)} selection={sel} empty={<ListEmpty list={list} noun="users" />} />
+      <DataTable list={list} columns={columns} rowId={(u) => u.id} onRowClick={(u) => edit.open(u.id)} selection={sel} empty={<ListEmpty list={list} noun="users" />} scroll />
       {editing && <UserDrawer key={editing.id + editing.updatedAt + editing.plan} rec={editing} onClose={edit.close} />}
       {edit.id === "new" && (
         <UserDrawer
@@ -298,7 +298,7 @@ function AccessSummary({ email }: { email: string }) {
         {reward && <span className="font-normal text-success"> · referral reward: {reward.percent}% off next plan</span>}
       </p>
       {rows.length ? (
-        <ul className="space-y-1.5 text-sm">
+        <ul className="max-h-60 space-y-1.5 overflow-y-auto pr-1 text-sm">
           {rows.map((r, i) => (
             <li key={i} className="flex items-center gap-2">
               <Badge tone={r.tag === "approved" ? "success" : r.tag === "pending" ? "warning" : r.tag === "rejected" ? "error" : "teal"}>{r.tag}</Badge>
