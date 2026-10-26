@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileJson, MoveRight, Plus } from "lucide-react";
+import { Copy, Download, FileJson, MoveRight, Plus } from "lucide-react";
+import { questionToJson } from "@/lib/admin/questionImport";
+import { copyText, downloadJson, pretty } from "@/components/admin/json";
 import { crud } from "@/lib/admin/crud";
 import type { QuestionRec } from "@/lib/admin/types";
 import type { ItemType } from "@/lib/types";
@@ -88,6 +90,8 @@ export default function QuestionsAdmin() {
   const sel = useSelection(list.filtered.map((r) => r.id));
   const selectedRows = rows.filter((r) => sel.selected.has(r.id));
   const onlyStandalone = selectedRows.every((r) => r.source.kind === "standalone");
+  /** Selected questions in the import format: edit them anywhere and import them back to update. */
+  const selectedJson = () => selectedRows.map((q) => questionToJson(q));
 
   const columns: Column<QuestionRec>[] = [
     {
@@ -129,6 +133,14 @@ export default function QuestionsAdmin() {
     >
       <ListToolbar list={list} placeholder="Search stem, options, rationale, topic, id" />
       <BulkBar count={sel.selected.size} onClear={sel.clear}>
+        <Btn onClick={() => copyText(pretty(selectedJson()), `${sel.selected.size} question${sel.selected.size === 1 ? "" : "s"} as JSON`)}>
+          <Copy className="size-4" />
+          Copy JSON
+        </Btn>
+        <Btn onClick={() => downloadJson(selectedJson(), `nclexbase-questions-${sel.selected.size}.json`)}>
+          <Download className="size-4" />
+          Download JSON
+        </Btn>
         {onlyStandalone ? (
           <>
             <StatusBulkActions

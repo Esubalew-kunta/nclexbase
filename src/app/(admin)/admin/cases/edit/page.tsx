@@ -8,10 +8,13 @@ import { crud, today } from "@/lib/admin/crud";
 import { newId } from "@/lib/admin/store";
 import type { CaseContent, CaseRec, QuestionRec, Status } from "@/lib/admin/types";
 import type { CaseTab, ItemType, TabContent } from "@/lib/types";
-import { useAll, useSubjects } from "@/lib/content";
+import { getAll, useAll, useSubjects } from "@/lib/content";
 import { caseHref } from "@/lib/routes";
 import { AdminPage, Badge, Btn, confirmDialog, Dialog, EmptyState, Field, IconBtn, Input, Panel, Segmented, Select, StatusBadge, stripHtml, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { HistoryButton, StatusPicker, SubjectSelect } from "@/components/admin/parts";
+import { JsonEditor, pretty, tryParse } from "@/components/admin/json";
+import { CasePreview, saveCaseRows, useCaseContext } from "@/components/admin/caseJson";
+import { caseToJson, normalizeCase } from "@/lib/admin/caseImport";
 import { blankItem, TYPE_LABELS, validateItem } from "@/components/admin/items";
 
 const api = crud("cases");
@@ -41,6 +44,8 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
   const router = useRouter();
   const [f, setF] = useState<CaseRec>(rec);
   const [adding, setAdding] = useState(false);
+  /** Form fields or the whole case (details, tabs and questions) as JSON. */
+  const [mode, setMode] = useState<"form" | "json">("form");
   const questions = useAll("questions");
   const subjects = useSubjects(true);
   const dirty = !sameRecord(f, rec);
@@ -84,159 +89,189 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
             </Link>
           )}
           <HistoryButton<CaseRec> historyKey={`cases:${rec.id}`} onRestore={(v) => api.restore(rec.id, v)} describe={(v) => `${v.status} · ${v.content?.itemIds.length ?? 0} questions`} />
-          <Btn onClick={() => save("draft")} disabled={!dirty && f.status === "draft"}>
-            Save draft
-          </Btn>
-          <Btn variant="primary" onClick={() => save("published")}>
-            {rec.status === "published" ? "Save & keep published" : "Publish"}
-          </Btn>
+          {mode === "form" && (
+            <>
+              <Btn onClick={() => save("draft")} disabled={!dirty && f.status === "draft"}>
+                Save draft
+              </Btn>
+              <Btn variant="primary" onClick={() => save("published")}>
+                {rec.status === "published" ? "Save & keep published" : "Publish"}
+              </Btn>
+            </>
+          )}
         </>
       }
     >
       <div className="space-y-4">
-        <Panel title="Details">
-          <div className="grid gap-3 md:grid-cols-[2fr_1fr_120px]">
-            <Field label="Title" required>
-              <Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
-            </Field>
-            <Field label="Subject">
-              <SubjectSelect value={f.subject} onChange={(v) => setF({ ...f, subject: v as CaseRec["subject"] })} />
-            </Field>
-            <Field label="Number">
-              <Input type="number" value={f.number} onChange={(e) => setF({ ...f, number: Number(e.target.value) || f.number, order: Number(e.target.value) || f.order })} />
-            </Field>
-          </div>
-          <div className="mt-3 flex flex-wrap items-end gap-4">
-            <Field label="Access">
-              <Segmented
-                value={f.access}
-                onChange={(v) => setF({ ...f, access: v })}
-                options={[
-                  { value: "free", label: "Free" },
-                  { value: "premium", label: "Premium" },
-                ]}
-              />
-            </Field>
-            <Field label="Status">
-              <StatusPicker value={f.status} onChange={(v) => setF({ ...f, status: v })} />
-            </Field>
-          </div>
-        </Panel>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-muted">Edit with</span>
+          <Segmented
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "form", label: "Form" },
+              { value: "json", label: "JSON" },
+            ]}
+          />
+          {mode === "json" && <span className="text-xs text-muted">The whole case: details, tabs and questions. Copy it, change it anywhere, paste it back and save.</span>}
+        </div>
 
-        {!content ? (
-          <Panel title="Content">
-            <EmptyState
-              title="No authored content yet"
-              body={`Students who open this case get the ${subjects.find((s) => s.id === f.subject)?.name ?? ""} sample case. Write the scenario and questions to replace it.`}
-              action={
-                <Btn variant="primary" onClick={() => setF({ ...f, content: { intro: "", tabs: [{ label: "Nurses' Notes", content: { kind: "notes", heading: "", entries: [{ time: "", html: "" }] } }], itemIds: [] } })}>
-                  Start writing content
-                </Btn>
-              }
-            />
-          </Panel>
+        {mode === "json" ? (
+          <CaseJsonPanel
+            rec={f}
+            items={items}
+            onSaved={(saved) => {
+              setF(saved);
+              setMode("form");
+            }}
+          />
         ) : (
           <>
-            <Panel title="Scenario">
-              <Field label="Intro" hint="The sentence above the tabs, e.g. “The nurse is caring for a 68-year-old client…”.">
-                <TextArea value={content.intro} onChange={(e) => setContent({ intro: e.target.value })} rows={2} className="min-h-0" />
-              </Field>
-            </Panel>
-
-            <Panel
-              title={`Scenario tabs (${content.tabs.length})`}
-              description="Tabs students read on the left side of the exam. Questions can reveal tabs progressively (see each question's “Tabs visible”)."
-              actions={
-                <Btn onClick={() => setContent({ tabs: [...content.tabs, { label: "New tab", content: { kind: "text", html: "" } }] })}>
-                  <Plus className="size-4" />
-                  Add tab
-                </Btn>
-              }
-            >
-              <div className="space-y-3">
-                {content.tabs.map((t, i) => (
-                  <TabEditor
-                    key={i}
-                    index={i}
-                    tab={t}
-                    total={content.tabs.length}
-                    onChange={(tab) => setTab(i, tab)}
-                    onMove={(d) => setContent({ tabs: move(content.tabs, i, d) })}
-                    onRemove={async () => {
-                      if (await confirmDialog({ title: `Remove tab “${t.label}”?`, confirm: "Remove", danger: true })) setContent({ tabs: content.tabs.filter((_, k) => k !== i) });
-                    }}
+            <Panel title="Details">
+              <div className="grid gap-3 md:grid-cols-[2fr_1fr_120px]">
+                <Field label="Title" required>
+                  <Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
+                </Field>
+                <Field label="Subject">
+                  <SubjectSelect value={f.subject} onChange={(v) => setF({ ...f, subject: v as CaseRec["subject"] })} />
+                </Field>
+                <Field label="Number">
+                  <Input type="number" value={f.number} onChange={(e) => setF({ ...f, number: Number(e.target.value) || f.number, order: Number(e.target.value) || f.order })} />
+                </Field>
+              </div>
+              <div className="mt-3 flex flex-wrap items-end gap-4">
+                <Field label="Access">
+                  <Segmented
+                    value={f.access}
+                    onChange={(v) => setF({ ...f, access: v })}
+                    options={[
+                      { value: "free", label: "Free" },
+                      { value: "premium", label: "Premium" },
+                    ]}
                   />
-                ))}
+                </Field>
+                <Field label="Status">
+                  <StatusPicker value={f.status} onChange={(v) => setF({ ...f, status: v })} />
+                </Field>
               </div>
             </Panel>
 
-            <Panel
-              title={`Questions (${items.length})`}
-              description="Case studies normally have 6 questions, in exam order. Edit each question in the Question Bank editor."
-              actions={
-                <Btn onClick={() => setAdding(true)}>
-                  <Plus className="size-4" />
-                  Add question
-                </Btn>
-              }
-            >
-              {items.length === 0 ? (
-                <p className="text-sm text-muted">No questions yet.</p>
-              ) : (
-                <ol className="divide-y divide-line rounded-md border border-line">
-                  {items.map((q, i) => {
-                    const problems = validateItem(q);
-                    return (
-                      <li key={q.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
-                        <span className="w-6 text-sm text-muted tabular-nums">{i + 1}.</span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm text-ink">{stripHtml(q.stem) || <span className="text-muted italic">No stem</span>}</p>
-                          <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
-                            <Badge>{TYPE_LABELS[q.type]}</Badge>
-                            {problems.length > 0 && <Badge tone="warning">{problems.length} to fix</Badge>}
-                          </p>
-                        </div>
-                        <label className="flex items-center gap-1 text-xs text-muted">
-                          Tabs visible
-                          <Select
-                            value={q.tabs ?? content.tabs.length}
-                            onChange={(e) => (qApi.update({ ...q, tabs: Number(e.target.value) }), toast("Saved"))}
-                            className="h-8 w-16 px-1"
-                          >
-                            {content.tabs.map((_, k) => (
-                              <option key={k} value={k + 1}>
-                                {k + 1}
-                              </option>
-                            ))}
-                          </Select>
-                        </label>
-                        <IconBtn label="Move up" disabled={i === 0} onClick={() => setContent({ itemIds: move(content.itemIds, i, -1) })}>
-                          <ArrowUp className="size-4" />
-                        </IconBtn>
-                        <IconBtn label="Move down" disabled={i === items.length - 1} onClick={() => setContent({ itemIds: move(content.itemIds, i, 1) })}>
-                          <ArrowDown className="size-4" />
-                        </IconBtn>
-                        <Link href={`/admin/questions/edit?id=${encodeURIComponent(q.id)}`} className="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-primary-light hover:text-primary" aria-label="Edit question" title="Edit question">
-                          <Pencil className="size-4" />
-                        </Link>
-                        <IconBtn
-                          label="Remove from case"
-                          className="hover:text-error"
-                          onClick={async () => {
-                            if (!(await confirmDialog({ title: "Remove this question from the case?", body: "It is archived in the Question Bank, so it can be restored later.", confirm: "Remove", danger: true }))) return;
-                            setContent({ itemIds: content.itemIds.filter((x) => x !== q.id) });
-                            qApi.update({ ...q, status: "archived" }, "archive");
-                          }}
-                        >
-                          <Trash2 className="size-4" />
-                        </IconBtn>
-                      </li>
-                    );
-                  })}
-                </ol>
-              )}
-              {dirty && <p className="mt-2 text-xs text-muted">Question order changes are saved with the case.</p>}
-            </Panel>
+            {!content ? (
+              <Panel title="Content">
+                <EmptyState
+                  title="No authored content yet"
+                  body={`Students who open this case get the ${subjects.find((s) => s.id === f.subject)?.name ?? ""} sample case. Write the scenario and questions to replace it.`}
+                  action={
+                    <Btn variant="primary" onClick={() => setF({ ...f, content: { intro: "", tabs: [{ label: "Nurses' Notes", content: { kind: "notes", heading: "", entries: [{ time: "", html: "" }] } }], itemIds: [] } })}>
+                      Start writing content
+                    </Btn>
+                  }
+                />
+              </Panel>
+            ) : (
+              <>
+                <Panel title="Scenario">
+                  <Field label="Intro" hint="The sentence above the tabs, e.g. “The nurse is caring for a 68-year-old client…”.">
+                    <TextArea value={content.intro} onChange={(e) => setContent({ intro: e.target.value })} rows={2} className="min-h-0" />
+                  </Field>
+                </Panel>
+
+                <Panel
+                  title={`Scenario tabs (${content.tabs.length})`}
+                  description="Tabs students read on the left side of the exam. Questions can reveal tabs progressively (see each question's “Tabs visible”)."
+                  actions={
+                    <Btn onClick={() => setContent({ tabs: [...content.tabs, { label: "New tab", content: { kind: "text", html: "" } }] })}>
+                      <Plus className="size-4" />
+                      Add tab
+                    </Btn>
+                  }
+                >
+                  <div className="space-y-3">
+                    {content.tabs.map((t, i) => (
+                      <TabEditor
+                        key={i}
+                        index={i}
+                        tab={t}
+                        total={content.tabs.length}
+                        onChange={(tab) => setTab(i, tab)}
+                        onMove={(d) => setContent({ tabs: move(content.tabs, i, d) })}
+                        onRemove={async () => {
+                          if (await confirmDialog({ title: `Remove tab “${t.label}”?`, confirm: "Remove", danger: true })) setContent({ tabs: content.tabs.filter((_, k) => k !== i) });
+                        }}
+                      />
+                    ))}
+                  </div>
+                </Panel>
+
+                <Panel
+                  title={`Questions (${items.length})`}
+                  description="Case studies normally have 6 questions, in exam order. Edit each question in the Question Bank editor."
+                  actions={
+                    <Btn onClick={() => setAdding(true)}>
+                      <Plus className="size-4" />
+                      Add question
+                    </Btn>
+                  }
+                >
+                  {items.length === 0 ? (
+                    <p className="text-sm text-muted">No questions yet.</p>
+                  ) : (
+                    <ol className="divide-y divide-line rounded-md border border-line">
+                      {items.map((q, i) => {
+                        const problems = validateItem(q);
+                        return (
+                          <li key={q.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
+                            <span className="w-6 text-sm text-muted tabular-nums">{i + 1}.</span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm text-ink">{stripHtml(q.stem) || <span className="text-muted italic">No stem</span>}</p>
+                              <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                                <Badge>{TYPE_LABELS[q.type]}</Badge>
+                                {problems.length > 0 && <Badge tone="warning">{problems.length} to fix</Badge>}
+                              </p>
+                            </div>
+                            <label className="flex items-center gap-1 text-xs text-muted">
+                              Tabs visible
+                              <Select
+                                value={q.tabs ?? content.tabs.length}
+                                onChange={(e) => (qApi.update({ ...q, tabs: Number(e.target.value) }), toast("Saved"))}
+                                className="h-8 w-16 px-1"
+                              >
+                                {content.tabs.map((_, k) => (
+                                  <option key={k} value={k + 1}>
+                                    {k + 1}
+                                  </option>
+                                ))}
+                              </Select>
+                            </label>
+                            <IconBtn label="Move up" disabled={i === 0} onClick={() => setContent({ itemIds: move(content.itemIds, i, -1) })}>
+                              <ArrowUp className="size-4" />
+                            </IconBtn>
+                            <IconBtn label="Move down" disabled={i === items.length - 1} onClick={() => setContent({ itemIds: move(content.itemIds, i, 1) })}>
+                              <ArrowDown className="size-4" />
+                            </IconBtn>
+                            <Link href={`/admin/questions/edit?id=${encodeURIComponent(q.id)}`} className="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-primary-light hover:text-primary" aria-label="Edit question" title="Edit question">
+                              <Pencil className="size-4" />
+                            </Link>
+                            <IconBtn
+                              label="Remove from case"
+                              className="hover:text-error"
+                              onClick={async () => {
+                                if (!(await confirmDialog({ title: "Remove this question from the case?", body: "It is archived in the Question Bank, so it can be restored later.", confirm: "Remove", danger: true }))) return;
+                                setContent({ itemIds: content.itemIds.filter((x) => x !== q.id) });
+                                qApi.update({ ...q, status: "archived" }, "archive");
+                              }}
+                            >
+                              <Trash2 className="size-4" />
+                            </IconBtn>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
+                  {dirty && <p className="mt-2 text-xs text-muted">Question order changes are saved with the case.</p>}
+                </Panel>
+              </>
+            )}
           </>
         )}
       </div>
@@ -252,6 +287,63 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
         />
       )}
     </AdminPage>
+  );
+}
+
+/** The case as JSON with a live student preview. Saving writes the case and its questions at once. */
+function CaseJsonPanel({ rec, items, onSaved }: { rec: CaseRec; items: QuestionRec[]; onSaved: (rec: CaseRec) => void }) {
+  const context = useCaseContext();
+  const [text, setText] = useState(() => pretty(caseToJson(rec, items)));
+  const checked = useMemo(() => {
+    const p = tryParse(text);
+    if ("error" in p) return null;
+    return normalizeCase(p.value, context(), { cases: new Set(), questions: new Set() }, { lockId: rec.id });
+  }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
+  const parseError = (() => {
+    const p = tryParse(text);
+    return "error" in p ? p.error : null;
+  })();
+
+  const save = async () => {
+    if (!checked?.rec) return;
+    const removed = checked.dropped.length;
+    if (removed && !(await confirmDialog({ title: `Archive ${removed} question${removed === 1 ? "" : "s"}?`, body: "They are no longer listed in the JSON, so they are removed from this case and archived in the Question Bank.", confirm: "Save", danger: true })))
+      return;
+    saveCaseRows([{ ...checked, include: true }], "from the case JSON editor");
+    toast("Case study saved from JSON");
+    onSaved(getAll("cases").find((c) => c.id === rec.id) ?? checked.rec);
+  };
+
+  return (
+    <Panel
+      title="Case study as JSON"
+      description="Same format as the case import. Questions keep their ids, so they are updated in place; new questions without an id are added."
+      actions={
+        <Btn variant="primary" onClick={save} disabled={!checked?.rec}>
+          Save from JSON
+        </Btn>
+      }
+    >
+      <div className="grid gap-4 xl:grid-cols-2">
+        <JsonEditor
+          label="Case JSON"
+          value={text}
+          onChange={setText}
+          rows={32}
+          errors={parseError ? [parseError] : (checked?.errors ?? [])}
+          warnings={checked?.warnings ?? []}
+          ok={checked?.rec ? `Valid${checked.dropped.length ? `; ${checked.dropped.length} question(s) no longer listed will be archived` : ""}. Click “Save from JSON” to keep the changes.` : undefined}
+        />
+        <div className="min-w-0">
+          <p className="mb-1 text-sm font-medium text-ink">Student preview</p>
+          {checked?.rec ? (
+            <CasePreview rec={checked.rec} questions={checked.questions.map((q) => q.rec!)} />
+          ) : (
+            <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-line px-6 text-center text-sm text-muted">Fix the errors to see the preview.</div>
+          )}
+        </div>
+      </div>
+    </Panel>
   );
 }
 

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Copy, Download, FileJson, Plus } from "lucide-react";
+import { caseToJson } from "@/lib/admin/caseImport";
+import { copyText, downloadJson, pretty } from "@/components/admin/json";
 import { crud, today } from "@/lib/admin/crud";
 import { newId } from "@/lib/admin/store";
 import type { CaseRec, CaseContent } from "@/lib/admin/types";
@@ -54,6 +56,11 @@ export default function CasesAdmin() {
     defaultSort: { key: "number", dir: "asc" },
   });
   const sel = useSelection(list.filtered.map((r) => r.id));
+  /** Selected cases in the import format (with their questions): edit anywhere and import back to update. */
+  const selectedJson = () =>
+    rows
+      .filter((c) => sel.selected.has(c.id))
+      .map((c) => caseToJson(c, (c.content?.itemIds ?? []).map((id) => questions.find((q) => q.id === id)).filter((q): q is (typeof questions)[number] => Boolean(q))));
   const columns: Column<CaseRec>[] = [
     { key: "number", label: "#", sort: "number", render: (c) => <span className="text-muted tabular-nums">{c.number}</span>, headClassName: "w-14" },
     { key: "title", label: "Title", sort: "title", render: (c) => <span className="font-medium">{c.title}</span> },
@@ -69,14 +76,28 @@ export default function CasesAdmin() {
       title="Case Studies"
       description="Next Gen case studies: scenario tabs plus six linked questions. Rows without authored content still work for students; they replay that subject's sample case until content is written."
       actions={
-        <Btn variant="primary" onClick={() => setCreating(true)}>
-          <Plus className="size-4" />
-          New case study
-        </Btn>
+        <>
+          <Btn onClick={() => router.push("/admin/cases/import")}>
+            <FileJson className="size-4" />
+            Bulk import (JSON)
+          </Btn>
+          <Btn variant="primary" onClick={() => setCreating(true)}>
+            <Plus className="size-4" />
+            New case study
+          </Btn>
+        </>
       }
     >
       <ListToolbar list={list} placeholder="Search title, scenario text, question stems" />
       <BulkBar count={sel.selected.size} onClear={sel.clear}>
+        <Btn onClick={() => copyText(pretty(selectedJson()), `${sel.selected.size} case stud${sel.selected.size === 1 ? "y" : "ies"} as JSON`)}>
+          <Copy className="size-4" />
+          Copy JSON
+        </Btn>
+        <Btn onClick={() => downloadJson(selectedJson(), `nclexbase-cases-${sel.selected.size}.json`)}>
+          <Download className="size-4" />
+          Download JSON
+        </Btn>
         <StatusBulkActions
           ids={[...sel.selected]}
           rows={rows}

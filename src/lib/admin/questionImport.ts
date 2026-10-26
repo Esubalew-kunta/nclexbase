@@ -4,7 +4,8 @@ import type { Access, QuestionRec, Status, SubjectRec } from "./types";
 /*
  * Bulk question import: turns admin-written JSON into question records.
  * Every row is checked here (shape, taxonomy, answer indexes) so the import screen
- * can show problems per row before anything is saved. Imported questions are standalone.
+ * can show problems per row before anything is saved. A row whose id is already in the
+ * bank updates that question; rows without an id create standalone questions.
  */
 
 export interface ImportRow {
@@ -16,6 +17,10 @@ export interface ImportRow {
   errors: string[];
   /** Problems that only block publishing; the row is imported as a draft. */
   warnings: string[];
+  /** "update" when the id matches a question already in the bank. */
+  mode: "create" | "update";
+  /** The current version of an updated question (kept in its History). */
+  previous?: QuestionRec;
   include: boolean;
 }
 
@@ -127,37 +132,56 @@ function rangeErrors(it: Item): string[] {
 
 export interface ImportContext {
   subjects: SubjectRec[];
-  /** Ids already in the bank, so supplied ids can't overwrite anything. */
-  takenIds: Set<string>;
+  /** Questions already in the bank, by id. A row with one of these ids updates that question. */
+  existing: Map<string, QuestionRec>;
   newId: () => string;
   blank: (type: ItemType, base: { id: string; subject: Item["subject"]; system: string }) => Item;
   validate: (it: Item) => string[];
   today: string;
 }
 
+export interface RowOptions {
+  /** Questions inside a case: subject/system fall back to the case's, and access/status follow the case. */
+  inCase?: { caseId: string; subject: string; system?: string; access: Access; status: Status };
+  /** Editing one known question: the id must stay this one. */
+  lockId?: string;
+}
+
+export type RowResult = Omit<ImportRow, "include">;
+
 /** Check and normalise one JSON object. `seenIds` catches duplicates inside the same file. */
-export function normalizeRow(raw: unknown, ctx: ImportContext, seenIds: Set<string>): Omit<ImportRow, "include"> {
-  const errors: string[] = [];
-  if (!isObj(raw)) return { raw, rec: null, errors: ["Each question must be a JSON object { … }."], warnings: [] };
+export function normalizeRow(raw: unknown, ctx: ImportContext, seenIds: Set<string>, opts: RowOptions = {}): RowResult {
+  const fail = (errors: string[]): RowResult => ({ raw, rec: null, errors, warnings: [], mode: "create" });
+  if (!isObj(raw)) return fail(["Each question must be a JSON object { … }."]);
   const type = raw.type as ItemType;
-  if (!SHAPES[type]) return { raw, rec: null, errors: [`"type" must be one of: ${IMPORT_TYPES.join(", ")}.`], warnings: [] };
+  if (!SHAPES[type]) return fail([`"type" must be one of: ${IMPORT_TYPES.join(", ")}.`]);
+  const errors: string[] = [];
 
-  // Subject and system: id/key or display name, any case.
-  const sv = isStr(raw.subject) ? raw.subject.trim().toLowerCase() : "";
-  const subject = ctx.subjects.find((s) => s.id.toLowerCase() === sv || s.name.toLowerCase() === sv);
-  if (!subject) errors.push(isStr(raw.subject) ? `Unknown subject “${raw.subject}”. Use a subject id from the list on this page.` : '"subject" is required.');
-  const yv = isStr(raw.system) ? raw.system.trim().toLowerCase() : "";
-  const system = subject?.systems.find((x) => x.key.toLowerCase() === yv || x.label.toLowerCase() === yv);
-  if (subject && !system) errors.push(isStr(raw.system) ? `“${raw.system}” is not a system of ${subject.name}.` : '"system" is required.');
-
+  // An id that is already in the bank means "update that question".
   let id = ctx.newId();
+  let previous: QuestionRec | undefined;
   if (raw.id !== undefined) {
-    if (!isStr(raw.id) || !raw.id.trim()) errors.push('"id" must be text, or leave it out to generate one.');
-    else if (ctx.takenIds.has(raw.id)) errors.push(`Id “${raw.id}” is already in the bank. Leave "id" out to import this as a new question.`);
-    else if (seenIds.has(raw.id)) errors.push(`Id “${raw.id}” appears twice in this file.`);
-    else id = raw.id;
+    if (!isStr(raw.id) || !raw.id.trim()) errors.push('"id" must be text, or leave it out to create a new question.');
+    else if (opts.lockId && raw.id !== opts.lockId) errors.push(`"id" can't be changed here (it is “${opts.lockId}”).`);
+    else if (seenIds.has(raw.id)) errors.push(`Id “${raw.id}” appears twice.`);
+    else {
+      id = raw.id;
+      previous = ctx.existing.get(raw.id);
+      if (previous && previous.type !== type) errors.push(`“${raw.id}” is a ${previous.type} question; its type can't change to ${type}.`);
+      if (previous && opts.inCase && !(previous.source.kind === "case" && previous.source.caseId === opts.inCase.caseId))
+        errors.push(`Id “${raw.id}” belongs to another question outside this case. Leave "id" out to create a new one.`);
+    }
     if (isStr(raw.id)) seenIds.add(raw.id);
   }
+
+  // Subject and system: id/key or display name, any case. A question being updated may keep its current ones.
+  const sv = isStr(raw.subject) ? raw.subject.trim().toLowerCase() : (opts.inCase?.subject.toLowerCase() ?? "");
+  const subject = ctx.subjects.find((s) => s.id.toLowerCase() === sv || s.name.toLowerCase() === sv);
+  const yRaw = isStr(raw.system) ? raw.system : opts.inCase?.system;
+  const yv = (yRaw ?? "").trim().toLowerCase();
+  const system = subject?.systems.find((x) => x.key.toLowerCase() === yv || x.label.toLowerCase() === yv)?.key ?? (previous && subject?.id === previous.subject && yRaw === previous.system ? previous.system : undefined);
+  if (!subject) errors.push(isStr(raw.subject) ? `Unknown subject “${raw.subject}”. Use a subject id from the Subjects & systems list.` : '"subject" is required.');
+  else if (!system) errors.push(yRaw ? `“${yRaw}” is not a system of ${subject.name}.` : '"system" is required.');
 
   const shape = SHAPES[type];
   for (const [key, { kind, optional }] of Object.entries(shape)) {
@@ -171,11 +195,14 @@ export function normalizeRow(raw: unknown, ctx: ImportContext, seenIds: Set<stri
   ["stem", "lead", "topic", "linkedVideo", "linkedSheet"].forEach(optStr);
   if (type !== "highlightText" && raw.stem === undefined) errors.push('"stem" is required.');
   if (raw.avgPercent !== undefined && (!isNum(raw.avgPercent) || raw.avgPercent < 0 || raw.avgPercent > 100)) errors.push('"avgPercent" must be a number from 0 to 100.');
-  if (raw.access !== undefined && raw.access !== "free" && raw.access !== "premium") errors.push('"access" must be "free" or "premium".');
-  if (raw.status !== undefined && raw.status !== "draft" && raw.status !== "published") errors.push('"status" must be "draft" or "published".');
+  if (raw.tabs !== undefined && (!isNum(raw.tabs) || raw.tabs < 1)) errors.push('"tabs" must be the number of scenario tabs shown (1 or more).');
+  if (!opts.inCase) {
+    if (raw.access !== undefined && raw.access !== "free" && raw.access !== "premium") errors.push('"access" must be "free" or "premium".');
+    if (raw.status !== undefined && raw.status !== "draft" && raw.status !== "published" && raw.status !== "archived") errors.push('"status" must be "draft", "published" or "archived".');
+  }
 
   const r = raw.rationale;
-  const rationale = isStr(r) ? { explanation: r, takeaway: [] as string[] } : isObj(r) ? r : null;
+  const rationale = isStr(r) ? { explanation: r } : isObj(r) ? r : null;
   if (!rationale) errors.push('"rationale" is required: { "explanation": "…" } (or just the explanation text).');
   else {
     if (!isStr(rationale.explanation)) errors.push('"rationale.explanation" must be text.');
@@ -183,41 +210,73 @@ export function normalizeRow(raw: unknown, ctx: ImportContext, seenIds: Set<stri
     if (rationale.incorrect !== undefined && !isArr(rationale.incorrect, (x) => isObj(x) && isStr(x.label) && isStr(x.text))) errors.push('"rationale.incorrect" must be a list of { "label": "…", "text": "…" }.');
   }
 
-  if (errors.length || !subject || !system || !rationale) return { raw, rec: null, errors, warnings: [] };
+  if (errors.length || !subject || !system || !rationale) return fail(errors);
 
-  const base = ctx.blank(type, { id, subject: subject.id, system: system.key });
+  const base = previous ?? ctx.blank(type, { id, subject: subject.id, system });
   const fields = Object.fromEntries(Object.keys(shape).filter((k) => raw[k] !== undefined).map((k) => [k, type === "fitb" && k === "answer" ? String(raw[k]) : raw[k]]));
   const item = {
-    ...base,
+    ...ctx.blank(type, { id, subject: subject.id, system }),
     ...fields,
+    id,
+    subject: subject.id,
+    system,
     stem: isStr(raw.stem) ? raw.stem : "",
     lead: isStr(raw.lead) && raw.lead ? raw.lead : undefined,
     topic: isStr(raw.topic) ? raw.topic : "",
     avgPercent: isNum(raw.avgPercent) ? raw.avgPercent : base.avgPercent,
+    tabs: isNum(raw.tabs) ? raw.tabs : undefined,
     linkedVideo: isStr(raw.linkedVideo) && raw.linkedVideo ? raw.linkedVideo : undefined,
     linkedSheet: isStr(raw.linkedSheet) && raw.linkedSheet ? raw.linkedSheet : undefined,
+    // Uploaded videos aren't part of the JSON; an update keeps the current one.
+    video: previous?.video,
     rationale: {
       explanation: rationale.explanation as string,
       takeaway: (rationale.takeaway as string[] | undefined) ?? [],
       ...(rationale.incorrect ? { incorrect: rationale.incorrect as { label: string; text: string }[] } : {}),
+      ...(rationale.raw === true ? { raw: true } : {}),
     },
   } as Item;
 
   const range = rangeErrors(item);
-  if (range.length) return { raw, rec: null, errors: range, warnings: [] };
+  if (range.length) return fail(range);
 
   const warnings = ctx.validate(item);
-  const wanted: Status = raw.status === "published" ? "published" : "draft";
-  if (wanted === "published" && warnings.length) warnings.push("Asked for “published”, so it will be imported as a draft until these are fixed.");
+  let status: Status;
+  let access: Access;
+  if (opts.inCase) {
+    status = opts.inCase.status;
+    access = opts.inCase.access;
+  } else {
+    const wanted = (raw.status as Status | undefined) ?? previous?.status ?? "draft";
+    status = wanted === "published" && warnings.length ? "draft" : wanted;
+    if (wanted === "published" && warnings.length) warnings.push("Asked for “published”, so it is saved as a draft until these are fixed.");
+    access = (raw.access as Access | undefined) ?? previous?.access ?? "free";
+  }
   const rec = {
     ...item,
-    source: { kind: "standalone" },
-    access: (raw.access as Access | undefined) ?? "free",
-    status: wanted === "published" && !warnings.length ? "published" : "draft",
-    order: 0,
+    source: opts.inCase ? { kind: "case", caseId: opts.inCase.caseId } : (previous?.source ?? { kind: "standalone" }),
+    access,
+    status,
+    order: previous?.order ?? 0,
     updatedAt: ctx.today,
   } as QuestionRec;
-  return { raw, rec, errors: [], warnings };
+  return { raw, rec, errors: [], warnings, mode: previous ? "update" : "create", previous };
+}
+
+/** A question as editable JSON: the same format the import accepts, so it can be copied, changed and pasted back. */
+export function questionToJson(q: QuestionRec, opts: { inCase?: boolean } = {}): Record<string, unknown> {
+  const it = q as unknown as Record<string, unknown>;
+  const out: Record<string, unknown> = { id: q.id, type: q.type, subject: q.subject, system: q.system, topic: q.topic };
+  if (!opts.inCase) Object.assign(out, { access: q.access, status: q.status });
+  out.avgPercent = q.avgPercent;
+  if (q.tabs !== undefined) out.tabs = q.tabs;
+  if (q.lead) out.lead = q.lead;
+  if (q.type !== "highlightText" || q.stem) out.stem = q.stem;
+  for (const k of Object.keys(SHAPES[q.type])) if (it[k] !== undefined) out[k] = it[k];
+  out.rationale = q.rationale;
+  if (q.linkedVideo) out.linkedVideo = q.linkedVideo;
+  if (q.linkedSheet) out.linkedSheet = q.linkedSheet;
+  return out;
 }
 
 /** Parse pasted text into question objects: an array, `{ "questions": [...] }`, or a single object. */
@@ -372,6 +431,7 @@ export const COMMON_FIELDS: [string, string][] = [
   ["access", '"free" (default) or "premium".'],
   ["status", '"draft" (default) or "published". Questions with problems always come in as drafts.'],
   ["avgPercent", "Optional, 0 to 100 (default 60)."],
-  ["id", "Optional. Leave it out and an id is generated. Existing ids are never overwritten."],
+  ["id", "Optional. Leave it out to create a new question. An id that is already in the bank updates that question (copy it from the question's JSON view)."],
+  ["tabs", "Case questions only: how many scenario tabs are visible for this question."],
   ["answers", "Positions start at 0: the first option is 0, the second is 1, and so on."],
 ];

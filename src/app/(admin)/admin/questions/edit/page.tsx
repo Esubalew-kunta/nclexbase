@@ -12,6 +12,7 @@ import { useAll, useSubjects } from "@/lib/content";
 import { AdminPage, Badge, Btn, confirmDialog, EmptyState, Field, IconBtn, Input, Panel, Segmented, Select, StatusBadge, Switch, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { HistoryButton, StatusPicker, SubjectSelect, SystemSelect, VideoDrop } from "@/components/admin/parts";
 import { AnswerSetup, blankItem, ItemPreview, TYPE_LABELS, validateItem } from "@/components/admin/items";
+import { QuestionJsonEditor } from "@/components/admin/questionJson";
 
 const api = crud("questions");
 
@@ -64,6 +65,8 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
     if (isNew) router.replace(`/admin/questions/edit?id=${encodeURIComponent(next.id)}`);
   };
 
+  /** Form fields or the whole question as JSON (copy, paste, edit). */
+  const [mode, setMode] = useState<"form" | "json">("form");
   const r = q.rationale;
   const setR = (patch: Partial<Item["rationale"]>) => set({ rationale: { ...r, ...patch } });
 
@@ -110,99 +113,121 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
     >
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,520px)]">
         <div className="space-y-4">
-          <Panel title="Classification">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Subject" required>
-                <SubjectSelect value={q.subject} onChange={(v) => set({ subject: v as Item["subject"], system: "" })} />
-              </Field>
-              <Field label="System" required error={!q.system ? "Pick a system." : ""}>
-                <SystemSelect subject={q.subject} value={q.system || null} onChange={(v) => set({ system: v ?? "" })} general="Choose…" />
-              </Field>
-              <Field label="Topic" hint="Shown under the explanation, e.g. “Sepsis”.">
-                <Input value={q.topic} onChange={(e) => set({ topic: e.target.value })} />
-              </Field>
-              <Field label="Average score (%)" hint="Shown to students as “% of students answered correctly”.">
-                <Input type="number" min={0} max={100} value={q.avgPercent} onChange={(e) => set({ avgPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} />
-              </Field>
-              {standalone && (
-                <Field label="Access">
-                  <Segmented
-                    value={q.access}
-                    onChange={(v) => set({ access: v })}
-                    options={[
-                      { value: "free", label: "Free pool" },
-                      { value: "premium", label: "Premium" },
-                    ]}
-                  />
-                </Field>
-              )}
-              {ownStatus ? (
-                <Field label={standalone ? "Status" : "In the readiness pool"} hint={standalone ? undefined : "Published = used in new readiness exams."}>
-                  <StatusPicker value={q.status} onChange={(v) => set({ status: v })} />
-                </Field>
-              ) : (
-                <p className="text-sm text-muted sm:col-span-2">Access and publishing follow the case study this question belongs to.</p>
-              )}
-            </div>
-          </Panel>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-muted">Edit with</span>
+            <Segmented
+              value={mode}
+              onChange={setMode}
+              options={[
+                { value: "form", label: "Form" },
+                { value: "json", label: "JSON" },
+              ]}
+            />
+            {mode === "json" && <span className="text-xs text-muted">Copy it, change it anywhere, and paste it back. The uploaded video isn&apos;t part of the JSON.</span>}
+          </div>
 
-          <Panel title="Question">
-            <div className="space-y-3">
-              <Field label="Lead-in (optional)" hint="A sentence shown above the stem, e.g. the client's situation.">
-                <TextArea value={q.lead ?? ""} onChange={(e) => set({ lead: e.target.value || undefined })} rows={2} className="min-h-0" />
-              </Field>
-              {q.type !== "highlightText" && (
-                <Field label="Stem" required hint="HTML allowed: <b>, <i>, <br>.">
-                  <TextArea value={q.stem} onChange={(e) => set({ stem: e.target.value })} rows={3} />
-                </Field>
-              )}
-            </div>
-          </Panel>
-
-          <Panel title="Answer" description={TYPE_LABELS[q.type]}>
-            <AnswerSetup item={q} set={(p) => set(p)} />
-          </Panel>
-
-          <Panel title="Rationale" description="Shown after the student submits (tutor mode) and in review.">
-            <div className="space-y-3">
-              <Field label="Explanation" required hint="HTML allowed.">
-                <TextArea value={r.explanation} onChange={(e) => setR({ explanation: e.target.value })} rows={5} />
-              </Field>
-              <Field label="Why the other options are wrong (optional)">
-                <div className="space-y-2">
-                  {(r.incorrect ?? []).map((x, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input value={x.label} placeholder="Option" className="w-40 shrink-0" onChange={(e) => setR({ incorrect: r.incorrect!.map((y, k) => (k === i ? { ...y, label: e.target.value } : y)) })} />
-                      <Input value={x.text} placeholder="Why it's wrong" onChange={(e) => setR({ incorrect: r.incorrect!.map((y, k) => (k === i ? { ...y, text: e.target.value } : y)) })} />
-                      <IconBtn label="Remove" onClick={() => setR({ incorrect: r.incorrect!.filter((_, k) => k !== i) })} className="hover:text-error">
-                        <Trash2 className="size-4" />
-                      </IconBtn>
-                    </div>
-                  ))}
-                  <Btn variant="ghost" className="h-8" onClick={() => setR({ incorrect: [...(r.incorrect ?? []), { label: "", text: "" }] })}>
-                    <Plus className="size-3.5" />
-                    Add explanation
-                  </Btn>
+          {mode === "json" ? (
+            <Panel title="Question as JSON" description="Same format as the bulk import. Valid changes update the preview right away.">
+              <QuestionJsonEditor q={q} onChange={setQ} />
+            </Panel>
+          ) : (
+            <>
+              <Panel title="Classification">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Subject" required>
+                    <SubjectSelect value={q.subject} onChange={(v) => set({ subject: v as Item["subject"], system: "" })} />
+                  </Field>
+                  <Field label="System" required error={!q.system ? "Pick a system." : ""}>
+                    <SystemSelect subject={q.subject} value={q.system || null} onChange={(v) => set({ system: v ?? "" })} general="Choose…" />
+                  </Field>
+                  <Field label="Topic" hint="Shown under the explanation, e.g. “Sepsis”.">
+                    <Input value={q.topic} onChange={(e) => set({ topic: e.target.value })} />
+                  </Field>
+                  <Field label="Average score (%)" hint="Shown to students as “% of students answered correctly”.">
+                    <Input type="number" min={0} max={100} value={q.avgPercent} onChange={(e) => set({ avgPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} />
+                  </Field>
+                  {standalone && (
+                    <Field label="Access">
+                      <Segmented
+                        value={q.access}
+                        onChange={(v) => set({ access: v })}
+                        options={[
+                          { value: "free", label: "Free pool" },
+                          { value: "premium", label: "Premium" },
+                        ]}
+                      />
+                    </Field>
+                  )}
+                  {ownStatus ? (
+                    <Field label={standalone ? "Status" : "In the readiness pool"} hint={standalone ? undefined : "Published = used in new readiness exams."}>
+                      <StatusPicker value={q.status} onChange={(v) => set({ status: v })} />
+                    </Field>
+                  ) : (
+                    <p className="text-sm text-muted sm:col-span-2">Access and publishing follow the case study this question belongs to.</p>
+                  )}
                 </div>
-              </Field>
-              <Field label="Key takeaways (optional)">
-                <div className="space-y-2">
-                  {r.takeaway.map((t, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input value={t} onChange={(e) => setR({ takeaway: r.takeaway.map((y, k) => (k === i ? e.target.value : y)) })} />
-                      <IconBtn label="Remove" onClick={() => setR({ takeaway: r.takeaway.filter((_, k) => k !== i) })} className="hover:text-error">
-                        <Trash2 className="size-4" />
-                      </IconBtn>
-                    </div>
-                  ))}
-                  <Btn variant="ghost" className="h-8" onClick={() => setR({ takeaway: [...r.takeaway, ""] })}>
-                    <Plus className="size-3.5" />
-                    Add takeaway
-                  </Btn>
+              </Panel>
+
+              <Panel title="Question">
+                <div className="space-y-3">
+                  <Field label="Lead-in (optional)" hint="A sentence shown above the stem, e.g. the client's situation.">
+                    <TextArea value={q.lead ?? ""} onChange={(e) => set({ lead: e.target.value || undefined })} rows={2} className="min-h-0" />
+                  </Field>
+                  {q.type !== "highlightText" && (
+                    <Field label="Stem" required hint="HTML allowed: <b>, <i>, <br>.">
+                      <TextArea value={q.stem} onChange={(e) => set({ stem: e.target.value })} rows={3} />
+                    </Field>
+                  )}
                 </div>
-              </Field>
-            </div>
-          </Panel>
+              </Panel>
+
+              <Panel title="Answer" description={TYPE_LABELS[q.type]}>
+                <AnswerSetup item={q} set={(p) => set(p)} />
+              </Panel>
+
+              <Panel title="Rationale" description="Shown after the student submits (tutor mode) and in review.">
+                <div className="space-y-3">
+                  <Field label="Explanation" required hint="HTML allowed.">
+                    <TextArea value={r.explanation} onChange={(e) => setR({ explanation: e.target.value })} rows={5} />
+                  </Field>
+                  <Field label="Why the other options are wrong (optional)">
+                    <div className="space-y-2">
+                      {(r.incorrect ?? []).map((x, i) => (
+                        <div key={i} className="flex gap-2">
+                          <Input value={x.label} placeholder="Option" className="w-40 shrink-0" onChange={(e) => setR({ incorrect: r.incorrect!.map((y, k) => (k === i ? { ...y, label: e.target.value } : y)) })} />
+                          <Input value={x.text} placeholder="Why it's wrong" onChange={(e) => setR({ incorrect: r.incorrect!.map((y, k) => (k === i ? { ...y, text: e.target.value } : y)) })} />
+                          <IconBtn label="Remove" onClick={() => setR({ incorrect: r.incorrect!.filter((_, k) => k !== i) })} className="hover:text-error">
+                            <Trash2 className="size-4" />
+                          </IconBtn>
+                        </div>
+                      ))}
+                      <Btn variant="ghost" className="h-8" onClick={() => setR({ incorrect: [...(r.incorrect ?? []), { label: "", text: "" }] })}>
+                        <Plus className="size-3.5" />
+                        Add explanation
+                      </Btn>
+                    </div>
+                  </Field>
+                  <Field label="Key takeaways (optional)">
+                    <div className="space-y-2">
+                      {r.takeaway.map((t, i) => (
+                        <div key={i} className="flex gap-2">
+                          <Input value={t} onChange={(e) => setR({ takeaway: r.takeaway.map((y, k) => (k === i ? e.target.value : y)) })} />
+                          <IconBtn label="Remove" onClick={() => setR({ takeaway: r.takeaway.filter((_, k) => k !== i) })} className="hover:text-error">
+                            <Trash2 className="size-4" />
+                          </IconBtn>
+                        </div>
+                      ))}
+                      <Btn variant="ghost" className="h-8" onClick={() => setR({ takeaway: [...r.takeaway, ""] })}>
+                        <Plus className="size-3.5" />
+                        Add takeaway
+                      </Btn>
+                    </div>
+                  </Field>
+                </div>
+              </Panel>
+
+            </>
+          )}
 
           <Panel
             title="Video explanation"
@@ -213,34 +238,36 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
             {q.video && !q.video.visible && <p className="mt-2 text-xs text-muted">Hidden: students don&apos;t see this video until you switch it back on and save.</p>}
           </Panel>
 
-          <Panel title="Linked study material" description="Cards shown under the explanation.">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Cheat sheet">
-                <Select value={q.linkedSheet ?? ""} onChange={(e) => set({ linkedSheet: e.target.value || undefined })}>
-                  <option value="">None</option>
-                  {sheets
-                    .filter((s) => s.subject === q.subject)
-                    .map((s) => (
-                      <option key={s.id} value={s.title}>
-                        {s.title}
-                      </option>
-                    ))}
-                </Select>
-              </Field>
-              <Field label="Crash course video">
-                <Select value={q.linkedVideo ?? ""} onChange={(e) => set({ linkedVideo: e.target.value || undefined })}>
-                  <option value="">None</option>
-                  {lessons
-                    .filter((l) => l.course === q.subject && l.type === "video")
-                    .map((l) => (
-                      <option key={l.id} value={l.title}>
-                        {l.title}
-                      </option>
-                    ))}
-                </Select>
-              </Field>
-            </div>
-          </Panel>
+          {mode === "form" && (
+            <Panel title="Linked study material" description="Cards shown under the explanation.">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Cheat sheet">
+                  <Select value={q.linkedSheet ?? ""} onChange={(e) => set({ linkedSheet: e.target.value || undefined })}>
+                    <option value="">None</option>
+                    {sheets
+                      .filter((s) => s.subject === q.subject)
+                      .map((s) => (
+                        <option key={s.id} value={s.title}>
+                          {s.title}
+                        </option>
+                      ))}
+                  </Select>
+                </Field>
+                <Field label="Crash course video">
+                  <Select value={q.linkedVideo ?? ""} onChange={(e) => set({ linkedVideo: e.target.value || undefined })}>
+                    <option value="">None</option>
+                    {lessons
+                      .filter((l) => l.course === q.subject && l.type === "video")
+                      .map((l) => (
+                        <option key={l.id} value={l.title}>
+                          {l.title}
+                        </option>
+                      ))}
+                  </Select>
+                </Field>
+              </div>
+            </Panel>
+          )}
 
           {!isNew && ownStatus && q.status === "archived" && (
             <Panel title="Danger zone">

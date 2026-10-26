@@ -5,48 +5,18 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Copy, Download, FileUp, Pencil, Trash2, XCircle } from "lucide-react";
-import { today } from "@/lib/admin/crud";
-import { newId, useAdminStore } from "@/lib/admin/store";
-import { COMMON_FIELDS, IMPORT_TYPES, normalizeRow, parseImport, SAMPLES, type ImportContext, type ImportRow } from "@/lib/admin/questionImport";
+import { copyText, downloadJson, JsonEditor, pretty, tryParse } from "@/components/admin/json";
+import { sampleFor, useImportContext } from "@/components/admin/questionJson";
+import { useAdminStore } from "@/lib/admin/store";
+import { COMMON_FIELDS, IMPORT_TYPES, normalizeRow, parseImport, type ImportContext, type ImportRow } from "@/lib/admin/questionImport";
 import type { SubjectRec } from "@/lib/admin/types";
 import type { ItemType } from "@/lib/types";
 import { getAll, useSubjects } from "@/lib/content";
 import { AdminPage, Badge, Btn, confirmDialog, Dialog, IconBtn, Panel, Select, stripHtml, TextArea, toast, useUnsavedGuard } from "@/components/admin/ui";
 import { TickBox } from "@/components/admin/list";
-import { blankItem, ItemPreview, TYPE_LABELS, validateItem } from "@/components/admin/items";
-
-const pretty = (v: unknown) => JSON.stringify(v, null, 2);
-
-async function copy(text: string, what: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast(`Copied ${what}`);
-  } catch {
-    toast("Couldn't copy. Select the text and copy it by hand.", "error");
-  }
-}
+import { ItemPreview, TYPE_LABELS } from "@/components/admin/items";
 
 /** Samples use real subjects; if the admin renamed or removed one, fall back to the first subject and system. */
-function sampleFor(type: ItemType, subjects: SubjectRec[]) {
-  const s = SAMPLES[type];
-  const subject = subjects.find((x) => x.id === s.subject);
-  if (subject?.systems.some((y) => y.key === s.system)) return s;
-  const fallback = subject ?? subjects[0];
-  return { ...s, subject: fallback?.id ?? s.subject, system: fallback?.systems[0]?.key ?? s.system };
-}
-
-function useImportContext(): () => ImportContext {
-  const subjects = useSubjects(true);
-  return () => ({
-    subjects,
-    takenIds: new Set(getAll("questions").map((q) => q.id)),
-    newId: () => newId("q"),
-    blank: blankItem,
-    validate: validateItem,
-    today: today(),
-  });
-}
-
 /** Re-check every row (ids can clash across rows, so one edit can change another row's result). */
 function buildRows(raws: unknown[], ctx: ImportContext, include?: boolean[]): ImportRow[] {
   const seen = new Set<string>();
@@ -98,7 +68,8 @@ export default function ImportQuestionsPage() {
       errors: r.filter((x) => !x.rec).length,
       chosen: chosen.length,
       published: chosen.filter((x) => x.rec!.status === "published").length,
-      drafts: chosen.filter((x) => x.rec!.status === "draft").length,
+      drafts: chosen.filter((x) => x.rec!.status !== "published").length,
+      updates: chosen.filter((x) => x.mode === "update").length,
     };
   }, [rows]);
 
@@ -107,7 +78,7 @@ export default function ImportQuestionsPage() {
     const skipped = rows.length - counts.chosen;
     const ok = await confirmDialog({
       title: `Import ${counts.chosen} question${counts.chosen === 1 ? "" : "s"}?`,
-      body: `${counts.published} published, ${counts.drafts} as drafts${skipped ? `, ${skipped} skipped` : ""}. They are added to the Question Bank as standalone questions.`,
+      body: `${counts.chosen - counts.updates} new, ${counts.updates} updated (${counts.published} published, ${counts.drafts} not published)${skipped ? `, ${skipped} skipped` : ""}. Updated questions keep their old version in History.`,
       confirm: "Import",
     });
     if (!ok) return;
@@ -118,13 +89,22 @@ export default function ImportQuestionsPage() {
       rows.map((r) => r.include),
     );
     const start = Math.max(0, ...getAll("questions").filter((q) => q.source.kind === "standalone").map((q) => q.order)) + 1;
-    const recs = fresh.filter((r) => r.include && r.rec).map((r, i) => ({ ...r.rec!, order: start + i }));
-    if (recs.length !== counts.chosen) {
+    const chosen = fresh.filter((r) => r.include && r.rec);
+    if (chosen.length !== counts.chosen) {
       setRows(fresh);
       return toast("Some rows changed while you were reviewing. Check the list and try again.", "error");
     }
-    useAdminStore.getState().save("questions", recs, { action: "import", label: `Imported ${recs.length} question${recs.length === 1 ? "" : "s"} from JSON` });
-    toast(`Imported ${recs.length} question${recs.length === 1 ? "" : "s"}`);
+    const created = chosen.filter((r) => r.mode === "create").map((r, i) => ({ ...r.rec!, order: start + i }));
+    const updated = chosen.filter((r) => r.mode === "update");
+    const save = useAdminStore.getState().save;
+    if (created.length) save("questions", created, { action: "import", label: `Imported ${created.length} new question${created.length === 1 ? "" : "s"} from JSON` });
+    if (updated.length)
+      save(
+        "questions",
+        updated.map((r) => r.rec!),
+        { action: "import", label: `Updated ${updated.length} question${updated.length === 1 ? "" : "s"} from JSON`, previous: updated.map((r) => r.previous) },
+      );
+    toast(`Saved ${chosen.length} question${chosen.length === 1 ? "" : "s"} (${created.length} new, ${updated.length} updated)`);
     setText("");
     setRows(null);
     router.push("/admin/questions?source=standalone&sort=updated&dir=desc");
@@ -141,7 +121,7 @@ export default function ImportQuestionsPage() {
         </Link>
       }
       title="Bulk import questions"
-      description="Paste or upload questions as JSON, review and fix them here, then import them all at once. Nothing is saved until you click Import. Imported questions are standalone questions."
+      description="Paste or upload questions as JSON, review and fix them here, then import them all at once. Nothing is saved until you click Import. Questions without an id are added as new standalone questions; an id that is already in the bank updates that question."
     >
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
         <Panel
@@ -198,6 +178,7 @@ export default function ImportQuestionsPage() {
           description="Click a row to see it as students will and to fix its JSON. Rows with errors can't be imported until they're fixed or removed."
           actions={
             <div className="flex flex-wrap items-center gap-2">
+              {counts.updates > 0 && <Badge tone="teal">{counts.updates} updates</Badge>}
               <Badge tone="success">{counts.published} ready to publish</Badge>
               <Badge tone="warning">{counts.drafts} as drafts</Badge>
               {counts.errors > 0 && <Badge tone="error">{counts.errors} with errors</Badge>}
@@ -300,6 +281,7 @@ function ResultCell({ row }: { row: ImportRow }) {
   const list = row.rec ? row.warnings : row.errors;
   return (
     <div className="space-y-1">
+      {row.rec && row.mode === "update" && <Badge tone="teal">Updates {row.rec.id}</Badge>}
       {!row.rec ? (
         <Badge tone="error">
           <XCircle className="size-3" />
@@ -374,12 +356,9 @@ function ReviewRow({ index, row, subjects, onToggle, onOpen, onRemove }: { index
 function RowDialog({ index, row, context, onClose, onSave, onRemove }: { index: number; row: ImportRow; context: () => ImportContext; onClose: () => void; onSave: (raw: unknown) => void; onRemove: () => void }) {
   const [draft, setDraft] = useState(() => pretty(row.raw));
   const checked = useMemo(() => {
-    try {
-      const raw: unknown = JSON.parse(draft);
-      return normalizeRow(raw, context(), new Set());
-    } catch (e) {
-      return { raw: undefined, rec: null, errors: [`Not valid JSON: ${e instanceof Error ? e.message : "parse error"}`], warnings: [] };
-    }
+    const p = tryParse(draft);
+    if ("error" in p) return { raw: undefined, rec: null, errors: [p.error], warnings: [] as string[], mode: "create" as const };
+    return normalizeRow(p.value, context(), new Set());
   }, [draft]); // eslint-disable-line react-hooks/exhaustive-deps
   const changed = draft !== pretty(row.raw);
 
@@ -403,30 +382,14 @@ function RowDialog({ index, row, context, onClose, onSave, onRemove }: { index: 
       }
     >
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="min-w-0">
-          <p className="mb-1 text-sm font-medium text-ink">Question JSON</p>
-          <TextArea value={draft} onChange={(e) => setDraft(e.target.value)} rows={24} spellCheck={false} aria-label="Question JSON" className="font-mono text-xs" />
-          <div className="mt-2 space-y-1">
-            {checked.errors.map((p) => (
-              <p key={p} className="flex gap-1.5 text-xs text-error">
-                <XCircle className="mt-px size-3.5 shrink-0" />
-                {p}
-              </p>
-            ))}
-            {checked.warnings.map((p) => (
-              <p key={p} className="flex gap-1.5 text-xs text-ink">
-                <AlertTriangle className="mt-px size-3.5 shrink-0 text-warning" />
-                {p}
-              </p>
-            ))}
-            {checked.rec && !checked.warnings.length && (
-              <p className="flex gap-1.5 text-xs text-success">
-                <CheckCircle2 className="mt-px size-3.5 shrink-0" />
-                {checked.rec.status === "published" ? "Ready to publish." : "Valid. It will be imported as a draft."}
-              </p>
-            )}
-          </div>
-        </div>
+        <JsonEditor
+          label="Question JSON"
+          value={draft}
+          onChange={setDraft}
+          errors={checked.errors}
+          warnings={checked.warnings}
+          ok={checked.rec ? `${checked.mode === "update" ? `Updates ${checked.rec.id}. ` : ""}${checked.rec.status === "published" ? "Ready to publish." : "Valid. It will be saved as a draft."}` : undefined}
+        />
         <div className="min-w-0">
           <p className="mb-1 text-sm font-medium text-ink">Student preview</p>
           {checked.rec ? (
@@ -450,14 +413,7 @@ function FormatGuide({ subjects }: { subjects: SubjectRec[] }) {
   const sample = pretty([sampleFor(type, subjects)]);
   const all = () => pretty(IMPORT_TYPES.map((t) => sampleFor(t, subjects)));
 
-  const download = () => {
-    const url = URL.createObjectURL(new Blob([all()], { type: "application/json" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "nclexbase-questions-template.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const download = () => downloadJson(IMPORT_TYPES.map((t) => sampleFor(t, subjects)), "nclexbase-questions-template.json");
 
   return (
     <Panel
@@ -501,11 +457,11 @@ function FormatGuide({ subjects }: { subjects: SubjectRec[] }) {
                 </option>
               ))}
             </Select>
-            <Btn onClick={() => copy(sample, `${TYPE_LABELS[type]} sample`)}>
+            <Btn onClick={() => copyText(sample, `${TYPE_LABELS[type]} sample`)}>
               <Copy className="size-4" />
               Copy
             </Btn>
-            <Btn variant="ghost" onClick={() => copy(all(), "all samples")}>
+            <Btn variant="ghost" onClick={() => copyText(all(), "all samples")}>
               Copy all types
             </Btn>
           </div>
