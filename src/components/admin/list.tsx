@@ -431,7 +431,7 @@ export function DataTable<T>({
   const someOn = pageIds.some((id) => selection?.selected.has(id));
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-white">
-      <div className={scroll ? "max-h-[60dvh] overflow-auto" : "overflow-x-auto"}>
+      <div className={scroll ? "max-h-[480px] overflow-auto" : "overflow-x-auto"}>
         <table className="w-full min-w-[720px] text-sm">
           <thead className="sticky top-0 z-[1] bg-background">
             <tr className="border-b border-line text-left">
