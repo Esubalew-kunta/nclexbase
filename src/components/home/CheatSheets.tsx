@@ -96,11 +96,14 @@ export function CheatSheetBrowser({ subject: fixedSubject }: { subject?: Subject
   const sheets = useCheatSheets();
   const subjects = useSubjects();
   const allLabel = fixedSubject ? `All ${subjectName(fixedSubject)}` : "All Systems";
+  // On the all-sheets page the chips follow the subject picked in the rail (as on the live site):
+  // a subject shows its own system chips, "all" shows the global ones.
+  const chipSubject = fixedSubject ?? (subject === "all" ? undefined : subject);
+  const tagsOf = (c: CheatSheetRec) => (chipSubject ? c.subjectSystems : c.systems);
+  const pool = chipSubject ? sheets.filter((c) => c.subject === chipSubject) : sheets;
   // Chips keep the live site's order, then any new tags the admin used; tags with no sheets are left out.
-  const tagsOf = (c: CheatSheetRec) => (fixedSubject ? c.subjectSystems : c.systems);
-  const pool = fixedSubject ? sheets.filter((c) => c.subject === fixedSubject) : sheets;
   const inUse = new Set(pool.flatMap(tagsOf));
-  const seedChips = fixedSubject ? (CHEAT_SHEET_SUBJECT_SYSTEMS[fixedSubject] ?? []) : CHEAT_SHEET_SYSTEMS;
+  const seedChips = chipSubject ? (CHEAT_SHEET_SUBJECT_SYSTEMS[chipSubject] ?? []) : CHEAT_SHEET_SYSTEMS;
   const chips = [...seedChips.filter((c) => inUse.has(c)), ...[...inUse].filter((c) => !seedChips.includes(c)).sort()];
   const [system, setSystem] = useState(allLabel);
   const [q, setQ] = useState("");
@@ -127,7 +130,7 @@ export function CheatSheetBrowser({ subject: fixedSubject }: { subject?: Subject
               return (
                 <div
                   key={id}
-                  onClick={() => setSubject(id)}
+                  onClick={() => (setSubject(id), setSystem(allLabel))}
                   className={clsx("flex h-8 cursor-pointer items-center rounded-lg border px-3 py-2 transition-colors md:w-full", on ? "border-primary bg-primary-light" : "border-line bg-white hover:bg-primary-light")}
                 >
                   <span className="mr-1 flex size-4">{id === "all" ? <Star /> : <SubjectIcon id={id} size={16} />}</span>
