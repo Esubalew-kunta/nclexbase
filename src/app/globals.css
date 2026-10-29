@@ -3,6 +3,12 @@
 /*
  * NCLEXBase.com brand tokens. Tailwind name -> brand role:
  *   primary (#0E5A5C) / primary-hover / primary-light: deep teal, its hover, pale teal surfaces
+ *   ink-teal / ink-teal-soft: the near-black field a hero sits on, so `primary` has something
+ *     to sit *on*. Without these the palette jumps straight from #0E5A5C to #E8F2F2 and a
+ *     full-bleed teal hero reads as one piece of coloured paper.
+ *   teal-bright: the mid-tone for diagrams and line art on a dark field
+ *   clay: the one warm note in the brand. Not gold, and not an error colour -- used for a
+ *     clinical value out of range, and for at most one thing per page, so it means something
  *   gold: premium accent only (logo, Pro badges, upgrade actions, thin accent lines)
  *   background / surface: page background / cards, forms, modals
  *   exam-ink: question stems, answers, rationales. ink: interface text. muted: secondary text
@@ -12,10 +18,17 @@
 @theme {
   --font-sans: var(--font-brand), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-exam: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Display headlines only. A serif over a clinical sans buys authority that a geometric sans
+     cannot, and separates the site from every competitor in the category -- all of them sans. */
+  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
 
   --color-primary: #0e5a5c;
   --color-primary-hover: #094448;
   --color-primary-light: #e8f2f2;
+  --color-ink-teal: #07272a;
+  --color-ink-teal-soft: #0a3f41;
+  --color-teal-bright: #1c8f90;
+  --color-clay: #c2603f;
   --color-gold: #c9a34e;
 
   --color-background: #f8fafa;
