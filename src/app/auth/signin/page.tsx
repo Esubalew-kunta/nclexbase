@@ -58,7 +58,7 @@ function SignIn() {
       type="button"
       disabled={Boolean(pending)}
       onClick={() => void signIn(account, account.label)}
-      className="h-11 flex-1 cursor-pointer rounded-lg border border-primary bg-white font-semibold text-primary transition-colors hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
+      className="h-11 w-full cursor-pointer rounded-lg border border-primary bg-white font-semibold text-primary transition-colors hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
     >
       {pending === account.label ? "Signing in…" : account.label}
     </button>
@@ -69,14 +69,15 @@ function SignIn() {
       title="Log in"
       onSubmit={submit}
       footer={<AuthSubmit disabled={!ready}>{pending === "form" ? "Logging in…" : "Log In"}</AuthSubmit>}
-      below={
+      aside={
         demoAuthEnabled() ? (
-          <div className="border-t border-line px-6 py-4 text-center sm:px-16">
-            <p className="mb-2 text-sm text-muted">Sign in to a demo account</p>
-            <div className="flex gap-3">
+          <div className="rounded-lg border border-line bg-white p-4 shadow-card">
+            <p className="mb-3 text-sm font-semibold text-ink">Demo accounts</p>
+            <div className="flex flex-col gap-2">
               {quick(DEMO_STUDENT)}
               {quick(DEMO_ADMIN)}
             </div>
+            <p className="mt-3 text-xs leading-4 text-muted">Signs in for real. What you can do is set by the account, not the button.</p>
           </div>
         ) : undefined
       }

@@ -4,10 +4,14 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useState, type ComponentProps, type ReactNode } from "react";
 import { LogoStacked } from "@/components/ui/Logo";
+import { apiMode } from "@/lib/api/client";
 
 /**
  * Shared frame for /auth/signin, /auth/join and /auth/forgot:
  * off-white page, stacked NCLEXBase logo, 528px white card with a teal top edge.
+ *
+ * `aside` sits beside the card on a wide screen and falls in under it on a narrow one, where
+ * there is no room for a second column.
  */
 export function AuthShell({
   title,
@@ -16,6 +20,7 @@ export function AuthShell({
   children,
   footer,
   below,
+  aside,
 }: {
   title: string;
   subtitle?: string;
@@ -23,25 +28,30 @@ export function AuthShell({
   children: ReactNode;
   footer: ReactNode;
   below?: ReactNode;
+  aside?: ReactNode;
 }) {
   return (
     <div className="min-h-dvh bg-background font-sans">
-      <div className="mx-auto w-full max-w-[528px] px-4 pt-12 pb-10 sm:px-0">
+      <div className={clsx("mx-auto w-full px-4 pt-12 pb-10 sm:px-0", aside ? "max-w-[528px] lg:max-w-[744px]" : "max-w-[528px]")}>
         <div className="mb-8 flex justify-center">
           <Link href="/nclex">
             <LogoStacked width={200} />
           </Link>
         </div>
-        <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-line border-t-4 border-t-primary bg-white shadow-card">
-          <div className="px-6 py-8 sm:px-16">
-            <h2 className="text-center text-[26px] leading-[31.2px] font-bold text-ink">{title}</h2>
-            {subtitle && <p className="mt-1 text-center text-base leading-6 text-muted">{subtitle}</p>}
-            <div className="mt-6">{children}</div>
-          </div>
-          <div className="border-t border-line px-6 py-6 sm:px-16">{footer}</div>
-          {below}
-        </form>
-        <p className="mt-6 text-center text-sm text-muted">Prototype: nothing you enter here leaves your browser.</p>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <form onSubmit={onSubmit} className="min-w-0 flex-1 overflow-hidden rounded-lg border border-line border-t-4 border-t-primary bg-white shadow-card">
+            <div className="px-6 py-8 sm:px-16">
+              <h2 className="text-center text-[26px] leading-[31.2px] font-bold text-ink">{title}</h2>
+              {subtitle && <p className="mt-1 text-center text-base leading-6 text-muted">{subtitle}</p>}
+              <div className="mt-6">{children}</div>
+            </div>
+            <div className="border-t border-line px-6 py-6 sm:px-16">{footer}</div>
+            {below}
+          </form>
+          {aside && <div className="lg:w-[180px] lg:shrink-0">{aside}</div>}
+        </div>
+        {/* True only without an API behind the form; with one, what is typed does leave the browser. */}
+        {!apiMode() && <p className="mt-6 text-center text-sm text-muted">Prototype: nothing you enter here leaves your browser.</p>}
       </div>
     </div>
   );
