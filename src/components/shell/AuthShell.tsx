@@ -107,6 +107,16 @@ export function AuthSubmit({ disabled, children }: { disabled?: boolean; childre
   );
 }
 
+/** What the server said went wrong. Renders nothing when there is nothing to say. */
+export function AuthError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className="mb-4 rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+      {message}
+    </p>
+  );
+}
+
 /** Teal text link centered under a form section ("Create an account", "Go back to login"). */
 export function AuthLink({ href, children }: { href: string; children: ReactNode }) {
   return (

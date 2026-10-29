@@ -5,7 +5,9 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { useConfig } from "@/lib/content";
 import { recordReferralJoin } from "@/lib/promo";
-import { AuthField, AuthLink, AuthShell, AuthSubmit, PasswordField } from "@/components/shell/AuthShell";
+import { apiMode } from "@/lib/api/client";
+import { register } from "@/lib/api/auth";
+import { AuthError, AuthField, AuthLink, AuthShell, AuthSubmit, PasswordField } from "@/components/shell/AuthShell";
 
 /** Mock sign-up (live: app.bootcamp.com/auth#/join). Starts a fresh free account in this browser. */
 export default function JoinPage() {
@@ -13,16 +15,32 @@ export default function JoinPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [agree, setAgree] = useState(false);
+  const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
   const { termsUrl, privacyUrl } = useConfig().branding;
-  const ready = /\S+@\S+\.\S+/.test(email) && password.length >= 8 && agree;
+  const ready = /\S+@\S+\.\S+/.test(email) && password.length >= 8 && agree && !pending;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    useStore.getState().resetAll();
-    useStore.setState((s) => ({ user: { ...s.user, name: "", email: email.trim(), plan: "free", signedIn: true } }));
     // Join links from Refer a friend carry ?ref=CODE.
     const ref = new URLSearchParams(window.location.search).get("ref");
+
+    if (apiMode()) {
+      setPending(true);
+      setError(undefined);
+      const result = await register({ email: email.trim(), password, ref });
+      setPending(false);
+      if (!result.ok) {
+        // The API rejects a password found in a breach corpus, and says so per field.
+        return setError(result.errors?.password?.[0] ?? result.errors?.email?.[0] ?? result.message ?? "We could not create that account.");
+      }
+      if (ref) recordReferralJoin(ref, email.trim());
+      return router.push("/nclex");
+    }
+
+    useStore.getState().resetAll();
+    useStore.setState((s) => ({ user: { ...s.user, name: "", email: email.trim(), plan: "free", signedIn: true } }));
     if (ref) recordReferralJoin(ref, email.trim());
     router.push("/nclex");
   };
@@ -31,13 +49,14 @@ export default function JoinPage() {
     <AuthShell
       title="Start studying for free"
       onSubmit={submit}
-      footer={<AuthSubmit disabled={!ready}>Create My Free Account</AuthSubmit>}
+      footer={<AuthSubmit disabled={!ready}>{pending ? "Creating your account…" : "Create My Free Account"}</AuthSubmit>}
       below={
         <div className="pt-2 pb-8 text-center">
           <AuthLink href="/auth/signin">I already have an account</AuthLink>
         </div>
       }
     >
+      <AuthError message={error} />
       <AuthField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
       <PasswordField label="Password" right="8+ characters" value={password} onChange={setPassword} autoComplete="new-password" />
       <div className="mt-4 mb-2">

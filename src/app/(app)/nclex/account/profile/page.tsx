@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { AccountShell, Field, PanelCard } from "@/components/home/AccountShell";
+import { apiMode } from "@/lib/api/client";
+import { logout } from "@/lib/api/auth";
 import { signOutStudent } from "@/lib/demo";
 
 export default function ProfilePage() {
@@ -36,7 +38,12 @@ export default function ProfilePage() {
       </PanelCard>
       <div className="mx-auto mt-8 w-60">
         <button
-          onClick={() => (signOutStudent(), router.push("/auth/signin"))}
+          onClick={async () => {
+            // Ending the server session matters; the local flag alone would leave the cookie live.
+            if (apiMode()) await logout();
+            else signOutStudent();
+            router.push("/auth/signin");
+          }}
           className="flex h-14 w-full cursor-pointer items-center justify-center rounded-lg border border-primary bg-white px-4 py-[19px] text-lg leading-[18px] font-semibold text-primary shadow-[0_2px_0_0_var(--color-line)] transition-colors hover:bg-primary-light active:translate-y-[2px] active:shadow-none"
         >
           Log Out

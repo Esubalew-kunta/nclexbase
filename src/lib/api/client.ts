@@ -16,6 +16,25 @@ export const apiMode = () => BASE !== "";
 /** `https://api.nclexbase.com/api/v1` — the version lives in the path, never in a header. */
 export const apiUrl = (path: string) => `${BASE}/api/v1${path.startsWith("/") ? path : `/${path}`}`;
 
+/**
+ * Sanctum's CSRF cookie. It sits outside the versioned prefix, so it is built from the base.
+ *
+ * Laravel sets an `XSRF-TOKEN` cookie and expects it echoed back in `X-XSRF-TOKEN` on every
+ * write. Both the cookie and the session cookie are scoped to the host without the port, so
+ * the SPA and the API can run on different ports of localhost during development.
+ */
+export async function csrf(): Promise<void> {
+  if (!apiMode() || readCookie("XSRF-TOKEN")) return;
+  await fetch(`${BASE}/sanctum/csrf-cookie`, { credentials: "include", headers: { Accept: "application/json" } });
+}
+
+function readCookie(name: string): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const hit = document.cookie.split("; ").find((c) => c.startsWith(`${name}=`));
+  // Laravel URL-encodes the token when it sets the cookie.
+  return hit ? decodeURIComponent(hit.slice(name.length + 1)) : undefined;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -43,6 +62,9 @@ export async function api<T>(path: string, { body, retries, ...init }: ApiOption
   const method = init.method ?? (body === undefined ? "GET" : "POST");
   const attempts = retries ?? (method === "GET" ? 2 : 0);
 
+  // Anything that changes state needs the CSRF cookie in place before it is sent.
+  if (method !== "GET" && method !== "HEAD") await csrf();
+
   let lastError: unknown;
   for (let attempt = 0; attempt <= attempts; attempt++) {
     try {
@@ -53,6 +75,7 @@ export async function api<T>(path: string, { body, retries, ...init }: ApiOption
         headers: {
           Accept: "application/json",
           ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+          ...xsrfHeader(method),
           ...init.headers,
         },
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -76,6 +99,12 @@ export async function api<T>(path: string, { body, retries, ...init }: ApiOption
   }
 
   throw lastError instanceof Error ? lastError : new ApiError(0, "The server could not be reached.");
+}
+
+function xsrfHeader(method: string): Record<string, string> {
+  if (method === "GET" || method === "HEAD") return {};
+  const token = readCookie("XSRF-TOKEN");
+  return token ? { "X-XSRF-TOKEN": token } : {};
 }
 
 async function toError(res: Response): Promise<ApiError> {

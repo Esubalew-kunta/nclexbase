@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useCaseRows } from "@/lib/content";
+import { useBank, useCaseRows } from "@/lib/content";
 import { resolveCase, useStartCase } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
 import { Button, Modal, UpgradeButton } from "@/components/ui/primitives";
@@ -17,6 +17,9 @@ export function CaseList({ subject }: { subject?: string }) {
   const start = useStartCase();
   const [confirm, setConfirm] = useState<{ id: string; title: string } | null>(null);
   const rows = useCaseRows(subject);
+  // resolveCase() below reads the bank directly, which is not a subscription. In API mode the
+  // bank arrives after the first render, so without this the row counts would stay at 0.
+  useBank();
 
   return (
     <div className="mt-4 flex flex-col">

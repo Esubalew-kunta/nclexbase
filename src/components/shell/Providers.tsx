@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { useAdminStore } from "@/lib/admin/store";
 import { apiMode } from "@/lib/api/client";
 import { loadApiContent, loadQuestionBank, useApiContent } from "@/lib/api/content";
+import { restoreSession } from "@/lib/api/auth";
 
 /** Rehydrates persisted state after mount so static HTML and first client render match. */
 export function Providers({ children }: { children: ReactNode }) {
@@ -23,12 +24,22 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [router]);
 
   useEffect(() => {
-    // API content first in API mode: lib/content reads are synchronous, so a page rendered
-    // before the bootstrap lands would show empty lists and then jump.
-    Promise.resolve(apiMode() ? loadApiContent({ withBank: useStore.getState().user.signedIn === true }) : undefined)
+    /*
+     * API content first in API mode: lib/content reads are synchronous, so a page rendered
+     * before the bootstrap lands would show empty lists and then jump.
+     *
+     * The session comes from the cookie, not from localStorage, so it is restored after the
+     * persisted stores are back -- `/auth/me` then has the last word on whether this browser
+     * is signed in, and a stale `signedIn` flag cannot outlive the real session.
+     */
+    Promise.resolve(apiMode() ? loadApiContent({ withBank: false }) : undefined)
       .then(() => useAdminStore.persist.rehydrate())
       .then(() => useAdminStore.setState({ hydrated: true }))
       .then(() => useStore.persist.rehydrate())
+      // Only ask when this browser thinks it has a session: the Laravel session cookie is
+      // HttpOnly and unreadable here, so the persisted flag is the only hint available, and
+      // probing without one would make every first-time visitor provoke a 401.
+      .then(() => (apiMode() && useStore.getState().user.signedIn ? restoreSession() : null))
       .then(() => useStore.getState().setUi({ hydrated: true }));
     // Another tab (e.g. /admin) saved changes: pick them up here too.
     const onStorage = (e: StorageEvent) => {
@@ -39,7 +50,7 @@ export function Providers({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // The question bank needs a session, so a visitor who signs in after boot has to ask again.
+  // The bank needs a session. Asking only once signed in keeps a guest from provoking a 401.
   const signedIn = useStore((s) => s.user.signedIn);
   useEffect(() => {
     if (apiMode() && signedIn) void loadQuestionBank();
