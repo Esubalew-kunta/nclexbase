@@ -166,7 +166,10 @@ const seedNavigation = (): NavSectionCfg[] =>
 export const DEFAULT_CONFIG: SiteConfig = {
   branding: {
     siteName: "NCLEXBase.com",
-    supportEmail: "team@bootcamp.com",
+    // Not bootcamp.com's address, which is what this said until 2026-10-30 -- and the public
+    // /contact page and the site footer both render it. Matches MAIL_REPLY_TO_ADDRESS in the
+    // API, so a reply to any mail we send reaches the same inbox the site advertises.
+    supportEmail: "support@nclexbase.com",
     // Relative, so they work on localhost and on whatever host the site is served from.
     // They were absolute `https://nclexbase.com/...` links to pages that did not exist.
     termsUrl: "/terms",
