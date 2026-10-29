@@ -31,8 +31,11 @@ export const DEMO_STUDENT: DemoAccount = {
 
 export const DEMO_ADMIN: DemoAccount = {
   label: "Admin",
-  email: "admin@nclexbase.com",
-  password: "nclexbase-admin-2026",
+  email: "esubalewkunta59@gmail.com",
+  // Set directly against the account: the password rules refuse this one on sign-up and on
+  // reset, because it is in every breach list. Fine for a local demo, and the reason the
+  // buttons must be switched off before the site is public.
+  password: "123456",
   home: "/admin",
 };
 
