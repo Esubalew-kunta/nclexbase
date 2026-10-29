@@ -1,0 +1,14 @@
+# Keep NCLEXBase out of search engines and AI answer engines.
+#
+# Install by hand in each static docroot (public_html for nclexbase.com and the
+# web-staging docroot for test.nclexbase.com). deploy.sh rsyncs with
+# `--exclude '.htaccess'`, so this file survives every deploy.
+#
+# The header covers *everything* the server hands out — HTML, JSON, assets — not
+# just pages that carry a <meta name="robots"> tag.
+<IfModule mod_headers.c>
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate"
+</IfModule>
+
+# Nothing here is a directory listing.
+Options -Indexes

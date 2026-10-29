@@ -9,6 +9,11 @@ services:
       - key: NODE_VERSION
         value: 22.20.0
     headers:
+      # Keep the site out of search engines and AI crawlers (owner's decision).
+      # Matches the cPanel docroot rule in deploy/htaccess-noindex.
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate
       - path: /_next/static/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
