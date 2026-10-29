@@ -27,7 +27,7 @@ export interface ImportRow {
 type Kind = "string" | "number" | "string[]" | "number[]" | "number[][]" | "blanks" | "hlrows" | "bowtieAnswer";
 
 /** Type-specific fields. Fields marked optional fall back to the editor's defaults. */
-const SHAPES: Record<ItemType, Record<string, { kind: Kind; optional?: boolean }>> = {
+export const SHAPES: Record<ItemType, Record<string, { kind: Kind; optional?: boolean }>> = {
   mcq: { options: { kind: "string[]" }, answer: { kind: "number" } },
   sata: { options: { kind: "string[]" }, answers: { kind: "number[]" } },
   selectN: { n: { kind: "number" }, options: { kind: "string[]" }, answers: { kind: "number[]" } },
