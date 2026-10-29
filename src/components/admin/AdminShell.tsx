@@ -41,7 +41,6 @@ import { STORAGE_FULL_EVENT, useAdminStore } from "@/lib/admin/store";
 import { getAll } from "@/lib/content";
 import { planReminder } from "@/lib/daily";
 import { LogoMark } from "@/components/ui/Logo";
-import { ViewSwitch } from "@/components/shell/ViewSwitch";
 import { ConfirmHost, stripHtml, toast, Toaster } from "./ui";
 
 interface NavItem {
@@ -391,7 +390,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </button>
           <JumpTo />
           <div className="ml-auto flex items-center gap-2">
-            <ViewSwitch current="admin" />
             <span className="hidden text-right text-xs leading-tight md:block">
               <span className="block font-semibold text-ink">{session.name}</span>
               <span className="block text-muted">{session.email}</span>

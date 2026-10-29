@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { apiMode } from "@/lib/api/client";
 import { login } from "@/lib/api/auth";
-import { DEMO_STUDENT, signInStudent } from "@/lib/demo";
+import { DEMO_ADMIN, DEMO_STUDENT, demoAuthEnabled, signInAdmin, signInStudent, type DemoAccount } from "@/lib/demo";
 import { AuthError, AuthField, AuthLink, AuthShell, AuthSubmit, PasswordField } from "@/components/shell/AuthShell";
 
 /**
@@ -17,52 +17,68 @@ function SignIn() {
   const router = useRouter();
   const next = useSearchParams().get("next");
   const live = apiMode();
-  // Pre-filling only makes sense for the prototype account.
   const [email, setEmail] = useState(live ? "" : DEMO_STUDENT.email);
   const [password, setPassword] = useState(live ? "" : DEMO_STUDENT.password);
   const [error, setError] = useState<string>();
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<string>();
   const ready = Boolean(email.trim() && password) && !pending;
-  const go = () => router.push(next?.startsWith("/nclex") ? next : "/nclex");
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ready) return;
+  const go = (home: string) => router.push(next?.startsWith("/nclex") ? next : home);
+
+  /** One path for both the form and the demo buttons, so they cannot behave differently. */
+  const signIn = async (account: { email: string; password: string; home: string }, busy: string) => {
+    setPending(busy);
+    setError(undefined);
 
     if (!live) {
-      signInStudent(email === DEMO_STUDENT.email ? undefined : email);
-      return go();
+      // No API: fall back to the bundled demo behaviour.
+      if (account.home === DEMO_ADMIN.home) signInAdmin();
+      else signInStudent(account.email === DEMO_STUDENT.email ? undefined : account.email);
+      setPending(undefined);
+      return go(account.home);
     }
 
-    setPending(true);
-    setError(undefined);
-    const result = await login(email.trim(), password);
-    setPending(false);
+    const result = await login(account.email.trim(), account.password);
+    setPending(undefined);
 
-    if (result.ok) return go();
+    if (result.ok) return go(account.home);
     setError(result.message ?? "That email and password did not match.");
   };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ready) return;
+    // A typed sign-in goes to the student app; an admin account lands on /admin by its role.
+    void signIn({ email, password, home: DEMO_STUDENT.home }, "form");
+  };
+
+  const quick = (account: DemoAccount) => (
+    <button
+      key={account.label}
+      type="button"
+      disabled={Boolean(pending)}
+      onClick={() => void signIn(account, account.label)}
+      className="h-11 flex-1 cursor-pointer rounded-lg border border-primary bg-white font-semibold text-primary transition-colors hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending === account.label ? "Signing in…" : account.label}
+    </button>
+  );
 
   return (
     <AuthShell
       title="Log in"
       onSubmit={submit}
-      footer={<AuthSubmit disabled={!ready}>{pending ? "Logging in…" : "Log In"}</AuthSubmit>}
+      footer={<AuthSubmit disabled={!ready}>{pending === "form" ? "Logging in…" : "Log In"}</AuthSubmit>}
       below={
-        live ? undefined : (
+        demoAuthEnabled() ? (
           <div className="border-t border-line px-6 py-4 text-center sm:px-16">
-            <p className="mb-2 text-sm text-muted">
-              Prototype demo account: <span className="font-semibold text-ink">{DEMO_STUDENT.email}</span> / <span className="font-semibold text-ink">{DEMO_STUDENT.password}</span>
-            </p>
-            <button
-              type="button"
-              onClick={() => (signInStudent(), go())}
-              className="h-11 w-full cursor-pointer rounded-lg border border-primary bg-white font-semibold text-primary transition-colors hover:bg-primary-light"
-            >
-              Log in as the demo student
-            </button>
+            <p className="mb-2 text-sm text-muted">Sign in to a demo account</p>
+            <div className="flex gap-3">
+              {quick(DEMO_STUDENT)}
+              {quick(DEMO_ADMIN)}
+            </div>
           </div>
-        )
+        ) : undefined
       }
     >
       <AuthError message={error} />

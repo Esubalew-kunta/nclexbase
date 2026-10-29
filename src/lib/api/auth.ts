@@ -2,6 +2,7 @@
 
 import { api, ApiError, apiMode } from "@/lib/api/client";
 import { loadQuestionBank, useApiContent } from "@/lib/api/content";
+import { useAdminStore } from "@/lib/admin/store";
 import { useStore } from "@/lib/store";
 
 /*
@@ -32,11 +33,25 @@ export interface AuthResult {
   errors?: Record<string, string[]>;
 }
 
-/** Copy the API's user onto the student store, which the whole app reads. */
+/**
+ * Copy the API's user onto the stores the app reads.
+ *
+ * Whether someone may open /admin is decided by the `role` the API reports, not by which
+ * button they pressed or what is typed into the admin login form. The admin area still keeps
+ * its own session object, so that is filled in here from the authenticated user and cleared
+ * for anyone who is not an admin. When the admin screens move onto the API they will read the
+ * role directly and this bridge goes away.
+ */
 export function adoptUser(user: ApiUser): void {
   useStore.setState((s) => ({
     user: { ...s.user, name: user.name, email: user.email, plan: user.plan, signedIn: true },
   }));
+
+  useAdminStore.setState({
+    session: user.role === "admin"
+      ? { email: user.email, name: user.name, at: new Date().toISOString() }
+      : null,
+  });
 }
 
 export async function login(email: string, password: string): Promise<AuthResult> {
@@ -71,6 +86,7 @@ export async function logout(): Promise<void> {
     // The session may already be gone; signing out locally is what matters.
   }
   useStore.setState((s) => ({ user: { ...s.user, signedIn: false } }));
+  useAdminStore.setState({ session: null });
   useApiContent.setState({ questions: undefined });
 }
 

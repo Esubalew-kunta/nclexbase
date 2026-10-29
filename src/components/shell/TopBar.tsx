@@ -9,8 +9,6 @@ import { LogoMark } from "@/components/ui/Logo";
 import { SITE_NAME } from "@/lib/brand";
 import { SearchBox } from "./SearchBox";
 import { SidebarContent } from "./Sidebar";
-import { DevResetButton } from "./DevResetButton";
-import { ViewSwitch } from "./ViewSwitch";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -89,11 +87,6 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center">
-        {/* TEMPORARY: prototype-only controls (see ViewSwitch.tsx and DevResetButton.tsx). */}
-        <div className="mr-2">
-          <ViewSwitch current="student" />
-        </div>
-        <DevResetButton />
         <div className="group relative hidden sm:block">
           <p className="flex h-[42px] cursor-pointer items-center rounded-full border border-line bg-white px-4 py-3 text-base leading-4 font-semibold text-ink transition-colors duration-100 hover:bg-primary-light">
             <img src="/assets/brand/flame.png" alt="Streak" className="mr-2 h-4 w-3.5" />
