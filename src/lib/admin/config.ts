@@ -167,8 +167,10 @@ export const DEFAULT_CONFIG: SiteConfig = {
   branding: {
     siteName: "NCLEXBase.com",
     supportEmail: "team@bootcamp.com",
-    termsUrl: "https://nclexbase.com/terms",
-    privacyUrl: "https://nclexbase.com/privacy",
+    // Relative, so they work on localhost and on whatever host the site is served from.
+    // They were absolute `https://nclexbase.com/...` links to pages that did not exist.
+    termsUrl: "/terms",
+    privacyUrl: "/privacy",
     coachName: "Dr. Emily Wilson",
     coachPhotoUrl: "/assets/experts/emily.jpeg",
   },
