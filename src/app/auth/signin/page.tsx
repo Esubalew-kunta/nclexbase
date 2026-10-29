@@ -23,7 +23,15 @@ function SignIn() {
   const [pending, setPending] = useState<string>();
   const ready = Boolean(email.trim() && password) && !pending;
 
-  const go = (home: string) => router.push(next?.startsWith("/nclex") ? next : home);
+  /**
+   * Where to land.
+   *
+   * `next` is only ever a student page — StudentGuard writes it when it bounces a signed-out
+   * visitor, which is how nearly everyone arrives here — so it stands in for `/nclex` and for
+   * nothing else. An admin goes to the admin whatever page sent them to this one; sending them
+   * back to `/nclex` instead is the whole reason the Admin button appeared to do nothing.
+   */
+  const go = (home: string) => router.push(home === DEMO_STUDENT.home && next?.startsWith("/nclex") ? next : home);
 
   /** One path for both the form and the demo buttons, so they cannot behave differently. */
   const signIn = async (account: { email: string; password: string; home: string }, busy: string) => {
@@ -31,24 +39,32 @@ function SignIn() {
     setError(undefined);
 
     if (!live) {
-      // No API: fall back to the bundled demo behaviour.
-      if (account.home === DEMO_ADMIN.home) signInAdmin();
-      else signInStudent(account.email === DEMO_STUDENT.email ? undefined : account.email);
+      // No API: fall back to the bundled demo behaviour. The demo admin cannot fail to sign
+      // in — it is a button, not a credential check — so its destination is unconditional.
+      if (account.home === DEMO_ADMIN.home) {
+        signInAdmin();
+        setPending(undefined);
+        return go(DEMO_ADMIN.home);
+      }
+
+      signInStudent(account.email === DEMO_STUDENT.email ? undefined : account.email);
       setPending(undefined);
-      return go(account.home);
+      return go(DEMO_STUDENT.home);
     }
 
     const result = await login(account.email.trim(), account.password);
     setPending(undefined);
 
-    if (result.ok) return go(account.home);
-    setError(result.message ?? "That email and password did not match.");
+    if (!result.ok) return setError(result.message ?? "That email and password did not match.");
+
+    // The role the API reports decides, not the button that was pressed and not the form: an
+    // admin's credentials typed into the fields are a sign-in to the admin.
+    return go(result.user?.role === "admin" ? DEMO_ADMIN.home : DEMO_STUDENT.home);
   };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    // A typed sign-in goes to the student app; an admin account lands on /admin by its role.
     void signIn({ email, password, home: DEMO_STUDENT.home }, "form");
   };
 

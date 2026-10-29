@@ -31,6 +31,11 @@ export interface AuthResult {
   message?: string;
   /** Field-level errors from Laravel validation, e.g. { email: ["..."] }. */
   errors?: Record<string, string[]>;
+  /**
+   * Who signed in, on success. The sign-in page reads `role` from here to decide where to
+   * land, so the destination follows the account rather than the button that was pressed.
+   */
+  user?: ApiUser;
 }
 
 /**
@@ -59,6 +64,7 @@ export async function login(email: string, password: string): Promise<AuthResult
     const { data } = await api<{ data: ApiUser }>("/auth/login", { body: { email, password } });
     adoptUser(data);
     await loadQuestionBank();
+    return data;
   });
 }
 
@@ -76,6 +82,7 @@ export async function register(input: { name?: string; email: string; password: 
     });
     adoptUser(data);
     await loadQuestionBank();
+    return data;
   });
 }
 
@@ -107,10 +114,9 @@ export async function restoreSession(): Promise<ApiUser | null> {
   }
 }
 
-async function attempt(run: () => Promise<void>): Promise<AuthResult> {
+async function attempt(run: () => Promise<ApiUser>): Promise<AuthResult> {
   try {
-    await run();
-    return { ok: true };
+    return { ok: true, user: await run() };
   } catch (err) {
     if (err instanceof ApiError) return { ok: false, message: err.message, errors: err.errors };
     return { ok: false, message: "We could not reach the server. Check your connection and try again." };
