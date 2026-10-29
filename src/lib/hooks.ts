@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { getBank, useBank } from "@/lib/content";
-import { itemById, entriesForCase } from "./bank";
+import { findItem, entriesForCase } from "./bank";
 import { scoreItem } from "./scoring";
 import { latestAttempts, usedItemIds, useStore } from "./store";
 import type { CaseStudy, MasteryTag, SubjectId } from "./types";
@@ -32,7 +32,9 @@ export function useProgress() {
     let earned = 0;
     let max = 0;
     for (const [itemId, { answer, session }] of attempts) {
-      const item = itemById(itemId);
+      // History can outlive a question: skip rather than lose the whole page of statistics.
+      const item = findItem(itemId);
+      if (!item) continue;
       const sc = scoreItem(item, answer);
       earned += sc.earned;
       max += sc.max;

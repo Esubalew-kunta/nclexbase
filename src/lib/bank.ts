@@ -28,8 +28,25 @@ export function studyItems(): Item[] {
   return [...bank.cases.flatMap((c) => c.items), ...bank.standalone];
 }
 
+/**
+ * The item with this id, or undefined.
+ *
+ * Use this when walking saved history: an attempt can name a question the bank does not hold
+ * -- the admin deleted it, or in API mode the bank has not arrived yet -- and a whole page of
+ * statistics should not disappear because one old answer points at nothing.
+ */
+export function findItem(id: string): Item | undefined {
+  return getBank().byId.get(id) ?? fallbackItem(id);
+}
+
+/**
+ * The item with this id, or an error.
+ *
+ * Use this where the item must exist for the screen to mean anything, such as the question
+ * currently on display in the exam.
+ */
 export function itemById(id: string): Item {
-  const hit = getBank().byId.get(id) ?? fallbackItem(id);
+  const hit = findItem(id);
   if (!hit) throw new Error(`Unknown item ${id}`);
   return hit;
 }

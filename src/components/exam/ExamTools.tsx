@@ -382,10 +382,22 @@ function ExamDialog({ title, children, actions, onClose, width = 474 }: { title:
   );
 }
 
-export function ExamButton({ children, onClick, primary }: { children: ReactNode; onClick: () => void; primary?: boolean }) {
+export function ExamButton({
+  children,
+  onClick,
+  primary,
+  testId,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  primary?: boolean;
+  /** Stable handle for end-to-end tests. */
+  testId?: string;
+}) {
   return (
     <button
       onClick={onClick}
+      data-testid={testId}
       className={clsx(
         "min-w-[90px] cursor-pointer border px-3 py-1 text-base",
         primary ? "border-white font-semibold text-white hover:bg-white/10" : "border-white/40 text-white/60 hover:border-white/70 hover:text-white",
@@ -421,7 +433,7 @@ export function EndDialog({ onCancel, onEnd }: { onCancel: () => void; onEnd: ()
       actions={
         <>
           <ExamButton onClick={onCancel}>Return to Test</ExamButton>
-          <ExamButton primary onClick={onEnd}>
+          <ExamButton primary onClick={onEnd} testId="exam-end-confirm">
             End Test
           </ExamButton>
         </>
@@ -456,7 +468,7 @@ export function EndReviewDialog({ session, onCancel, onEnd }: { session: TestSes
       actions={
         <>
           <ExamButton onClick={onCancel}>Return to Review</ExamButton>
-          <ExamButton primary onClick={onEnd}>
+          <ExamButton primary onClick={onEnd} testId="exam-end-confirm">
             End Review
           </ExamButton>
         </>

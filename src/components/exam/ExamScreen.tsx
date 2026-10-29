@@ -141,7 +141,11 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
       </div>
       {!locked && !isCat && (
         <div className="my-4 ml-[26px]">
-          <button onClick={onSubmit} className="flex h-[35px] w-[100px] cursor-pointer items-center justify-center rounded-sm bg-primary text-base text-white hover:bg-primary-hover">
+          <button
+            onClick={onSubmit}
+            data-testid="exam-submit"
+            className="flex h-[35px] w-[100px] cursor-pointer items-center justify-center rounded-sm bg-primary text-base text-white hover:bg-primary-hover"
+          >
             <u>S</u>ubmit
           </button>
           {warnFor === item.id && (
@@ -225,13 +229,13 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
       <footer className="relative flex h-10 shrink-0 items-stretch justify-between bg-primary text-white">
         <div className="flex items-stretch">
           {review ? (
-            <FooterButton icon="examEnd" onClick={() => router.push(`/nclex/previous-tests/review?id=${session.id}`)} right>
+            <FooterButton icon="examEnd" onClick={() => router.push(`/nclex/previous-tests/review?id=${session.id}`)} right testId="exam-review">
               Exit Review
             </FooterButton>
           ) : (
             <>
               {!isCat && (
-                <FooterButton icon="examEnd" onClick={() => setOverlay("end")} right>
+                <FooterButton icon="examEnd" onClick={() => setOverlay("end")} right testId="exam-end">
                   End
                 </FooterButton>
               )}
@@ -247,7 +251,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
           {showTags && <TagButtons value={tags[item.id]} onChange={(t) => setTag(item.id, tags[item.id] === t ? null : t)} />}
           {!isCat && (
             <>
-              <FooterButton icon="examPrev" onClick={() => go(index - 1)} disabled={index === 0}>
+              <FooterButton icon="examPrev" onClick={() => go(index - 1)} disabled={index === 0} testId="exam-prev">
                 <u>P</u>revious
               </FooterButton>
               <FooterButton icon="examNavigate" onClick={() => setOverlay("drawer")}>
@@ -255,7 +259,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
               </FooterButton>
             </>
           )}
-          <FooterButton next onClick={() => (isCat ? onSubmit() : go(index + 1))} disabled={(review && index === total - 1) || (isCat && !isAnswered(item, current))}>
+          <FooterButton next onClick={() => (isCat ? onSubmit() : go(index + 1))} disabled={(review && index === total - 1) || (isCat && !isAnswered(item, current))} testId="exam-next">
             <u>N</u>ext
           </FooterButton>
         </div>
@@ -307,6 +311,7 @@ function FooterButton({
   right,
   next,
   pause,
+  testId,
 }: {
   icon?: IconName;
   children: ReactNode;
@@ -315,11 +320,14 @@ function FooterButton({
   right?: boolean;
   next?: boolean;
   pause?: boolean;
+  /** Stable handle for end-to-end tests; these buttons are icon-led and hard to name. */
+  testId?: string;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      data-testid={testId}
       className={clsx(
         "flex cursor-pointer items-center gap-1 px-2 py-2.5 text-xl hover:text-gold disabled:cursor-default disabled:opacity-50 disabled:hover:text-white",
         right ? "border-r border-white" : "border-l border-white",

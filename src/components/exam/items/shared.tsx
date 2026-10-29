@@ -31,6 +31,13 @@ export function Mark({ correct, show, className }: { correct: boolean; show: boo
 }
 
 /** Native checkbox/radio, 20px, like the live exam (disabled = gray once submitted). */
+/**
+ * The radio or checkbox behind a choice, a matrix cell and anything else that picks an option.
+ *
+ * `data-testid="answer-option"` is deliberate and shared: every selectable answer across the
+ * twelve item types carries it, so an end-to-end test can answer a question without knowing
+ * which type it is looking at. Guessing selectors per type was brittle and kept breaking.
+ */
 export function NativeInput({
   type,
   checked,
@@ -51,6 +58,7 @@ export function NativeInput({
       disabled={disabled}
       onChange={() => onChange?.()}
       aria-label={label}
+      data-testid="answer-option"
       className="mx-2 size-5 shrink-0 cursor-pointer align-middle accent-primary disabled:cursor-default"
     />
   );

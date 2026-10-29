@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { itemById } from "@/lib/bank";
+import { findItem } from "@/lib/bank";
 import { avgPoints, scoreSession } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
@@ -63,7 +63,11 @@ export default function PreviousTestsPage() {
           <tbody>
             {rows.map((s, i) => {
               const sc = scoreSession(s);
-              const avgMax = s.entries.reduce((a, e) => a + avgPoints(itemById(e.itemId)), 0);
+              // A saved test can name a question the bank no longer holds; it contributes nothing.
+              const avgMax = s.entries.reduce((a, e) => {
+                const item = findItem(e.itemId);
+                return item ? a + avgPoints(item) : a;
+              }, 0);
               const avg = sc.max ? Math.round((avgMax / sc.max) * 100) : 0;
               const href = s.status === "ended" ? `/nclex/previous-tests/review?id=${s.id}` : `/nclex/custom-test?id=${s.id}`;
               return (

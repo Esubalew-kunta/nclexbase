@@ -40,6 +40,10 @@ export function Providers({ children }: { children: ReactNode }) {
       // HttpOnly and unreadable here, so the persisted flag is the only hint available, and
       // probing without one would make every first-time visitor provoke a 401.
       .then(() => (apiMode() && useStore.getState().user.signedIn ? restoreSession() : null))
+      // A signed-in visitor's bank is part of "content ready": pages that resolve a question
+      // by id (Performance, Previous Tests, the exam itself) throw if it is not there yet, and
+      // they render as soon as `hydrated` flips.
+      .then((user) => (user ? loadQuestionBank() : null))
       .then(() => useStore.getState().setUi({ hydrated: true }));
     // Another tab (e.g. /admin) saved changes: pick them up here too.
     const onStorage = (e: StorageEvent) => {

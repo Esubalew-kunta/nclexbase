@@ -36,6 +36,7 @@ export function HighlightItemView({ item, answer, onChange, locked, reveal }: It
                         aria-pressed={on}
                         disabled={locked}
                         onClick={() => toggle(key)}
+                        data-testid="answer-option"
                         className={clsx(
                           "rounded-sm px-0.5 text-left disabled:cursor-default",
                           on && !reveal && "bg-[#ffe95c]",
