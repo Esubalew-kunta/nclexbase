@@ -3,7 +3,6 @@
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
-import { CHEAT_SHEET_SUBJECT_SYSTEMS, CHEAT_SHEET_SYSTEMS } from "@/data/catalog";
 import { crud, today } from "@/lib/admin/crud";
 import { newId } from "@/lib/admin/store";
 import type { CheatSheetRec, Status } from "@/lib/admin/types";
@@ -19,7 +18,8 @@ export default function CheatSheetsAdmin() {
   const subjects = useSubjects(true);
   const edit = useEditParam();
   const subjectName = (id: string) => subjects.find((s) => s.id === id)?.name ?? id;
-  const allTags = useMemo(() => [...new Set([...CHEAT_SHEET_SYSTEMS, ...rows.flatMap((r) => r.systems)])].sort(), [rows]);
+  // Every tag any sheet uses. Derived, so the filter list follows the sheets (see CheatSheets.tsx).
+  const allTags = useMemo(() => [...new Set(rows.flatMap((r) => r.systems))].sort(), [rows]);
 
   const tagFilter: FilterDef<CheatSheetRec> = {
     key: "tag",
@@ -148,6 +148,8 @@ function TagInput({ value, onChange, suggestions }: { value: string[]; onChange:
 
 function SheetEditor({ rec, onClose, tagOptions }: { rec: CheatSheetRec | null; onClose: () => void; tagOptions: string[] }) {
   const subjects = useSubjects(true);
+  // Chips offered in the editor follow the tags other sheets already use (see components/home/CheatSheets.tsx).
+  const sheets = useAll("cheatSheets");
   const initial = useMemo<CheatSheetRec>(
     () =>
       rec ?? {
@@ -169,7 +171,12 @@ function SheetEditor({ rec, onClose, tagOptions }: { rec: CheatSheetRec | null; 
   const dirty = !sameRecord(f, initial);
   useUnsavedGuard(dirty);
   const set = <K extends keyof CheatSheetRec>(k: K, v: CheatSheetRec[K]) => setF((x) => ({ ...x, [k]: v }));
-  const subjectChips = [...new Set([...(CHEAT_SHEET_SUBJECT_SYSTEMS[f.subject] ?? []), ...(subjects.find((s) => s.id === f.subject)?.systems.map((s) => s.label) ?? [])])];
+  const subjectChips = [
+    ...new Set([
+      ...sheets.filter((r) => r.subject === f.subject).flatMap((r) => r.subjectSystems),
+      ...(subjects.find((s) => s.id === f.subject)?.systems.map((s) => s.label) ?? []),
+    ]),
+  ].sort();
 
   const save = (status?: Status) => {
     setTried(true);

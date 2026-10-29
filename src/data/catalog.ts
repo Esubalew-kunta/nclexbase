@@ -3,7 +3,6 @@ import systemsJson from "./live/systems.json";
 import videosJson from "./live/videos.json";
 import sheetsJson from "./live/sheets.json";
 import faqsJson from "./live/faqs.json";
-import sheetChipsJson from "./live/sheetChips.json";
 
 /*
  * Catalog data captured from app.bootcamp.com/nclex (free account, 2026-09-30).
@@ -151,14 +150,6 @@ export const CHEAT_SHEET_SUBJECT_ORDER: SubjectId[] = [
   "mental-health",
   "pharmacology",
 ];
-
-const SHEET_CHIPS = sheetChipsJson as { subjectChips: Record<string, string[]>; globalChips: string[] };
-
-/** System chips on the all-subjects Cheat Sheets page. */
-export const CHEAT_SHEET_SYSTEMS = SHEET_CHIPS.globalChips;
-
-/** System chips on each subject's Cheat Sheets tab (differ per subject on the live site). */
-export const CHEAT_SHEET_SUBJECT_SYSTEMS = SHEET_CHIPS.subjectChips as Record<SubjectId, string[]>;
 
 /* ------------------------------------------------------------------ */
 /* FAQs (answers are HTML from the live site)                          */

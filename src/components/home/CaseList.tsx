@@ -79,7 +79,7 @@ export function CaseList({ subject }: { subject?: string }) {
               )
             }
           >
-            <UsageBlock usage={{ total: authored.items.length, ...counts }} />
+            <UsageBlock usage={{ total: authored?.items.length ?? 0, ...counts }} />
           </NumberedRow>
         );
       })}

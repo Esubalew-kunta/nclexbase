@@ -6,7 +6,7 @@ import { getBank, useBank } from "@/lib/content";
 import { itemById, entriesForCase } from "./bank";
 import { scoreItem } from "./scoring";
 import { latestAttempts, usedItemIds, useStore } from "./store";
-import type { MasteryTag, SubjectId } from "./types";
+import type { CaseStudy, MasteryTag, SubjectId } from "./types";
 
 export interface TagCounts {
   used: number;
@@ -80,7 +80,15 @@ export function useProgress() {
  * The prototype authors one case per subject. Catalog rows without authored
  * content replay the closest authored case so every "Start" button works.
  */
-export function resolveCase(caseId: string, subject?: string) {
+/**
+ * The case to show for a row: the authored case itself, else the subject's sample, else any.
+ *
+ * Returns undefined when the bank holds no authored case at all. That cannot happen with the
+ * bundled seed, but it does in API mode before the question bank has loaded (or for a visitor
+ * who may not have it), and the old `cases[0]` quietly returned undefined while the inferred
+ * type claimed otherwise -- so callers dereferenced it and the page crashed.
+ */
+export function resolveCase(caseId: string, subject?: string): CaseStudy | undefined {
   const { cases } = getBank();
   return cases.find((c) => c.id === caseId) ?? cases.find((c) => c.subject === subject) ?? cases[0];
 }
@@ -96,6 +104,9 @@ export function useStartCase() {
     const url0 = existing && `/nclex/custom-test?id=${existing.id}`;
     if (url0) return opts.replace ? router.replace(url0) : router.push(url0);
     const c = resolveCase(caseId, opts.subject);
+    // No authored case means there is nothing to start; leaving the click inert beats
+    // creating a session with no items in it.
+    if (!c) return;
     const id = createSession({ kind: "case", title: opts.title ?? c.title, entries: entriesForCase(c), tutor: true, timed: false, pool: "unused", sourceId: caseId });
     const url = `/nclex/custom-test?id=${id}`;
     if (opts.replace) router.replace(url);

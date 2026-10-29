@@ -1,4 +1,5 @@
 import { READINESS_CASES, READINESS_ITEMS } from "@/data/readiness";
+import { apiMode } from "@/lib/api/client";
 import { getBank } from "@/lib/content";
 import type { CaseStudy, Item, SessionEntry, SubjectId } from "./types";
 
@@ -8,9 +9,18 @@ import type { CaseStudy, Item, SessionEntry, SubjectId } from "./types";
  * readiness items, so saved test sessions keep working after content changes.
  */
 
+/*
+ * Readiness items used to live only in src/data, so lookups fall back to them. In API mode
+ * the bank already holds every readiness question and its case, and the bundled copy may be
+ * out of date with what the admin has since edited -- so the fallback is skipped there and a
+ * missing id is reported as missing rather than answered from the bundle.
+ */
 const readinessFallback = new Map<string, Item>(READINESS_ITEMS.map((i) => [i.id, i]));
 const readinessCaseFallback = new Map<string, CaseStudy>();
 for (const c of READINESS_CASES) for (const i of c.items) readinessCaseFallback.set(i.id, c);
+
+const fallbackItem = (id: string) => (apiMode() ? undefined : readinessFallback.get(id));
+const fallbackCase = (id: string) => (apiMode() ? undefined : readinessCaseFallback.get(id));
 
 /** Published items students can study (standalone + published case studies). */
 export function studyItems(): Item[] {
@@ -19,13 +29,13 @@ export function studyItems(): Item[] {
 }
 
 export function itemById(id: string): Item {
-  const hit = getBank().byId.get(id) ?? readinessFallback.get(id);
+  const hit = getBank().byId.get(id) ?? fallbackItem(id);
   if (!hit) throw new Error(`Unknown item ${id}`);
   return hit;
 }
 
 export function caseForItem(id: string): CaseStudy | undefined {
-  return getBank().caseOf.get(id) ?? readinessCaseFallback.get(id);
+  return getBank().caseOf.get(id) ?? fallbackCase(id);
 }
 
 export function itemsForSubject(subject: SubjectId): Item[] {

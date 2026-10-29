@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { READINESS_CASES } from "@/data/readiness";
+import { useApiContent, type ApiReadinessCase } from "@/lib/api/content";
+import { apiMode } from "@/lib/api/client";
 import { useAdminStore, type CollectionPatch } from "@/lib/admin/store";
 import { DEFAULT_CONFIG, mergeDeep, type ConfigPatch, type SiteConfig } from "@/lib/admin/config";
 import { COPY_DEFAULTS } from "@/lib/admin/copy";
@@ -12,9 +14,13 @@ import type { CaseStudy, Item, SubjectId } from "@/lib/types";
 
 /*
  * Content repository: the one place both the student app and the admin read content from.
- * Each collection = seed records (src/data) merged with the admin's edits (lib/admin/store).
- * Results are memoised on the store slice, so reads are cheap and stable between renders.
- * When the backend arrives, these functions fetch from the API instead; callers stay the same.
+ * Each collection = base records merged with the admin's edits (lib/admin/store). Results are
+ * memoised on the store slice, so reads are cheap and stable between renders.
+ *
+ * The base records come from one of two places, decided by NEXT_PUBLIC_API_URL (decision D8):
+ * the seed bundled in src/data, or the payload /content/bootstrap put in lib/api/content.
+ * Callers cannot tell the difference, which is the whole point -- the API swap changed this
+ * file and nothing downstream of it.
  */
 
 /* ------------------------------------------------------------------ */
@@ -26,13 +32,40 @@ function seedOf<K extends CollectionName>(col: K): Collections[K][] {
   return (seedCache[col] ??= SEED[col]() as never) as Collections[K][];
 }
 
-const mergeCache = new Map<CollectionName, { patch: unknown; out: unknown[] }>();
+const EMPTY: never[] = [];
 
-/** All records of a collection (any status), seed order first, then records the admin created. */
-export function mergeCollection<K extends CollectionName>(col: K, patch: CollectionPatch<Collections[K]> | undefined): Collections[K][] {
+/**
+ * The records the admin's edits are applied on top of.
+ *
+ * In API mode a collection the API does not serve (promo codes, payments, anything the admin
+ * owns) reads as empty rather than falling back to the seed: a half-API, half-bundled list
+ * would be worse than an obviously missing one, and those collections arrive with the admin
+ * API. The identity of the returned array is stable, which the merge cache below relies on.
+ */
+function baseOf<K extends CollectionName>(col: K): Collections[K][] {
+  if (!apiMode()) return seedOf(col);
+  const served = useApiContent.getState();
+  // Questions are the paid content and arrive from /content/bank, not from the bootstrap.
+  const base = col === "questions" ? served.questions : served.collections[col];
+  return (base ?? EMPTY) as Collections[K][];
+}
+
+const mergeCache = new Map<CollectionName, { patch: unknown; base: unknown; out: unknown[] }>();
+
+/**
+ * All records of a collection (any status), base order first, then records the admin created.
+ *
+ * `base` is passed in by the hook form so that React sees the API content as a real dependency;
+ * everywhere else it is read from the current mode.
+ */
+export function mergeCollection<K extends CollectionName>(
+  col: K,
+  patch: CollectionPatch<Collections[K]> | undefined,
+  base: Collections[K][] = baseOf(col),
+): Collections[K][] {
+  // `base` is part of the key: in API mode it changes once, when the bootstrap lands.
   const hit = mergeCache.get(col);
-  if (hit && hit.patch === patch) return hit.out as Collections[K][];
-  const base = seedOf(col);
+  if (hit && hit.patch === patch && hit.base === base) return hit.out as Collections[K][];
   let out: Collections[K][];
   if (!patch) out = base;
   else {
@@ -46,7 +79,7 @@ export function mergeCollection<K extends CollectionName>(col: K, patch: Collect
     }
     for (const [id, r] of Object.entries(patch.records)) if (!seen.has(id) && !patch.removed[id]) out.push(r);
   }
-  mergeCache.set(col, { patch, out });
+  mergeCache.set(col, { patch, base, out });
   return out;
 }
 
@@ -55,10 +88,12 @@ export function getAll<K extends CollectionName>(col: K): Collections[K][] {
   return mergeCollection(col, useAdminStore.getState().data[col] as CollectionPatch<Collections[K]> | undefined);
 }
 
-/** Hook read; re-renders when the admin changes this collection. */
+/** Hook read; re-renders when the admin changes this collection, or when the API content lands. */
 export function useAll<K extends CollectionName>(col: K): Collections[K][] {
   const patch = useAdminStore((s) => s.data[col]) as CollectionPatch<Collections[K]> | undefined;
-  return useMemo(() => mergeCollection(col, patch), [col, patch]);
+  const served = useApiContent((s) => (col === "questions" ? s.questions : s.collections[col])) as Collections[K][] | undefined;
+  const base = apiMode() ? (served ?? EMPTY) : seedOf(col);
+  return useMemo(() => mergeCollection(col, patch, base), [col, patch, base]);
 }
 
 const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
@@ -74,23 +109,38 @@ export function usePublished<K extends CollectionName>(col: K): Collections[K][]
 /* Site config                                                         */
 /* ------------------------------------------------------------------ */
 
-let configCache: { patch: ConfigPatch; out: SiteConfig } | null = null;
+/** The config the admin's patch is applied on top of: the API's sections, or the built-in ones. */
+function configBase(): SiteConfig {
+  return (apiMode() ? useApiContent.getState().config : undefined) ?? DEFAULT_CONFIG;
+}
+
+let configCache: { patch: ConfigPatch; base: SiteConfig; out: SiteConfig } | null = null;
 export function resolveConfig(patch: ConfigPatch): SiteConfig {
-  if (configCache?.patch === patch) return configCache.out;
-  const out = mergeDeep(DEFAULT_CONFIG, patch);
-  configCache = { patch, out };
+  const base = configBase();
+  if (configCache?.patch === patch && configCache.base === base) return configCache.out;
+  const out = mergeDeep(base, patch);
+  configCache = { patch, base, out };
   return out;
 }
 export const getConfig = () => resolveConfig(useAdminStore.getState().config);
 export function useConfig(): SiteConfig {
   const patch = useAdminStore((s) => s.config);
+  useApiContent((s) => s.config);
   return resolveConfig(patch);
 }
 
-/** Page text: admin override or the registered default (lib/admin/copy.ts). */
+/**
+ * Page text: the admin's override, else the registered default.
+ *
+ * The defaults come from the API's `copy` rows when it is in charge, so changing a default
+ * is a content change rather than a release. lib/admin/copy.ts stays the fallback, and the
+ * key itself is the last resort so a missing entry is visible rather than blank.
+ */
 export function useCopy(): (key: string) => string {
   const copy = useConfig().copy;
-  return (key) => copy[key] ?? COPY_DEFAULTS[key] ?? key;
+  const served = useApiContent((s) => s.copy);
+  const defaults = apiMode() ? served : COPY_DEFAULTS;
+  return (key) => copy[key] ?? defaults[key] ?? COPY_DEFAULTS[key] ?? key;
 }
 
 /* ------------------------------------------------------------------ */
@@ -185,11 +235,32 @@ export interface Bank {
   cases: CaseStudy[];
 }
 
-let bankCache: { q: unknown; c: unknown; bank: Bank } | null = null;
+/**
+ * The readiness exams wrap runs of items in case studies of their own. In local mode that
+ * grouping is computed in src/data/readiness.ts; in API mode it arrives as wrappers plus
+ * item ids, which are resolved here because this is where the id map exists.
+ */
+function readinessCasesFrom(byId: Map<string, QuestionRec>): CaseStudy[] {
+  if (!apiMode()) return READINESS_CASES;
+
+  return useApiContent.getState().readinessCases.map((c: ApiReadinessCase) => ({
+    id: c.id,
+    title: c.title,
+    subject: c.subject as SubjectId,
+    intro: c.intro,
+    exhibit: c.exhibit,
+    tabs: c.tabs as CaseStudy["tabs"],
+    items: c.itemIds.map((id) => byId.get(id)).filter(Boolean) as Item[],
+  }));
+}
+
+let bankCache: { q: unknown; c: unknown; served: unknown; bank: Bank } | null = null;
 
 export function getBank(): Bank {
   const s = useAdminStore.getState();
-  if (bankCache && bankCache.q === s.data.questions && bankCache.c === s.data.cases) return bankCache.bank;
+  // In API mode the question bank arrives after boot, so its identity is part of the key.
+  const served = apiMode() ? useApiContent.getState().questions : undefined;
+  if (bankCache && bankCache.q === s.data.questions && bankCache.c === s.data.cases && bankCache.served === served) return bankCache.bank;
   const questions = mergeCollection("questions", s.data.questions as CollectionPatch<QuestionRec> | undefined);
   const caseRecs = mergeCollection("cases", s.data.cases as CollectionPatch<CaseRec> | undefined);
   const byId = new Map(questions.map((q) => [q.id, q]));
@@ -203,7 +274,7 @@ export function getBank(): Bank {
   const all = caseRecs.map(toCase).filter(Boolean) as CaseStudy[];
   for (const c of all) for (const it of c.items) caseOf.set(it.id, c);
   // Readiness cases keep their structure; their items pick up admin edits.
-  for (const rc of READINESS_CASES) {
+  for (const rc of readinessCasesFrom(byId)) {
     const c = { ...rc, items: rc.items.map((it) => byId.get(it.id) ?? it) };
     for (const it of c.items) caseOf.set(it.id, c);
   }
@@ -215,7 +286,7 @@ export function getBank(): Bank {
     standalone: questions.filter((q) => q.source.kind === "standalone" && published(q)).sort(byOrder),
     cases: all.filter((c) => live.has(c.id) && c.items.length > 0),
   };
-  bankCache = { q: s.data.questions, c: s.data.cases, bank };
+  bankCache = { q: s.data.questions, c: s.data.cases, served, bank };
   return bank;
 }
 
@@ -223,5 +294,6 @@ export function getBank(): Bank {
 export function useBank(): Bank {
   useAdminStore((s) => s.data.questions);
   useAdminStore((s) => s.data.cases);
+  useApiContent((s) => s.questions);
   return getBank();
 }

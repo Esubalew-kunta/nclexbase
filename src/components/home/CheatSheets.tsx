@@ -3,7 +3,6 @@
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CHEAT_SHEET_SUBJECT_SYSTEMS, CHEAT_SHEET_SYSTEMS } from "@/data/catalog";
 import { SubjectIcon } from "@/components/ui/visuals";
 import type { CheatSheetRec } from "@/lib/admin/types";
 import { subjectName, useCheatSheets, useSubjects } from "@/lib/content";
@@ -101,10 +100,14 @@ export function CheatSheetBrowser({ subject: fixedSubject }: { subject?: Subject
   const chipSubject = fixedSubject ?? (subject === "all" ? undefined : subject);
   const tagsOf = (c: CheatSheetRec) => (chipSubject ? c.subjectSystems : c.systems);
   const pool = chipSubject ? sheets.filter((c) => c.subject === chipSubject) : sheets;
-  // Chips keep the live site's order, then any new tags the admin used; tags with no sheets are left out.
+  /*
+   * Chips are the tags actually in use, sorted. They used to come from a captured list in
+   * src/data, but that list was exactly the sorted unique tags of the sheets it was captured
+   * from, so deriving it is identical for the seeded content and has two advantages: a sheet
+   * the admin adds brings its own chip, and a tag with no sheets behind it cannot appear.
+   */
   const inUse = new Set(pool.flatMap(tagsOf));
-  const seedChips = chipSubject ? (CHEAT_SHEET_SUBJECT_SYSTEMS[chipSubject] ?? []) : CHEAT_SHEET_SYSTEMS;
-  const chips = [...seedChips.filter((c) => inUse.has(c)), ...[...inUse].filter((c) => !seedChips.includes(c)).sort()];
+  const chips = [...inUse].sort();
   const [system, setSystem] = useState(allLabel);
   const [q, setQ] = useState("");
   const term = q.trim().toLowerCase();
