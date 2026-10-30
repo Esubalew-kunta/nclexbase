@@ -9,22 +9,6 @@ import faqsJson from "./live/faqs.json";
  * Raw captures live in research/; JSON copies are in ./live.
  */
 
-export interface Expert {
-  id: string;
-  name: string;
-  short: string;
-  credentials: string;
-  photo: string;
-}
-
-export const EXPERTS: Record<string, Expert> = {
-  emily: { id: "emily", name: "Dr. Emily Wilson", short: "Dr. Emily", credentials: "DNP", photo: "/assets/experts/emily.jpeg" },
-  amber: { id: "amber", name: "Dr. Amber Adams", short: "Dr. Amber", credentials: "DNP", photo: "/assets/experts/amber.png" },
-  cortney: { id: "cortney", name: "Dr. Cortney Olejniczak", short: "Dr. Cortney", credentials: "DNP", photo: "/assets/experts/cortney.png" },
-  crysta: { id: "crysta", name: "Crysta Bliss", short: "Nurse Crysta", credentials: "MSN", photo: "/assets/experts/crysta.png" },
-  miriam: { id: "miriam", name: "Miriam Wahrman", short: "Nurse Miriam", credentials: "MSN", photo: "/assets/experts/miriam.png" },
-};
-
 export interface SystemStat {
   name: string;
   /** Average score across all users (Performance page). */
@@ -36,8 +20,6 @@ export interface SystemStat {
 export interface Subject {
   id: SubjectId;
   name: string;
-  /** Short label used in the sidebar (truncated there with an ellipsis). */
-  experts: string[];
   /** "0 of N questions used" on Home. */
   questionCount: number;
   lessonCount: number;
@@ -58,14 +40,14 @@ export interface Subject {
 const S = systemsJson as Record<string, { avg: number; perfTotal: number; perfSystems: SystemStat[]; standaloneTotal: number; standaloneSystems: { name: string; total: number }[] }>;
 const V = videosJson as Record<string, { lessons: number; runtime: string; items: Lesson[] }>;
 
-const base: { id: SubjectId; name: string; experts: string[]; questionCount: number; caseCount: number; avgTimeSec: number }[] = [
-  { id: "adult-health", name: "Adult Health", experts: ["emily", "amber"], questionCount: 569, caseCount: 27, avgTimeSec: 70 },
-  { id: "child-health", name: "Child Health", experts: ["crysta", "miriam"], questionCount: 199, caseCount: 9, avgTimeSec: 68 },
-  { id: "fundamentals", name: "Fundamentals", experts: ["emily", "crysta"], questionCount: 155, caseCount: 0, avgTimeSec: 75 },
-  { id: "maternal-and-newborn-health", name: "Maternal & Newborn Health", experts: ["miriam", "crysta"], questionCount: 213, caseCount: 12, avgTimeSec: 82 },
-  { id: "mental-health", name: "Mental Health", experts: ["cortney", "emily"], questionCount: 116, caseCount: 2, avgTimeSec: 76 },
-  { id: "pharmacology", name: "Pharmacology", experts: ["cortney", "emily"], questionCount: 183, caseCount: 0, avgTimeSec: 62 },
-  { id: "management-of-care", name: "Management of Care", experts: ["amber", "emily"], questionCount: 145, caseCount: 0, avgTimeSec: 73 },
+const base: { id: SubjectId; name: string; questionCount: number; caseCount: number; avgTimeSec: number }[] = [
+  { id: "adult-health", name: "Adult Health", questionCount: 569, caseCount: 27, avgTimeSec: 70 },
+  { id: "child-health", name: "Child Health", questionCount: 199, caseCount: 9, avgTimeSec: 68 },
+  { id: "fundamentals", name: "Fundamentals", questionCount: 155, caseCount: 0, avgTimeSec: 75 },
+  { id: "maternal-and-newborn-health", name: "Maternal & Newborn Health", questionCount: 213, caseCount: 12, avgTimeSec: 82 },
+  { id: "mental-health", name: "Mental Health", questionCount: 116, caseCount: 2, avgTimeSec: 76 },
+  { id: "pharmacology", name: "Pharmacology", questionCount: 183, caseCount: 0, avgTimeSec: 62 },
+  { id: "management-of-care", name: "Management of Care", questionCount: 145, caseCount: 0, avgTimeSec: 73 },
 ];
 
 export const SUBJECTS: Subject[] = base.map((b) => ({

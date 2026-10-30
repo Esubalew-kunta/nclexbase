@@ -1,20 +1,9 @@
 /** Subject slug. Seeded ones are the 7 NCLEX subjects; the admin can add more (Admin > Subjects & Systems). */
 export type SubjectId = string;
 
-export interface Expert {
-  id: string;
-  name: string;
-  short: string;
-  credentials: string;
-  initials: string;
-  /** Avatar background, since the real photos are not part of the clone. */
-  color: string;
-}
-
 export interface Subject {
   id: SubjectId;
   name: string;
-  experts: string[];
   /** Catalog numbers mirrored from the live site. */
   questionCount: number;
   lessonCount: number;

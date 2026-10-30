@@ -174,8 +174,11 @@ export const DEFAULT_CONFIG: SiteConfig = {
     // They were absolute `https://nclexbase.com/...` links to pages that did not exist.
     termsUrl: "/terms",
     privacyUrl: "/privacy",
-    coachName: "Dr. Emily Wilson",
-    coachPhotoUrl: "/assets/experts/emily.jpeg",
+    // Neutral by default. Until 2026-10-30 these named and showed a real person employed by
+    // another company, copied in with the rest of the clone. The admin can still set a name and
+    // photo of their own under Settings > Branding.
+    coachName: "NCLEXBase",
+    coachPhotoUrl: "",
   },
   homeLayout: {
     sections: (["schedule", "subjects", "questionTypes", "resources", "faqs"] as HomeSection[]).map((key) => ({ key, visible: true })),
