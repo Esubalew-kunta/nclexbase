@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { SITE_NAME } from "@/lib/brand";
 import { useConfig } from "@/lib/content";
@@ -15,12 +16,18 @@ import { useConfig } from "@/lib/content";
  * ambassador programme and eight sibling products. We have none of those, and a footer padded
  * out with links that go nowhere is worse than a small one.
  */
-export function SiteFooter() {
+/**
+ * @param flush  No top margin, for a page that ends in a full-width band the footer should sit
+ *   against. The homepage is that page -- it closes on the dark call to action -- so it is the
+ *   default there, rather than something the page has to remember to pass.
+ */
+export function SiteFooter({ flush }: { flush?: boolean } = {}) {
+  const onHome = usePathname() === "/";
   const { branding } = useConfig();
   const name = branding.siteName || SITE_NAME;
 
   return (
-    <footer className="mt-24 border-t border-line bg-surface">
+    <footer className={`${(flush ?? onHome) ? "" : "mt-24 "}border-t border-line bg-surface`}>
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div className="lg:col-span-1">
           <Logo height={26} />

@@ -1,11 +1,12 @@
+import { HelpWidget } from "@/components/site/HelpWidget";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 
 /**
- * The public pages other than the homepage: /about, /pricing, /contact, /privacy, /terms.
+ * Every public page: `/`, /about, /pricing, /contact, /privacy, /terms.
  *
- * They share this chrome; `/` keeps its own because the review switcher has to sit above the
- * header. When an option is chosen and the switcher goes, the homepage can move in here too.
+ * The homepage used to carry its own copy of this chrome, because the homepage review switcher
+ * had to sit above the header. The switcher is gone, so it lives here with the rest.
  *
  * Nothing sets `robots` here. The root layout already tells every page in the site not to be
  * indexed, and repeating it per page is how one eventually gets missed.
@@ -16,6 +17,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <SiteHeader />
       {children}
       <SiteFooter />
+      {/* Public pages only. The app has its own chrome, and a floating button over a timed
+          exam would be an invitation to lose a question. */}
+      <HelpWidget />
     </>
   );
 }

@@ -30,7 +30,7 @@ export default function AboutPage() {
         <Section title="Why it exists">
           <p>
             Most people who fail the NCLEX do not fail because they never learned the material. They fail because the exam asks about it in
-            a way they have not seen before — a matrix grid, a bowtie, six items about one patient whose condition changes as you read.
+            a way they have not seen before: a matrix grid, a bowtie, six items about one patient whose condition changes as you read.
             Knowing that potassium matters is not the same as spotting, under time pressure, that it is the reason to hold a dose.
           </p>
           <p>
@@ -43,8 +43,8 @@ export default function AboutPage() {
         <Section title="How it is put together">
           <p>
             Every item is tagged to a subject and a system, so a test can be built from exactly the material you are weak at rather than
-            from whatever comes next in a syllabus. Case studies use the same tabbed chart the real exam gives you — nurses&apos; notes,
-            vital signs, laboratory results — because reading a chart under pressure is itself a skill being tested.
+            from whatever comes next in a syllabus. Case studies use the same tabbed chart the real exam gives you (nurses&apos; notes,
+            vital signs, laboratory results), because reading a chart under pressure is itself a skill being tested.
           </p>
           <p>
             Readiness exams are adaptive and timed, and scored the way the NCLEX scores. The point is not the number at the end. It is that
@@ -65,14 +65,14 @@ export default function AboutPage() {
 
         <Section title="Where it is made">
           <p>
-            NCLEXBase is built in Ethiopia, priced in birr, and takes payment by bank transfer and mobile wallet — because a prep site that
+            NCLEXBase is built in Ethiopia, priced in birr, and takes payment by bank transfer and mobile wallet, because a prep site that
             only accepts a foreign credit card is no use to most of the nurses it is meant for.
           </p>
         </Section>
 
         <Section title="Questions, corrections, complaints">
           <p>
-            If an explanation is wrong, tell us — we would rather fix it than defend it. The{" "}
+            If an explanation is wrong, tell us. We would rather fix it than defend it. The{" "}
             <Link href="/contact" className="font-semibold text-primary hover:text-primary-hover">
               contact page
             </Link>{" "}

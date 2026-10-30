@@ -53,7 +53,7 @@ export default function PrivacyPage() {
           <p>
             <strong className="text-ink">Payments.</strong> If you buy a plan, we store the plan, the amount, the method, any transaction
             reference you type and the receipt file you upload. Receipts are held privately and are reachable only by an administrator
-            reviewing your payment. We never see or store your card or wallet credentials — the transfer happens at your bank or wallet, not
+            reviewing your payment. We never see or store your card or wallet credentials. The transfer happens at your bank or wallet, not
             here.
           </p>
           <p>
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
         <Section id="cookies" title="Cookies">
           <p>
             One session cookie, set when you log in, so the site knows it is still you between pages. One security cookie that protects
-            forms from being submitted by another site on your behalf. Nothing else — no advertising or analytics cookies, because we run
+            forms from being submitted by another site on your behalf. Nothing else: no advertising or analytics cookies, because we run
             neither.
           </p>
           <p>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Newsreader } from "next/font/google";
+import { Caveat, Figtree, Newsreader } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/shell/Providers";
 
@@ -21,6 +21,14 @@ const serif = Newsreader({
   subsets: ["latin"],
   weight: ["500"],
   style: ["normal"],
+});
+
+// The handwritten margin notes on the homepage ("Same goal. You got this."). Two sentences
+// worth of glyphs, so one weight and the latin subset keep it to a single small file.
+const hand = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  weight: ["600"],
 });
 
 export const metadata: Metadata = {
@@ -46,7 +54,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${brand.variable} ${serif.variable} h-full`}>
+    <html lang="en" className={`${brand.variable} ${serif.variable} ${hand.variable} h-full`}>
       <body className="min-h-full">
         <Providers>{children}</Providers>
       </body>

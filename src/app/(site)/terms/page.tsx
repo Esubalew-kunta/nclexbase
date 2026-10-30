@@ -48,7 +48,7 @@ export default function TermsPage() {
         <Section id="access" title="What you are buying">
           <p>
             A plan buys access for a period of time, not a copy of anything. When the period ends, access ends. We may add to, change or
-            retire material during your period — the library is maintained, not frozen — and we will not remove so much that the plan stops
+            retire material during your period, because the library is maintained rather than frozen, and we will not remove so much that the plan stops
             being what you paid for.
           </p>
           <p>Some material is free to any account. The rest needs a current plan.</p>

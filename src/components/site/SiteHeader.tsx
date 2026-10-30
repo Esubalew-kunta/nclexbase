@@ -1,6 +1,9 @@
 "use client";
 
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { useStore } from "@/lib/store";
 
@@ -9,16 +12,23 @@ import { useStore } from "@/lib/store";
  *
  * Separate from the app's Sidebar on purpose. That one is navigation for someone who has
  * already paid attention — thirty links, a subject tree, a plan badge. A visitor who has not
- * decided anything yet needs four links and one action, and mixing the two would mean every
+ * decided anything yet needs five links and one action, and mixing the two would mean every
  * marketing page carried the whole study navigation.
+ *
+ * Subjects and Features are sections of the homepage, so they are `/#…` links: on the homepage
+ * they scroll, from any other public page they go there first.
  */
 
-/** The public pages, in header order. */
 const LINKS = [
-  { href: "/about", label: "About" },
+  { href: "/", label: "Home" },
+  { href: "/#subjects", label: "Subjects" },
+  { href: "/#features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/contact", label: "Contact" },
+  { href: "/about", label: "About" },
 ] as const;
+
+const cta =
+  "flex h-11 shrink-0 items-center whitespace-nowrap rounded-full bg-gold px-6 text-sm font-bold text-ink-teal shadow-premium transition-[background,transform] duration-[60ms] hover:bg-[#d3b05f] active:translate-y-[2px] active:shadow-none";
 
 /**
  * @param sticky  Whether the header follows the scroll. The homepage turns it off: the review
@@ -30,60 +40,88 @@ export function SiteHeader({ sticky = true }: { sticky?: boolean } = {}) {
   const hydrated = useStore((s) => s.hydrated);
   const signedIn = useStore((s) => s.user.signedIn);
   const known = hydrated && signedIn;
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  const action = known ? (
+    <Link href="/nclex" className={cta}>
+      My studying
+    </Link>
+  ) : (
+    <Link href="/auth/join" className={cta}>
+      Get Started
+    </Link>
+  );
 
   return (
-    <header className={`${sticky ? "sticky top-0 z-40" : ""} border-b border-line bg-surface/90 backdrop-blur`}>
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/" aria-label="NCLEXBase home" className="shrink-0">
-          <Logo height={28} />
+    <header className={`${sticky ? "sticky top-0 z-40" : ""} border-b border-line bg-surface/92 backdrop-blur`}>
+      <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-4 px-4 sm:px-6">
+        <Link href="/" aria-label="NCLEXBase home" className="shrink-0" onClick={() => setOpen(false)}>
+          <Logo height={32} />
         </Link>
 
-        <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-muted sm:flex">
-          {LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="transition-colors hover:text-primary">
-              {link.label}
-            </Link>
-          ))}
+        <nav aria-label="Main" className="ml-auto hidden items-center gap-8 text-[15px] font-semibold text-muted md:flex">
+          {LINKS.map((link) => {
+            const active = link.href === pathname;
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={`relative py-5 transition-colors hover:text-primary ${active ? "text-primary after:absolute after:inset-x-0 after:bottom-3 after:h-0.5 after:rounded-full after:bg-primary" : ""}`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 sm:ml-7">
-          {known ? (
-            <Link
-              href="/nclex"
-              className="flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-press transition-[background,transform] duration-[50ms] hover:bg-primary-hover active:translate-y-[2px] active:shadow-none"
-            >
-              Go to my studying
+        <div className="ml-auto flex items-center gap-1.5 md:ml-4">
+          {!known && (
+            <Link href="/auth/signin" className="hidden h-11 items-center px-3 text-[15px] font-semibold text-primary hover:text-primary-hover lg:flex">
+              Log in
             </Link>
-          ) : (
-            <>
-              <Link href="/auth/signin" className="hidden h-10 items-center px-3 text-sm font-semibold text-primary hover:text-primary-hover sm:flex">
-                Log in
-              </Link>
-              <Link
-                href="/auth/join"
-                className="flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-press transition-[background,transform] duration-[50ms] hover:bg-primary-hover active:translate-y-[2px] active:shadow-none"
-              >
-                Start free
-              </Link>
-            </>
           )}
+          {action}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="site-menu"
+            aria-label={open ? "Close menu" : "Open menu"}
+            className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-primary-light md:hidden"
+          >
+            {open ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
       </div>
 
-      {/* Narrow screens: the nav moves below the logo rather than behind a hamburger. Four
-          links fit on one line, and a menu nobody needs is a tap nobody should have to make. */}
-      <nav className="flex items-center gap-6 border-t border-line px-4 py-2.5 text-sm font-semibold text-muted sm:hidden">
-        {LINKS.map((link) => (
-          <Link key={link.href} href={link.href} className="transition-colors hover:text-primary">
-            {link.label}
-          </Link>
-        ))}
-        {!known && (
-          <Link href="/auth/signin" className="ml-auto text-primary">
-            Log in
-          </Link>
-        )}
-      </nav>
+      {/* Narrow screens: a panel under the bar. Big targets, one tap each, closes on use. */}
+      {open && (
+        <nav id="site-menu" aria-label="Main" className="animate-fade-in border-t border-line bg-surface px-4 pt-2 pb-4 md:hidden">
+          <ul>
+            {LINKS.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className={`flex h-12 items-center border-b border-line/70 text-base font-semibold ${link.href === pathname ? "text-primary" : "text-ink"}`}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            {!known && (
+              <li>
+                <Link href="/auth/signin" onClick={() => setOpen(false)} className="flex h-12 items-center text-base font-semibold text-primary">
+                  Log in
+                </Link>
+              </li>
+            )}
+          </ul>
+        </nav>
+      )}
     </header>
   );
 }

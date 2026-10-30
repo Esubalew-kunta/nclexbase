@@ -225,20 +225,27 @@ export const DEFAULT_CONFIG: SiteConfig = {
     ],
     readinessMinutes: 180,
   },
+  /*
+   * One list, shown on the public pricing page and on the signed-in upgrade screen, so the two
+   * can never disagree about what a plan contains. The admin owns all three fields.
+   *
+   * These defaults were the clone's: a pass guarantee we cannot honour, a student count that
+   * is not ours, a question count that does not match the catalog, and a mobile app that does
+   * not exist. Every line here is now either true today or in the catalog.
+   */
   upgrade: {
-    headline: "Pass the NCLEX®. Guaranteed.",
-    subhead: "Trusted by 200,000+ students preparing for the NCLEX®.",
+    headline: "One membership. Everything in it.",
+    subhead: "Every subject, every Next Gen format, every case study.",
     included: [
-      "2,600+ NCLEX® Questions",
-      "50 NCLEX® Cases",
-      "Crash Course Videos",
-      "4 CAT Readiness Exams",
-      "140+ Printable Cheat Sheets",
-      "Memory Tricks for every subject",
-      "Study Schedule Creator",
-      "Ask NCLEXBase AI",
-      "Pass Targets Tracker",
-      "Mobile App Access",
+      "1,500+ NCLEX® questions",
+      "50 NCLEX® case studies",
+      "Every Next Gen format: bowtie, matrix, cloze, highlight",
+      "An explanation under every answer, right and wrong",
+      "4 CAT readiness exams",
+      "140+ printable cheat sheets",
+      "Memory tricks for every subject",
+      "Study schedule creator",
+      "Pass targets tracker",
     ],
   },
   payments: { currency: "ETB", reviewTime: "within 24 hours", telegram: { enabled: false, chatId: "" } },

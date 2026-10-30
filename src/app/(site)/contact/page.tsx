@@ -1,15 +1,16 @@
 "use client";
 
+import { ContactForm } from "@/components/site/ContactForm";
 import { PageHeader, Prose, Section } from "@/components/site/Prose";
 import { useConfig } from "@/lib/content";
 
 /*
  * Contact.
  *
- * An address, not a form. A contact form needs somewhere to post to, and the only honest
- * version of that is an endpoint that actually delivers mail — the API's mail carrier is still
- * deliberately `log` (see docs/BACKEND_PLAN.md). A form that silently drops messages is worse
- * than no form, so this page gives the address the admin has set and nothing it cannot keep.
+ * A form and an address. The form hands the finished message to the visitor's own mail app
+ * (see ContactForm) because the API has no contact endpoint yet, and a form that posts into
+ * nothing is worse than no form at all. The address stays printed underneath for anyone whose
+ * device has no mail app set up, and it is the one the admin has configured.
  */
 export default function ContactPage() {
   const { branding, payments } = useConfig();
@@ -20,15 +21,14 @@ export default function ContactPage() {
       <PageHeader eyebrow="Contact" title="Talk to us." intro="Questions about a plan, a payment, or an explanation you think is wrong." />
 
       <Prose>
-        <Section title="Email">
+        <Section title="Send a message">
           {email ? (
-            <p>
-              Write to{" "}
-              <a href={`mailto:${email}`} className="font-semibold text-primary hover:text-primary-hover">
-                {email}
-              </a>
-              . Include your account email if your question is about a payment or your access.
-            </p>
+            <>
+              <p>Include your account email if your question is about a payment or your access.</p>
+              <div className="mt-5 not-prose">
+                <ContactForm email={email} />
+              </div>
+            </>
           ) : (
             <p>The support address is being set up. Until then, use the contact details shown at checkout.</p>
           )}
@@ -43,7 +43,7 @@ export default function ContactPage() {
 
         <Section title="A question that looks wrong">
           <p>
-            Send the question&apos;s id — it is shown with every item — and say what you think the answer should be. Being told an
+            Send the question&apos;s id, which is shown with every item, and say what you think the answer should be. Being told an
             explanation is wrong is more useful to us than almost anything else, and it gets to whoever wrote it.
           </p>
         </Section>

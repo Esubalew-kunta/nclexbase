@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePlans } from "@/lib/content";
+import { Check } from "lucide-react";
+import { useConfig, usePlans } from "@/lib/content";
 import { formatPrice } from "@/lib/payments";
 import { PageHeader } from "@/components/site/Prose";
 
@@ -16,26 +17,15 @@ import { PageHeader } from "@/components/site/Prose";
  * figure here and `/nclex/upgrade` reads the same records — the public page and the checkout
  * cannot disagree about what a plan costs.
  *
- * The headings and the "in every plan" list are **not** read from `config.upgrade`, unlike the
- * signed-in upgrade screen. Those defaults were copied from bootcamp.com during the clone and
- * still read "Pass the NCLEX®. Guaranteed.", "Trusted by 200,000+ students", "2,600+ NCLEX®
- * Questions" and "Mobile App Access" — a guarantee we cannot honour, a number that is not
- * ours, a count we do not have and an app that does not exist. None of that may go on a public
- * page. See PROGRESS.md: the config copy itself needs rewriting, which is a separate decision.
+ * What a plan contains is `config.upgrade.included`, the admin's own list, printed inside
+ * every card: all three plans contain the same thing and differ only in length, and a card
+ * with nothing in it but a price asks the reader to take the value on trust. The signed-in
+ * upgrade screen reads the same record, so the two pages cannot drift apart.
  */
-
-/** What is actually in the product today. Every line is true. */
-const INCLUDED = [
-  "Exam-style questions in every subject, with every Next Gen item type",
-  "An explanation under each one — the right answer and every wrong answer",
-  "Next Gen case studies with the tabbed patient chart",
-  "Adaptive, timed readiness exams scored like the real test",
-  "Printable cheat sheets and memory tricks",
-  "A study schedule you set to your own exam date",
-];
 
 export default function PricingPage() {
   const plans = usePlans();
+  const included = useConfig().upgrade.included;
 
   return (
     <main>
@@ -80,26 +70,23 @@ export default function PricingPage() {
 
                 <Link
                   href="/auth/join"
-                  className="mt-6 flex h-12 items-center justify-center rounded-lg bg-primary px-4 font-semibold text-white shadow-press transition-[background,transform] duration-[50ms] hover:bg-primary-hover active:translate-y-[2px] active:shadow-none"
+                  className="mt-6 flex h-12 items-center justify-center rounded-full bg-primary px-4 font-semibold text-white shadow-press transition-[background,transform] duration-[50ms] hover:bg-primary-hover active:translate-y-[2px] active:shadow-none"
                 >
                   Get started
                 </Link>
+
+                <ul className="mt-6 space-y-2.5 border-t border-line pt-5">
+                  {included.map((item) => (
+                    <li key={item} className="flex gap-2.5 text-sm leading-6 text-muted">
+                      <Check size={16} strokeWidth={2.6} className="mt-1 shrink-0 text-primary" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         )}
-
-        <section className="mt-16">
-          <h2 className="text-xl font-bold tracking-tight text-ink">In every plan</h2>
-          <ul className="mt-5 grid gap-x-10 gap-y-3 sm:grid-cols-2">
-            {INCLUDED.map((item) => (
-              <li key={item} className="flex gap-2.5 text-[15px] leading-6 text-muted">
-                <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
 
         <section className="mt-16 rounded-card border border-line bg-surface p-6">
           <h2 className="font-bold text-ink">Before you pay</h2>
@@ -115,7 +102,7 @@ export default function PricingPage() {
         <section className="mt-16">
           <h2 className="text-xl font-bold tracking-tight text-ink">How you pay</h2>
           <p className="mt-3 text-[15px] leading-7 text-muted">
-            By bank transfer or mobile wallet, in birr. You upload the receipt and we confirm your access — the account details and the
+            By bank transfer or mobile wallet, in birr. You upload the receipt and we confirm your access. The account details and the
             current review time are shown at checkout.
           </p>
         </section>
