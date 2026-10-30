@@ -60,12 +60,26 @@ export function SiteFooter({ flush }: { flush?: boolean } = {}) {
 
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs leading-5 text-faint sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>
-            © {new Date().getFullYear()} {name}. All rights reserved.
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span>
+              © {new Date().getFullYear()} {name}. All rights reserved.
+            </span>
+            {/*
+             * Staff access, beside the copyright where a student will never need it.
+             *
+             * Students and staff sign in at the same place; this is the fallback form for a
+             * browser-local admin session, which the student page cannot check. It is a plain
+             * link rather than a hidden URL, because the security here is the password and not
+             * the secrecy of the address. It sits on the left so the floating help button,
+             * which is pinned to the bottom right, never lands on top of it.
+             */}
+            <Link href="/admin/login" className="transition-colors hover:text-primary">
+              Staff access
+            </Link>
           </p>
           {/* NCLEX-RN is the NCSBN's trademark. Saying so is both correct and the thing every
               credible prep site does; leaving it out reads as carelessness. */}
-          <p>NCLEX-RN® and NCLEX-PN® are registered trademarks of the NCSBN, which does not endorse this site.</p>
+          <p className="sm:pr-28">NCLEX-RN® and NCLEX-PN® are registered trademarks of the NCSBN, which does not endorse this site.</p>
         </div>
       </div>
     </footer>

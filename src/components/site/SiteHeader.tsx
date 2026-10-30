@@ -27,6 +27,17 @@ const LINKS = [
   { href: "/about", label: "About" },
 ] as const;
 
+/*
+ * Log in is a nav item, not a button tucked beside the call to action.
+ *
+ * There is one door for everybody: `/auth/signin` checks the password and the role decides
+ * where you land, so students and staff use the same link. The admin has its own form only as
+ * a fallback for a browser-local prototype session, and it is reachable from the footer rather
+ * than from here, because a visitor who has not signed up yet should not be reading the word
+ * "admin" at the top of the page.
+ */
+const SIGN_IN = { href: "/auth/signin", label: "Log in" } as const;
+
 const cta =
   "flex h-11 shrink-0 items-center whitespace-nowrap rounded-full bg-gold px-6 text-sm font-bold text-ink-teal shadow-premium transition-[background,transform] duration-[60ms] hover:bg-[#d3b05f] active:translate-y-[2px] active:shadow-none";
 
@@ -61,7 +72,7 @@ export function SiteHeader({ sticky = true }: { sticky?: boolean } = {}) {
         </Link>
 
         <nav aria-label="Main" className="ml-auto hidden items-center gap-8 text-[15px] font-semibold text-muted md:flex">
-          {LINKS.map((link) => {
+          {[...LINKS, ...(known ? [] : [SIGN_IN])].map((link) => {
             const active = link.href === pathname;
 
             return (
@@ -78,11 +89,6 @@ export function SiteHeader({ sticky = true }: { sticky?: boolean } = {}) {
         </nav>
 
         <div className="ml-auto flex items-center gap-1.5 md:ml-4">
-          {!known && (
-            <Link href="/auth/signin" className="hidden h-11 items-center px-3 text-[15px] font-semibold text-primary hover:text-primary-hover lg:flex">
-              Log in
-            </Link>
-          )}
           {action}
           <button
             type="button"
@@ -114,8 +120,8 @@ export function SiteHeader({ sticky = true }: { sticky?: boolean } = {}) {
             ))}
             {!known && (
               <li>
-                <Link href="/auth/signin" onClick={() => setOpen(false)} className="flex h-12 items-center text-base font-semibold text-primary">
-                  Log in
+                <Link href={SIGN_IN.href} onClick={() => setOpen(false)} className="flex h-12 items-center text-base font-semibold text-primary">
+                  {SIGN_IN.label}
                 </Link>
               </li>
             )}

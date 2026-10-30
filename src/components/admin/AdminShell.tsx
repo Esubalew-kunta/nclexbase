@@ -38,6 +38,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { STORAGE_FULL_EVENT, useAdminStore } from "@/lib/admin/store";
+import { apiMode } from "@/lib/api/client";
 import { getAll } from "@/lib/content";
 import { planReminder } from "@/lib/daily";
 import { LogoMark } from "@/components/ui/Logo";
@@ -320,7 +321,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (hydrated && !session && !isLogin) router.replace(`/admin/login?next=${encodeURIComponent(pathname)}`);
+    /*
+     * Where a signed-out admin is sent.
+     *
+     * With an API there is only one door: `/auth/signin` checks the password against the
+     * server and the role it reports decides whether you land in the admin or in the student
+     * app, so a second form asking for the same credentials is a second thing to keep in step
+     * for no gain. Without an API this stays the prototype, where the admin's credentials are
+     * checked against this browser's own store, and only `/admin/login` can do that.
+     */
+    if (hydrated && !session && !isLogin) {
+      const next = encodeURIComponent(pathname);
+      router.replace(apiMode() ? `/auth/signin?next=${next}` : `/admin/login?next=${next}`);
+    }
   }, [hydrated, session, isLogin, pathname, router]);
 
   if (isLogin)
