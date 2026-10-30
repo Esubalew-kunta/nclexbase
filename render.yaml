@@ -8,10 +8,11 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 22.20.0
-      # No one-click demo sign-in on a public build. Without this the sign-in pages offer a
-      # button that drops anyone straight into the student app or the admin.
+      # The sign-in page keeps its two demo buttons (student, admin) at the owner's request,
+      # so the site can be walked through without an account. They are one click into the
+      # admin: set this to "0" before there is anything behind it worth protecting.
       - key: NEXT_PUBLIC_DEMO_AUTH
-        value: "0"
+        value: "1"
     headers:
       # Keep the site out of search engines and AI crawlers (owner's decision).
       # Matches the cPanel docroot rule in deploy/htaccess-noindex.

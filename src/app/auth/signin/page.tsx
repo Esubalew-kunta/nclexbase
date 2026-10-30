@@ -5,13 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { apiMode } from "@/lib/api/client";
 import { login } from "@/lib/api/auth";
+import { useAdminStore } from "@/lib/admin/store";
 import { DEMO_ADMIN, DEMO_STUDENT, demoAuthEnabled, signInAdmin, signInStudent, type DemoAccount } from "@/lib/demo";
 import { AuthError, AuthField, AuthLink, AuthShell, AuthSubmit, PasswordField } from "@/components/shell/AuthShell";
 
 /**
- * Sign in. With an API configured the credentials are checked by the server and the session
- * lives in a cookie; without one this stays the prototype, where any credentials work and
- * nothing leaves the browser.
+ * Sign in. One form for everybody: with an API configured the credentials are checked by the
+ * server and the role it reports decides where you land, and without one this stays the
+ * prototype, where the admin's password is checked against this browser's own store and
+ * anything else signs in as a student. There is no second form for staff.
  */
 function SignIn() {
   const router = useRouter();
@@ -40,9 +42,20 @@ function SignIn() {
 
     if (!live) {
       // No API: fall back to the bundled demo behaviour. The demo admin cannot fail to sign
-      // in — it is a button, not a credential check — so its destination is unconditional.
+      // in, being a button rather than a credential check, so its destination is unconditional.
       if (account.home === DEMO_ADMIN.home) {
         signInAdmin();
+        setPending(undefined);
+        return go(DEMO_ADMIN.home);
+      }
+
+      /*
+       * The admin signs in here as well, so there is one form in the product rather than two
+       * asking for the same thing. Without an API the only place an administrator's password
+       * can be checked is this browser's own admin store, so that is what is tried first; it
+       * returns false for everybody else, who carry on into the student app.
+       */
+      if (useAdminStore.getState().login(account.email.trim(), account.password)) {
         setPending(undefined);
         return go(DEMO_ADMIN.home);
       }
@@ -88,7 +101,8 @@ function SignIn() {
       aside={
         demoAuthEnabled() ? (
           <div className="rounded-lg border border-line bg-white p-4 shadow-card">
-            <p className="mb-3 text-sm font-semibold text-ink">Demo accounts</p>
+            <p className="mb-1 text-sm font-semibold text-ink">Demo accounts</p>
+            <p className="mb-3 text-xs leading-4 text-muted">Student opens the study app, Admin opens the admin.</p>
             <div className="flex flex-col gap-2">
               {quick(DEMO_STUDENT)}
               {quick(DEMO_ADMIN)}

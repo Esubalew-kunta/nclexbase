@@ -24,27 +24,38 @@ export interface DemoAccount {
 
 export const DEMO_STUDENT: DemoAccount = {
   label: "Student",
-  email: "demo@nclexbase.com",
-  password: "nclexbase-demo-2026",
+  email: "demo.student@nclexbase.com",
+  password: "nclexbase-demo-student-2026",
   home: "/nclex",
 };
 
 export const DEMO_ADMIN: DemoAccount = {
   label: "Admin",
-  email: "esubalewkunta59@gmail.com",
-  // Set directly against the account: the password rules refuse this one on sign-up and on
-  // reset, because it is in every breach list. Fine for a local demo, and the reason the
-  // buttons must be switched off before the site is public.
-  password: "123456",
+  email: "demo.admin@nclexbase.com",
+  password: "nclexbase-demo-admin-2026",
   home: "/admin",
 };
+
+/*
+ * The two accounts behind the buttons on the sign-in page.
+ *
+ * They are rows in the API's own database, created by `DemoAccountsSeeder` (api/database/
+ * seeders), so pressing a button is a real sign-in and the role on the account is what decides
+ * where it lands: the admin button opens the admin, the student button opens the study app.
+ * Without an API configured the same buttons fall back to a browser-local session.
+ *
+ * Neither is a secret. Both passwords ship in this bundle, which anyone can read, so these two
+ * rows are published credentials: nothing may be attached to them that an anonymous visitor
+ * should not have. They replaced a pair that used the owner's personal address and the
+ * password "123456".
+ */
 
 /**
  * Whether to offer the buttons at all.
  *
- * **Set `NEXT_PUBLIC_DEMO_AUTH=0` before the site is public.** These credentials are in the
- * JavaScript bundle, so anyone who can open the page can read them; that is fine for a demo
- * everyone is meant to try and not fine for a live site with real students on it.
+ * **Set `NEXT_PUBLIC_DEMO_AUTH=0` once the content behind the admin stops being disposable.**
+ * The button is one click into the admin, by design, for as long as there is nothing there
+ * worth protecting.
  */
 export const demoAuthEnabled = () => process.env.NEXT_PUBLIC_DEMO_AUTH !== "0";
 

@@ -38,7 +38,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { STORAGE_FULL_EVENT, useAdminStore } from "@/lib/admin/store";
-import { apiMode } from "@/lib/api/client";
 import { getAll } from "@/lib/content";
 import { planReminder } from "@/lib/daily";
 import { LogoMark } from "@/components/ui/Logo";
@@ -283,7 +282,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const hydrated = useAdminStore((s) => s.hydrated);
   const session = useAdminStore((s) => s.session);
   const [drawer, setDrawer] = useState(false);
-  const isLogin = pathname === "/admin/login";
   // Desktop sidebar: pinned open, or collapsed and peeking in when the pointer reaches the left edge.
   const collapsed = useAdminStore((s) => s.sidebarCollapsed);
   const [peek, setPeek] = useState(false);
@@ -322,27 +320,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     /*
-     * Where a signed-out admin is sent.
+     * Where a signed-out admin is sent: the same form as everybody else.
      *
-     * With an API there is only one door: `/auth/signin` checks the password against the
-     * server and the role it reports decides whether you land in the admin or in the student
-     * app, so a second form asking for the same credentials is a second thing to keep in step
-     * for no gain. Without an API this stays the prototype, where the admin's credentials are
-     * checked against this browser's own store, and only `/admin/login` can do that.
+     * There used to be a second one at /admin/login. It asked for the same credentials, and in
+     * the prototype it pre-filled them, so on a public build it handed the admin password to
+     * anyone who opened the page. /auth/signin checks the password -- against the server where
+     * there is one, against this browser's admin store where there is not -- and sends an
+     * administrator here.
      */
-    if (hydrated && !session && !isLogin) {
-      const next = encodeURIComponent(pathname);
-      router.replace(apiMode() ? `/auth/signin?next=${next}` : `/admin/login?next=${next}`);
-    }
-  }, [hydrated, session, isLogin, pathname, router]);
-
-  if (isLogin)
-    return (
-      <Suspense>
-        {children}
-        <Toaster />
-      </Suspense>
-    );
+    if (hydrated && !session) router.replace(`/auth/signin?next=${encodeURIComponent(pathname)}`);
+  }, [hydrated, session, pathname, router]);
   if (!hydrated || !session)
     return (
       <div className="flex h-dvh items-center justify-center bg-background">
@@ -410,7 +397,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <button
               onClick={() => {
                 useAdminStore.getState().logout();
-                router.replace("/admin/login");
+                router.replace("/auth/signin?next=%2Fadmin");
               }}
               aria-label="Sign out"
               title="Sign out"

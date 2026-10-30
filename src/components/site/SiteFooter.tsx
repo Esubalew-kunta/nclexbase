@@ -67,13 +67,13 @@ export function SiteFooter({ flush }: { flush?: boolean } = {}) {
             {/*
              * Staff access, beside the copyright where a student will never need it.
              *
-             * Students and staff sign in at the same place; this is the fallback form for a
-             * browser-local admin session, which the student page cannot check. It is a plain
-             * link rather than a hidden URL, because the security here is the password and not
-             * the secrecy of the address. It sits on the left so the floating help button,
-             * which is pinned to the bottom right, never lands on top of it.
+             * It is the same sign-in form as everybody else's, carrying the admin as the page
+             * to land on; there is no separate staff login to link to. A plain link rather
+             * than a hidden URL, because the security here is the password, not the secrecy of
+             * the address. On the left, so the floating help button pinned to the bottom right
+             * never lands on top of it.
              */}
-            <Link href="/admin/login" className="transition-colors hover:text-primary">
+            <Link href="/auth/signin?next=%2Fadmin" className="transition-colors hover:text-primary">
               Staff access
             </Link>
           </p>
