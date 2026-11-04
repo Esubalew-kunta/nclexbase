@@ -39,22 +39,29 @@ keep_this() {
 }
 
 unpack() {
-  local tarball=$1 staging
+  # Unpacked next to the docroot first: a tarball that turns out to be empty or truncated is
+  # then found before anything that is being served has been touched.
+  #
+  # Cleaned up by hand rather than with a RETURN trap: bash keeps such a trap for every later
+  # function return too, and the second firing refers to a local that no longer exists.
+  local tarball=$1 staging ok=0
   staging=$(mktemp -d "$HOME/apps/web-incoming.XXXXXX")
-  trap 'rm -rf "$staging"' RETURN
 
-  tar -xzf "$tarball" -C "$staging"
-  [[ -f $staging/index.html ]] || { log "that tarball has no index.html; refusing to publish it"; return 1; }
+  if tar -xzf "$tarball" -C "$staging" && [[ -f $staging/index.html ]]; then
+    for f in "$DOC"/* "$DOC"/.[!.]*; do
+      [[ -e $f ]] || continue
+      keep_this "$(basename "$f")" || rm -rf "$f"
+    done
+    cp -a "$staging"/. "$DOC"/
+    # The whole site is meant to stay out of search engines; a deploy that lost that rule
+    # would be worse than a deploy that failed.
+    grep -q 'X-Robots-Tag' "$DOC/.htaccess" && ok=1
+  else
+    log "that tarball is not a site build (no index.html); refusing to publish it"
+  fi
 
-  for f in "$DOC"/* "$DOC"/.[!.]*; do
-    [[ -e $f ]] || continue
-    keep_this "$(basename "$f")" || rm -rf "$f"
-  done
-  cp -a "$staging"/. "$DOC"/
-
-  # The whole site is meant to stay out of search engines; a deploy that lost that rule would
-  # be worse than a deploy that failed.
-  grep -q 'X-Robots-Tag' "$DOC/.htaccess"
+  rm -rf "$staging"
+  [[ $ok == 1 ]]
 }
 
 install_release() {
