@@ -2,6 +2,7 @@
 
 import { api, ApiError, apiMode } from "@/lib/api/client";
 import { loadQuestionBank, useApiContent } from "@/lib/api/content";
+import { startProgressSync, stopProgressSync } from "@/lib/api/progress";
 import { useAdminStore } from "@/lib/admin/store";
 import { useStore } from "@/lib/store";
 
@@ -48,6 +49,8 @@ export interface AuthResult {
  * role directly and this bridge goes away.
  */
 export function adoptUser(user: ApiUser): void {
+  // Read before it is overwritten below: it says whose progress this browser was holding.
+  const previousEmail = useStore.getState().user.email;
   useStore.setState((s) => ({
     user: { ...s.user, name: user.name, email: user.email, plan: user.plan, signedIn: true },
   }));
@@ -57,6 +60,9 @@ export function adoptUser(user: ApiUser): void {
       ? { email: user.email, name: user.name, at: new Date().toISOString() }
       : null,
   });
+
+  // Their progress lives on the server now: pick it up here, and send what they do from now on.
+  void startProgressSync(user.id, { email: user.email, previousEmail });
 }
 
 export async function login(email: string, password: string): Promise<AuthResult> {
@@ -104,6 +110,9 @@ export async function changePassword(current: string, next: string, repeat: stri
 }
 
 export async function logout(): Promise<void> {
+  // First, while the session is still good: send what has not gone yet, then clear this browser
+  // so the next person to sit here does not see (or upload) this student's progress.
+  await stopProgressSync({ wipe: true });
   try {
     await api("/auth/logout", { body: {} });
   } catch {
