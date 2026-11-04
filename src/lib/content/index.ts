@@ -264,13 +264,14 @@ function readinessCasesFrom(byId: Map<string, QuestionRec>): CaseStudy[] {
   }));
 }
 
-let bankCache: { q: unknown; c: unknown; served: unknown; bank: Bank } | null = null;
+let bankCache: { q: unknown; c: unknown; served: unknown; servedCases: unknown; bank: Bank } | null = null;
 
 export function getBank(): Bank {
   const s = useAdminStore.getState();
   // In API mode the question bank arrives after boot, so its identity is part of the key.
   const served = apiMode() ? useApiContent.getState().questions : undefined;
-  if (bankCache && bankCache.q === s.data.questions && bankCache.c === s.data.cases && bankCache.served === served) return bankCache.bank;
+  const servedCases = apiMode() ? useApiContent.getState().collections.cases : undefined;
+  if (bankCache && bankCache.q === s.data.questions && bankCache.c === s.data.cases && bankCache.served === served && bankCache.servedCases === servedCases) return bankCache.bank;
   const questions = mergeCollection("questions", s.data.questions as CollectionPatch<QuestionRec> | undefined);
   const caseRecs = mergeCollection("cases", s.data.cases as CollectionPatch<CaseRec> | undefined);
   const byId = new Map(questions.map((q) => [q.id, q]));
@@ -296,7 +297,7 @@ export function getBank(): Bank {
     standalone: questions.filter((q) => q.source.kind === "standalone" && published(q)).sort(byOrder),
     cases: all.filter((c) => live.has(c.id) && c.items.length > 0),
   };
-  bankCache = { q: s.data.questions, c: s.data.cases, served, bank };
+  bankCache = { q: s.data.questions, c: s.data.cases, served, servedCases, bank };
   return bank;
 }
 
@@ -305,5 +306,6 @@ export function useBank(): Bank {
   useAdminStore((s) => s.data.questions);
   useAdminStore((s) => s.data.cases);
   useApiContent((s) => s.questions);
+  useApiContent((s) => s.collections.cases);
   return getBank();
 }

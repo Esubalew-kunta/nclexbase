@@ -5,13 +5,16 @@
 import clsx from "clsx";
 import { useRef, useState, type ReactNode } from "react";
 import { Archive, FileText, History, Trash2, UploadCloud } from "lucide-react";
-import { deleteStored, MAX_IMAGE_MB, MAX_UPLOAD_MB, MAX_VIDEO_MB, storeImage, storePdf, storeVideo, useFileUrl } from "@/lib/admin/files";
+import { deleteStored, MAX_IMAGE_MB, MAX_UPLOAD_MB, storeImage, storePdf, storeVideo, useFileUrl, videoAccept, videoLimitMb } from "@/lib/admin/files";
+import { apiMode } from "@/lib/api/client";
+import { parseVideoLink, VIDEO_LINK_MESSAGE, type ParsedVideoLink } from "@/lib/videoLink";
+import { VideoPlayer } from "@/components/exam/VideoPlayer";
 import type { ExplanationVideo } from "@/lib/types";
 import { useAdminStore } from "@/lib/admin/store";
 import type { Access, FileRef, Status, SubjectRec } from "@/lib/admin/types";
 import { useSubjects } from "@/lib/content";
 import { PdfFrame } from "@/components/ui/files";
-import { Btn, confirmDialog, Dialog, fmtDateTime, Select, toast } from "./ui";
+import { Btn, confirmDialog, Dialog, fmtDateTime, Input, Segmented, Select, toast } from "./ui";
 import type { FilterDef } from "./list";
 
 const NO_VERSIONS: never[] = [];
@@ -102,80 +105,168 @@ export function FileDrop({ value, onChange }: { value: FileRef | null; onChange:
 }
 
 /* ------------------------------------------------------------------ */
-/* Video upload (question explanation videos)                          */
+/* Video (question explanation videos): upload a file, or add a link   */
 /* ------------------------------------------------------------------ */
+
+/** What a link is called in the panel. Worked out from the address, never stored: the server keeps only the address. */
+const linkLabel = (l: ParsedVideoLink | null) => (l?.provider === "youtube" ? "YouTube video" : l?.provider === "vimeo" ? "Vimeo video" : "Video file");
 
 export function VideoDrop({ value, onChange }: { value: ExplanationVideo | undefined; onChange: (v: ExplanationVideo | undefined) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const { href, missing } = useFileUrl(value?.url ?? null);
+  // Which way a new video is added, and whether an existing link is being changed.
+  const [how, setHow] = useState<"upload" | "link">("upload");
+  const [editingLink, setEditingLink] = useState(false);
+  const [text, setText] = useState("");
+  const isLink = value?.kind === "link";
+  const limit = videoLimitMb();
 
   const take = async (file: File | undefined) => {
     if (!file) return;
     setBusy(true);
+    setProgress(null);
     setError("");
     try {
       // A replaced video keeps its visibility; a first upload starts visible.
-      onChange({ ...(await storeVideo(file)), visible: value?.visible ?? true });
+      onChange({ ...(await storeVideo(file, setProgress)), visible: value?.visible ?? true });
       toast(`Uploaded ${file.name}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed.");
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
+
+  const addLink = () => {
+    const link = parseVideoLink(text);
+    if (!link) return setError(`That link can't be used. ${VIDEO_LINK_MESSAGE}`);
+    setError("");
+    // `name` is the address, the same value the server gives back, so a saved record equals the edited one.
+    onChange({ kind: "link", url: link.url, provider: link.provider, embedUrl: link.embedUrl, name: link.url, sizeKb: 0, visible: value?.visible ?? true });
+    setText("");
+    setEditingLink(false);
+    toast("Link added");
+  };
+
+  const uploading = busy ? (progress !== null ? `Uploading ${Math.round(progress * 100)}%` : "Uploading…") : null;
+
+  const linkForm = (
+    <div>
+      <div className="flex gap-2">
+        <Input
+          value={text}
+          onChange={(e) => (setText(e.target.value), setError(""))}
+          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addLink())}
+          placeholder="https://www.youtube.com/watch?v=..."
+          aria-label="Video link"
+          autoFocus={editingLink}
+        />
+        <Btn variant="primary" onClick={addLink} disabled={!text.trim()}>
+          {isLink ? "Use this link" : "Add link"}
+        </Btn>
+        {editingLink && (
+          <Btn
+            onClick={() => {
+              setEditingLink(false);
+              setText("");
+              setError("");
+            }}
+          >
+            Cancel
+          </Btn>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-muted">A YouTube or Vimeo address, or a direct https link to an .mp4 or .webm file. Without a video, students see only the written explanation.</p>
+    </div>
+  );
 
   return (
     <div>
       {value ? (
         <div className="space-y-2 rounded-md border border-line bg-background p-3">
-          {href ? (
-            <video src={href} controls preload="metadata" className="aspect-video w-full rounded bg-black" />
+          <VideoPlayer video={value} title="preview" className="aspect-video w-full rounded bg-black" />
+          {isLink && editingLink ? (
+            linkForm
           ) : (
-            <p className="text-sm text-muted">{missing ? "The video file is missing from this browser. Upload it again." : "Loading video…"}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="min-w-0 flex-1 truncate text-sm text-ink">
+                {isLink ? linkLabel(parseVideoLink(value.url)) : value.name}{" "}
+                <span className="text-xs text-muted">
+                  {isLink ? `· link · ${value.url}` : `· ${value.sizeKb >= 1024 ? `${(value.sizeKb / 1024).toFixed(1)} MB` : `${value.sizeKb} KB`}`}
+                </span>
+              </p>
+              {isLink ? (
+                <Btn
+                  onClick={() => {
+                    setText(value.url);
+                    setEditingLink(true);
+                  }}
+                >
+                  Change link
+                </Btn>
+              ) : (
+                <Btn onClick={() => input.current?.click()} disabled={busy}>
+                  {uploading ?? "Replace"}
+                </Btn>
+              )}
+              <Btn
+                variant="danger"
+                onClick={async () => {
+                  if (await confirmDialog({ title: "Remove this video?", body: "Students won't see a video for this question. Save the question to apply.", confirm: "Remove video", danger: true })) onChange(undefined);
+                }}
+              >
+                Remove
+              </Btn>
+            </div>
           )}
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="min-w-0 flex-1 truncate text-sm text-ink">
-              {value.name} <span className="text-xs text-muted">· {value.sizeKb >= 1024 ? `${(value.sizeKb / 1024).toFixed(1)} MB` : `${value.sizeKb} KB`}</span>
-            </p>
-            <Btn onClick={() => input.current?.click()} disabled={busy}>
-              {busy ? "Uploading…" : "Replace"}
-            </Btn>
-            <Btn
-              variant="danger"
-              onClick={async () => {
-                if (await confirmDialog({ title: "Remove this video?", body: "Students won't see a video for this question. Save the question to apply.", confirm: "Remove video", danger: true })) onChange(undefined);
-              }}
-            >
-              Remove
-            </Btn>
-          </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => input.current?.click()}
-          onDragOver={(e) => (e.preventDefault(), setOver(true))}
-          onDragLeave={() => setOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setOver(false);
-            void take(e.dataTransfer.files[0]);
-          }}
-          className={clsx(
-            "flex w-full cursor-pointer flex-col items-center rounded-md border-2 border-dashed px-4 py-7 text-center transition-colors",
-            over ? "border-primary bg-primary-light" : "border-line bg-background hover:border-primary/50",
+        <div className="space-y-3">
+          <Segmented
+            value={how}
+            onChange={(v) => (setHow(v), setError(""))}
+            options={[
+              { value: "upload", label: "Upload a video" },
+              { value: "link", label: "Add a link" },
+            ]}
+          />
+          {how === "upload" ? (
+            <button
+              type="button"
+              onClick={() => input.current?.click()}
+              onDragOver={(e) => (e.preventDefault(), setOver(true))}
+              onDragLeave={() => setOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setOver(false);
+                void take(e.dataTransfer.files[0]);
+              }}
+              className={clsx(
+                "flex w-full cursor-pointer flex-col items-center rounded-md border-2 border-dashed px-4 py-7 text-center transition-colors",
+                over ? "border-primary bg-primary-light" : "border-line bg-background hover:border-primary/50",
+              )}
+            >
+              <UploadCloud className="mb-2 size-7 text-primary" />
+              <span className="text-sm font-semibold text-ink">{uploading ?? "Drop a video here or click to choose"}</span>
+              <span className="mt-0.5 text-xs text-muted">
+                {apiMode() ? "MP4, WebM or OGG" : "MP4, WebM, OGG or MOV"}, up to {limit} MB. Without a video, students see only the written explanation.
+              </span>
+            </button>
+          ) : (
+            linkForm
           )}
-        >
-          <UploadCloud className="mb-2 size-7 text-primary" />
-          <span className="text-sm font-semibold text-ink">{busy ? "Uploading…" : "Drop a video here or click to choose"}</span>
-          <span className="mt-0.5 text-xs text-muted">MP4, WebM, OGG or MOV, up to {MAX_VIDEO_MB} MB. Without a video, students see only the written explanation.</span>
-        </button>
+        </div>
       )}
-      {error && <p className="mt-1 text-xs text-error">{error}</p>}
-      <input ref={input} type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" className="hidden" onChange={(e) => (void take(e.target.files?.[0]), (e.target.value = ""))} />
+      {error && (
+        <p className="mt-1 text-xs text-error" role="alert">
+          {error}
+        </p>
+      )}
+      <input ref={input} type="file" accept={videoAccept()} className="hidden" onChange={(e) => (void take(e.target.files?.[0]), (e.target.value = ""))} />
     </div>
   );
 }

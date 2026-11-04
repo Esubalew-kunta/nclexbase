@@ -8,12 +8,14 @@ import { subjectName, systemLabel, useConfig } from "@/lib/content";
 import { subjectHref } from "@/lib/routes";
 import { useStore } from "@/lib/store";
 import { avgPoints, formatClock, scoreItem, scoringRule } from "@/lib/scoring";
-import { useFileUrl } from "@/lib/admin/files";
 import type { Answer, ExplanationVideo, Item } from "@/lib/types";
 import { Html } from "./items/shared";
+import { VideoPlayer } from "./VideoPlayer";
 
-export function Feedback({ item, answer, seconds }: { item: Item; answer: Answer | undefined; seconds: number }) {
-  const plan = useStore((s) => s.user.plan);
+export function Feedback({ item, answer, seconds, plan: planOverride }: { item: Item; answer: Answer | undefined; seconds: number; plan?: "free" | "premium" }) {
+  const ownPlan = useStore((s) => s.user.plan);
+  // The admin preview draws the cards as a paying student sees them.
+  const plan = planOverride ?? ownPlan;
   const askAi = useConfig().exam.askAi;
   const { earned, max } = scoreItem(item, answer);
   const status = earned === max ? "Correct" : earned === 0 ? "Incorrect" : "Partial Credit";
@@ -222,9 +224,8 @@ function AskAi({ item }: { item: Item }) {
   );
 }
 
-/** Uploaded explanation video. Nothing renders when there is none, it is hidden, or its file is gone. */
+/** The explanation video. Nothing renders when there is none, it is hidden, or it cannot be played. */
 function VideoExplanation({ video, title }: { video: ExplanationVideo | undefined; title: string }) {
-  const { href } = useFileUrl(video?.visible ? video.url : null);
-  if (!video?.visible || !href) return null;
-  return <video src={href} controls preload="metadata" aria-label={`Video explanation: ${title}`} className="mb-6 aspect-video w-full rounded border-b-4 border-gold bg-black" />;
+  if (!video?.visible) return null;
+  return <VideoPlayer video={video} title={title} className="mb-6 aspect-video w-full rounded border-b-4 border-gold bg-black" />;
 }

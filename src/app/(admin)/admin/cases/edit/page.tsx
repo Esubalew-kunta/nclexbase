@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { crud, today } from "@/lib/admin/crud";
 import { newId } from "@/lib/admin/store";
 import type { CaseContent, CaseRec, QuestionRec, Status } from "@/lib/admin/types";
@@ -16,6 +16,7 @@ import { JsonEditor, pretty, tryParse } from "@/components/admin/json";
 import { CasePreview, saveCaseRows, useCaseContext } from "@/components/admin/caseJson";
 import { caseToJson, normalizeCase } from "@/lib/admin/caseImport";
 import { blankItem, TYPE_LABELS, validateItem } from "@/components/admin/items";
+import { ExamPreview, previewForCase, previewProblem, type PreviewSource } from "@/components/admin/ExamPreview";
 
 const api = crud("cases");
 const qApi = crud("questions");
@@ -44,6 +45,7 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
   const router = useRouter();
   const [f, setF] = useState<CaseRec>(rec);
   const [adding, setAdding] = useState(false);
+  const [preview, setPreview] = useState<PreviewSource | null>(null);
   /** Form fields or the whole case (details, tabs and questions) as JSON. */
   const [mode, setMode] = useState<"form" | "json">("form");
   const questions = useAll("questions");
@@ -61,6 +63,14 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
     if (next.status === "published" && next.content && (next.content.itemIds.length === 0 || itemProblems)) return toast("Add questions and fix their problems before publishing.", "error");
     api.update(next, next.status !== rec.status ? (next.status === "published" ? "publish" : next.status === "draft" ? "unpublish" : "archive") : "update");
     toast("Case study saved");
+  };
+
+  const openPreview = () => {
+    const src = previewForCase(f, items, { note: dirty ? "Showing your unsaved changes" : undefined });
+    if (!src) return toast("Start writing the content first, then preview it.", "error");
+    const problem = previewProblem(src);
+    if (problem) return toast(problem, "error");
+    setPreview(src);
   };
 
   const setTab = (i: number, tab: CaseTab) => setContent({ tabs: content!.tabs.map((t, k) => (k === i ? tab : t)) });
@@ -82,6 +92,10 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
       description={`${rec.id} · #${rec.number}`}
       actions={
         <>
+          <Btn onClick={openPreview}>
+            <Eye className="size-4" />
+            Preview
+          </Btn>
           {rec.status === "published" && (
             <Link href={caseHref(rec.id)} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-primary hover:bg-primary-light">
               <ExternalLink className="size-4" />
@@ -275,6 +289,7 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
           </>
         )}
       </div>
+      {preview && <ExamPreview source={preview} onClose={() => setPreview(null)} />}
       {adding && content && (
         <AddCaseQuestion
           rec={f}

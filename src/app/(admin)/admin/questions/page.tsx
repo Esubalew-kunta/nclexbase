@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Copy, Download, FileJson, MoveRight, Plus } from "lucide-react";
+import { Copy, Download, Eye, FileJson, MoveRight, Plus } from "lucide-react";
 import { questionToJson } from "@/lib/admin/questionImport";
 import { copyText, downloadJson, pretty } from "@/components/admin/json";
 import { crud } from "@/lib/admin/crud";
 import type { QuestionRec } from "@/lib/admin/types";
 import type { ItemType } from "@/lib/types";
 import { useAll, useSubjects } from "@/lib/content";
-import { AccessBadge, AdminPage, Badge, Btn, Dialog, Field, fmtDate, StatusBadge, stripHtml, toast } from "@/components/admin/ui";
+import { AccessBadge, AdminPage, Badge, Btn, Dialog, Field, fmtDate, IconBtn, StatusBadge, stripHtml, toast } from "@/components/admin/ui";
 import { accessFilter, BulkBar, DataTable, ListEmpty, ListToolbar, statusFilter, useList, useSelection, type Column } from "@/components/admin/list";
 import { StatusBulkActions, SubjectSelect, subjectFilter, SystemSelect, systemFilter } from "@/components/admin/parts";
 import { TYPE_LABELS, validateItem } from "@/components/admin/items";
+import { ExamPreview, previewForQuestion, previewProblem, type PreviewSource } from "@/components/admin/ExamPreview";
 
 const api = crud("questions");
 
@@ -34,6 +35,13 @@ export default function QuestionsAdmin() {
   const subjects = useSubjects(true);
   const [creating, setCreating] = useState(useSearchParams().get("new") === "1");
   const [moving, setMoving] = useState(false);
+  const [preview, setPreview] = useState<PreviewSource | null>(null);
+  const openPreview = (q: QuestionRec) => {
+    const src = previewForQuestion(q);
+    const problem = previewProblem(src);
+    if (problem) return toast(problem, "error");
+    setPreview(src);
+  };
   const subjectName = (id: string) => subjects.find((s) => s.id === id)?.name ?? id;
   const systemName = (q: QuestionRec) => subjects.find((s) => s.id === q.subject)?.systems.find((x) => x.key === q.system)?.label ?? q.system;
   const sourceLabel = (q: QuestionRec) => (q.source.kind === "standalone" ? "Standalone" : q.source.kind === "readiness" ? "Readiness exam" : `Case: ${cases.find((c) => q.source.kind === "case" && c.id === q.source.caseId)?.title ?? "?"}`);
@@ -112,6 +120,16 @@ export default function QuestionsAdmin() {
     { key: "status", label: "Status", render: (q) => <StatusBadge status={q.status} /> },
     { key: "avg", label: "Avg %", sort: "avg", render: (q) => <span className="tabular-nums">{q.avgPercent}%</span> },
     { key: "updated", label: "Updated", sort: "updated", render: (q) => <span className="text-xs text-muted">{fmtDate(q.updatedAt)}</span> },
+    {
+      key: "preview",
+      label: <span className="sr-only">Preview</span>,
+      headClassName: "w-10",
+      render: (q) => (
+        <IconBtn label="Preview as a student" onClick={(e) => (e.stopPropagation(), openPreview(q))}>
+          <Eye className="size-4" />
+        </IconBtn>
+      ),
+    },
   ];
 
   return (
@@ -173,6 +191,7 @@ export default function QuestionsAdmin() {
         empty={<ListEmpty list={list} noun="questions" onCreate={() => setCreating(true)} />}
       />
       {creating && <NewQuestionDialog onClose={() => setCreating(false)} />}
+      {preview && <ExamPreview source={preview} onClose={() => setPreview(null)} />}
       {moving && <MoveDialog ids={[...sel.selected]} onClose={() => setMoving(false)} onDone={sel.clear} />}
     </AdminPage>
   );

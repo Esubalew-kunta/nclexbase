@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Eye, Plus, Trash2 } from "lucide-react";
 import { crud, today } from "@/lib/admin/crud";
 import { newId } from "@/lib/admin/store";
 import type { QuestionRec, Status } from "@/lib/admin/types";
@@ -13,6 +13,8 @@ import { AdminPage, Badge, Btn, confirmDialog, EmptyState, Field, IconBtn, Input
 import { HistoryButton, StatusPicker, SubjectSelect, SystemSelect, VideoDrop } from "@/components/admin/parts";
 import { AnswerSetup, blankItem, ItemPreview, TYPE_LABELS, validateItem } from "@/components/admin/items";
 import { QuestionJsonEditor } from "@/components/admin/questionJson";
+import { ImagesPanel } from "@/components/admin/ImagesPanel";
+import { ExamPreview, previewForQuestion, previewProblem, type PreviewSource } from "@/components/admin/ExamPreview";
 
 const api = crud("questions");
 
@@ -49,6 +51,13 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
   const dirty = !sameRecord(q, initial);
   useUnsavedGuard(dirty);
   const canSave = isNew || dirty;
+  const [preview, setPreview] = useState<PreviewSource | null>(null);
+  const openPreview = () => {
+    const src = previewForQuestion(q, { note: dirty ? "Showing your unsaved changes" : undefined });
+    const problem = previewProblem(src);
+    if (problem) return toast(problem, "error");
+    setPreview(src);
+  };
   const problems = validateItem(q);
   const standalone = q.source.kind === "standalone";
   // Standalone and readiness-pool questions are published on their own; case questions follow their case.
@@ -101,6 +110,10 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
       }
       actions={
         <>
+          <Btn onClick={openPreview}>
+            <Eye className="size-4" />
+            Preview
+          </Btn>
           {!isNew && <HistoryButton<QuestionRec> historyKey={`questions:${q.id}`} onRestore={(v) => api.restore(q.id, v)} describe={(v) => `${v.status} · ${v.stem.replace(/<[^>]+>/g, "").slice(0, 40)}`} />}
           <Btn onClick={() => save("draft")} disabled={!canSave || !ownStatus}>
             Save draft
@@ -123,7 +136,7 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
                 { value: "json", label: "JSON" },
               ]}
             />
-            {mode === "json" && <span className="text-xs text-muted">Copy it, change it anywhere, and paste it back. The uploaded video isn&apos;t part of the JSON.</span>}
+            {mode === "json" && <span className="text-xs text-muted">Copy it, change it anywhere, and paste it back. The video isn&apos;t part of the JSON; pictures are the &lt;img&gt; tags in the text.</span>}
           </div>
 
           {mode === "json" ? (
@@ -229,6 +242,8 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
             </>
           )}
 
+          <ImagesPanel item={q} onChange={(patch) => set(patch)} />
+
           <Panel
             title="Video explanation"
             description="Optional. Shown above the written explanation. Questions without a video show no video area at all."
@@ -310,6 +325,7 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
           <ItemPreview item={q} />
         </div>
       </div>
+      {preview && <ExamPreview source={preview} onClose={() => setPreview(null)} />}
     </AdminPage>
   );
 }

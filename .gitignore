@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Python bytecode from scripts/*.py
 __pycache__/
+
+# pictures and videos uploaded in the admin (content, not code: this repo is public)
+/public/assets/media/

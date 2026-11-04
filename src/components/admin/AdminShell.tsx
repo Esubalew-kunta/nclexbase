@@ -38,6 +38,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { STORAGE_FULL_EVENT, useAdminStore } from "@/lib/admin/store";
+import { setAdminSyncNotifier, useAdminSync } from "@/lib/api/adminContent";
 import { getAll } from "@/lib/content";
 import { planReminder } from "@/lib/daily";
 import { LogoMark } from "@/components/ui/Logo";
@@ -312,6 +313,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Saves of questions and cases to the server report back here.
+  useEffect(() => {
+    setAdminSyncNotifier((n) => toast(n.text, n.tone));
+    return () => setAdminSyncNotifier(null);
+  }, []);
+  const saving = useAdminSync((s) => s.busy);
+
   useEffect(() => {
     const onFull = () => toast("Browser storage is full, so the last change was not saved. Export a backup (Settings), then delete unused items or uploads.", "error");
     window.addEventListener(STORAGE_FULL_EVENT, onFull);
@@ -390,6 +398,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </button>
           <JumpTo />
           <div className="ml-auto flex items-center gap-2">
+            {saving > 0 && (
+              <span role="status" className="flex items-center gap-1.5 text-xs text-muted">
+                <span className="size-3 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
+                Saving to the server
+              </span>
+            )}
             <span className="hidden text-right text-xs leading-tight md:block">
               <span className="block font-semibold text-ink">{session.name}</span>
               <span className="block text-muted">{session.email}</span>

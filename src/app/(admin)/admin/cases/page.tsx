@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Download, FileJson, Plus } from "lucide-react";
+import { Copy, Download, Eye, FileJson, Plus } from "lucide-react";
 import { caseToJson } from "@/lib/admin/caseImport";
 import { copyText, downloadJson, pretty } from "@/components/admin/json";
 import { crud, today } from "@/lib/admin/crud";
 import { newId } from "@/lib/admin/store";
 import type { CaseRec, CaseContent } from "@/lib/admin/types";
 import { useAll, useSubjects } from "@/lib/content";
-import { AccessBadge, AdminPage, Badge, Btn, Dialog, Field, fmtDate, Input, StatusBadge, stripHtml, toast } from "@/components/admin/ui";
+import { AccessBadge, AdminPage, Badge, Btn, Dialog, Field, fmtDate, IconBtn, Input, StatusBadge, stripHtml, toast } from "@/components/admin/ui";
 import { accessFilter, BulkBar, DataTable, ListEmpty, ListToolbar, statusFilter, useList, useSelection, type Column } from "@/components/admin/list";
 import { StatusBulkActions, SubjectSelect, subjectFilter } from "@/components/admin/parts";
+import { ExamPreview, previewForCase, previewProblem, type PreviewSource } from "@/components/admin/ExamPreview";
 
 const api = crud("cases");
 
@@ -26,6 +27,15 @@ export default function CasesAdmin() {
   const questions = useAll("questions");
   const subjects = useSubjects(true);
   const [creating, setCreating] = useState(false);
+  const [preview, setPreview] = useState<PreviewSource | null>(null);
+  const openPreview = (c: CaseRec) => {
+    const items = (c.content?.itemIds ?? []).map((id) => questions.find((q) => q.id === id)).filter((q): q is (typeof questions)[number] => Boolean(q));
+    const src = previewForCase(c, items);
+    if (!src) return toast("This case has no authored content yet, so there is nothing to preview.", "error");
+    const problem = previewProblem(src);
+    if (problem) return toast(problem, "error");
+    setPreview(src);
+  };
   const subjectName = (id: string) => subjects.find((s) => s.id === id)?.name ?? id;
   const stems = (c: CaseRec) => (c.content ? c.content.itemIds.map((id) => questions.find((q) => q.id === id)?.stem ?? "").join(" ") : "");
 
@@ -69,6 +79,16 @@ export default function CasesAdmin() {
     { key: "access", label: "Access", render: (c) => <AccessBadge access={c.access} /> },
     { key: "status", label: "Status", render: (c) => <StatusBadge status={c.status} /> },
     { key: "updated", label: "Updated", sort: "updated", render: (c) => <span className="text-xs text-muted">{fmtDate(c.updatedAt)}</span> },
+    {
+      key: "preview",
+      label: <span className="sr-only">Preview</span>,
+      headClassName: "w-10",
+      render: (c) => (
+        <IconBtn label="Preview as a student" onClick={(e) => (e.stopPropagation(), openPreview(c))}>
+          <Eye className="size-4" />
+        </IconBtn>
+      ),
+    },
   ];
 
   return (
@@ -107,6 +127,7 @@ export default function CasesAdmin() {
         />
       </BulkBar>
       <DataTable list={list} columns={columns} rowId={(c) => c.id} onRowClick={(c) => router.push(`/admin/cases/edit?id=${c.id}`)} selection={sel} empty={<ListEmpty list={list} noun="case studies" onCreate={() => setCreating(true)} />} />
+      {preview && <ExamPreview source={preview} onClose={() => setPreview(null)} />}
       {creating && <NewCaseDialog nextNumber={Math.max(0, ...rows.map((r) => r.number)) + 1} onClose={() => setCreating(false)} />}
     </AdminPage>
   );

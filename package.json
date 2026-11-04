@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/flatten-export.mjs",
+    "build": "node scripts/check-preview-isolated.mjs && node --experimental-strip-types --no-warnings scripts/check-video-link.mjs && node --experimental-strip-types --no-warnings scripts/check-image-html.mjs && next build && node scripts/flatten-export.mjs",
     "start": "next start",
     "lint": "eslint",
     "preview": "node scripts/preview.mjs"

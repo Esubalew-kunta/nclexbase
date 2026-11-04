@@ -17,6 +17,9 @@
 # that explain the case-study questions live in assets/cases. They are content, loaded onto the
 # server with the questions and never part of the build (the repo is public and holds no
 # question content), so a deploy has to carry them across instead of wiping them with assets/.
+# assets/media holds the pictures and videos the admin uploads into questions, written there by the
+# API (MEDIA_ROOT). Same reasoning, and it must be listed before the first upload or the next deploy
+# would delete them.
 set -euo pipefail
 
 ACTION=${1:-}
@@ -25,7 +28,7 @@ REL=$HOME/releases
 HEALTH_URL='https://nclexbase.com/'
 HOST_IP=91.204.209.6   # the box itself; pinned so a slow DNS answer can never fail a deploy
 KEEP=(.htaccess .user.ini php.ini .well-known cgi-bin)
-KEEP_DIRS=(assets/cases)
+KEEP_DIRS=(assets/cases assets/media)
 HISTORY=$REL/web.history
 KEEP_RELEASES=5
 

@@ -16,13 +16,24 @@ export interface Rationale {
   takeaway: string[];
 }
 
-/** Video explanation uploaded in the admin. `url` is a public path or `idb:<key>` for browser uploads. */
+/**
+ * Video explanation set in the admin: an uploaded file, or a link.
+ *
+ * A file: `url` is a public path (`/assets/media/<name>`), or `idb:<key>` for a browser-only upload
+ * in the no-API prototype. A link: `kind` is "link", `url` is the address the admin pasted, and the
+ * player is worked out from it (lib/videoLink.ts), never taken on trust from `embedUrl`.
+ */
 export interface ExplanationVideo {
   url: string;
   name: string;
   sizeKb: number;
-  /** The admin can hide an uploaded video without deleting it. */
+  /** The admin can hide a video without deleting it. */
   visible: boolean;
+  kind?: "link";
+  /** Links only: which player. */
+  provider?: "youtube" | "vimeo" | "file";
+  /** Links only: where the player points, as last worked out. */
+  embedUrl?: string;
 }
 
 interface ItemBase {

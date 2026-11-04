@@ -322,7 +322,7 @@ let toastId = 0;
 export function toast(text: string, tone: Toast["tone"] = "success") {
   const id = ++toastId;
   useToasts.setState((s) => ({ list: [...s.list, { id, tone, text }] }));
-  setTimeout(() => useToasts.setState((s) => ({ list: s.list.filter((t) => t.id !== id) })), 3600);
+  setTimeout(() => useToasts.setState((s) => ({ list: s.list.filter((t) => t.id !== id) })), tone === "error" ? 9000 : 3600);
 }
 
 export function Toaster() {
@@ -376,8 +376,19 @@ export const fmtDateTime = (iso?: string) =>
   iso ? new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—";
 export const stripHtml = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 
-/** Deep-equal for editor dirty checks; ignores the store-managed `updatedAt`. */
+/**
+ * Deep-equal for editor dirty checks; ignores the store-managed `updatedAt`.
+ *
+ * The order of an object's keys does not matter. A record read back from the server lists its
+ * fields in the server's order, the editor's copy in the editor's, and a save must not leave the
+ * editor claiming there are unsaved changes just because the two orders differ.
+ */
 export function sameRecord(a: unknown, b: unknown) {
-  const strip = (x: unknown) => JSON.stringify(x, (k, v) => (k === "updatedAt" ? undefined : v));
-  return strip(a) === strip(b);
+  const canon = (x: unknown) =>
+    JSON.stringify(x, (k, v) => {
+      if (k === "updatedAt") return undefined;
+      if (v && typeof v === "object" && !Array.isArray(v)) return Object.fromEntries(Object.entries(v).sort(([p], [q]) => (p < q ? -1 : p > q ? 1 : 0)));
+      return v;
+    });
+  return canon(a) === canon(b);
 }

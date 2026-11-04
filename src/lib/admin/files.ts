@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiMode } from "@/lib/api/client";
+import { MAX_VIDEO_MB as SERVER_MAX_VIDEO_MB, uploadMedia } from "@/lib/api/media";
 import type { FileRef } from "./types";
 
 /*
@@ -65,11 +67,27 @@ export async function storeImage(file: File): Promise<FileRef> {
 
 export const MAX_VIDEO_MB = 200;
 const VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
+const SERVER_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
 
-/** Validate and store a video (question explanation videos). */
-export async function storeVideo(file: File): Promise<{ url: string; name: string; sizeKb: number }> {
-  if (!VIDEO_TYPES.includes(file.type)) throw new Error("Use an MP4, WebM, OGG or MOV video.");
-  if (file.size > MAX_VIDEO_MB * 1024 * 1024) throw new Error(`This video is ${(file.size / 1048576).toFixed(0)} MB. The limit is ${MAX_VIDEO_MB} MB.`);
+/** How big a video may be here: the server's limit when there is a server, this browser's otherwise. */
+export const videoLimitMb = () => (apiMode() ? SERVER_MAX_VIDEO_MB : MAX_VIDEO_MB);
+
+/** The file types the video picker offers. */
+export const videoAccept = () => (apiMode() ? SERVER_VIDEO_TYPES : VIDEO_TYPES).join(",");
+
+/**
+ * Validate and store a video (question explanation videos).
+ *
+ * With a server the file is uploaded and kept there, so every admin and every student sees it. Without
+ * one (the prototype) it stays in this browser.
+ */
+export async function storeVideo(file: File, onProgress?: (fraction: number) => void): Promise<{ url: string; name: string; sizeKb: number }> {
+  if (!(apiMode() ? SERVER_VIDEO_TYPES : VIDEO_TYPES).includes(file.type)) throw new Error(apiMode() ? "Use an MP4, WebM or OGG video." : "Use an MP4, WebM, OGG or MOV video.");
+  if (file.size > videoLimitMb() * 1024 * 1024) throw new Error(`This video is ${(file.size / 1048576).toFixed(0)} MB. The limit is ${videoLimitMb()} MB. For a longer video, add a link instead.`);
+  if (apiMode()) {
+    const up = await uploadMedia(file, file.name, "video", onProgress);
+    return { url: up.url, name: up.name, sizeKb: up.sizeKb };
+  }
   const key = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   await tx("readwrite", (s) => s.put(file, key));
   return { url: `idb:${key}`, name: file.name, sizeKb: Math.max(1, Math.round(file.size / 1024)) };

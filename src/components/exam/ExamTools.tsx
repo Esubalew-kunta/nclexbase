@@ -3,10 +3,9 @@
 import clsx from "clsx";
 import { useRef, useState, type ReactNode } from "react";
 import { Calculator as CalcIcon, SquareX } from "lucide-react";
-import { useStore, type ExamSettings } from "@/lib/store";
-import { itemById } from "@/lib/bank";
+import type { ExamSettings } from "@/lib/store";
 import { formatDuration, scoreItem } from "@/lib/scoring";
-import type { MasteryTag, TestSession } from "@/lib/types";
+import type { Item, MasteryTag, TestSession } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
 import { BRAND, SITE_NAME } from "@/lib/brand";
 
@@ -172,11 +171,29 @@ const CHECK = "M40.32 12.7a1.5 1.5 0 0 1-.02 2.12l-22.25 22a1.5 1.5 0 0 1-2.11 0
 const HALF = "M2.03 11.25a10 10 0 0 1 19.94 0H22V12a10 10 0 0 1-20 0v-.75h.03ZM12 20.5a8.5 8.5 0 0 0 8.47-7.75H3.53A8.5 8.5 0 0 0 12 20.5Z";
 const CROSS = "M8.56 6.44a1.5 1.5 0 1 0-2.12 2.12L21.88 24 6.44 39.44a1.5 1.5 0 1 0 2.12 2.12L24 26.12l15.44 15.44a1.5 1.5 0 0 0 2.12-2.12L26.12 24 41.56 8.56a1.5 1.5 0 0 0-2.12-2.12L24 21.88 8.56 6.44Z";
 
-export function SettingsDrawer({ session, onClose, onJump }: { session: TestSession; onClose: () => void; onJump: (i: number) => void }) {
-  const settings = useStore((s) => s.examSettings);
-  const setSettings = useStore((s) => s.setExamSettings);
-  const tags = useStore((s) => s.tags);
-  const bookmarks = useStore((s) => s.bookmarks);
+/**
+ * Everything it shows or changes arrives as props. It reads no store, so the same drawer serves
+ * the student exam (props from the store) and the admin preview (props from local state).
+ */
+export function SettingsDrawer({
+  session,
+  settings,
+  onSettings: setSettings,
+  tags,
+  bookmarks,
+  getItem,
+  onClose,
+  onJump,
+}: {
+  session: TestSession;
+  settings: ExamSettings;
+  onSettings: (patch: Partial<ExamSettings>) => void;
+  tags: Record<string, MasteryTag | undefined>;
+  bookmarks: Record<string, boolean | undefined>;
+  getItem: (id: string) => Item;
+  onClose: () => void;
+  onJump: (i: number) => void;
+}) {
   const isCase = session.kind === "case";
   const tabsList: string[] = isCase ? ["All", "Status"] : ["All", "Status", "Topics"];
   const [tab, setTab] = useState("All");
@@ -189,7 +206,7 @@ export function SettingsDrawer({ session, onClose, onJump }: { session: TestSess
   const pools = { unused: 0, learning: 0, reviewing: 0, mastered: 0, bookmarked: 0 };
   session.entries.forEach((e) => {
     if (session.submitted[e.itemId]) {
-      const sc = scoreItem(itemById(e.itemId), session.answers[e.itemId]);
+      const sc = scoreItem(getItem(e.itemId), session.answers[e.itemId]);
       if (sc.earned >= sc.max) credit.full++;
       else if (sc.earned > 0) credit.partial++;
       else credit.none++;
@@ -200,7 +217,7 @@ export function SettingsDrawer({ session, onClose, onJump }: { session: TestSess
   });
 
   const rows = session.entries
-    .map((e, i) => ({ e, i, item: itemById(e.itemId) }))
+    .map((e, i) => ({ e, i, item: getItem(e.itemId) }))
     .filter(({ i, item }) => !q || `question ${i + 1} ${item.topic}`.toLowerCase().includes(q.toLowerCase()));
   const topics = [...new Set(rows.map((r) => r.item.topic))];
   const tabIndex = Math.max(0, tabsList.indexOf(tab));
@@ -448,8 +465,7 @@ export function EndDialog({ onCancel, onEnd }: { onCancel: () => void; onEnd: ()
 }
 
 /** Case study (tutored review): "Would you like to end your review?" with stats and tag counts. */
-export function EndReviewDialog({ session, onCancel, onEnd }: { session: TestSession; onCancel: () => void; onEnd: () => void }) {
-  const tags = useStore((s) => s.tags);
+export function EndReviewDialog({ session, tags, onCancel, onEnd }: { session: TestSession; tags: Record<string, MasteryTag | undefined>; onCancel: () => void; onEnd: () => void }) {
   const answered = session.entries.filter((e) => session.submitted[e.itemId]).length;
   const time = Object.values(session.timeSpent).reduce((a, b) => a + b, 0);
   const count = (t: MasteryTag) => session.entries.filter((e) => tags[e.itemId] === t).length;

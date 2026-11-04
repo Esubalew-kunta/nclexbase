@@ -101,6 +101,38 @@ export async function api<T>(path: string, { body, retries, ...init }: ApiOption
   throw lastError instanceof Error ? lastError : new ApiError(0, "The server could not be reached.");
 }
 
+/**
+ * Send a file (multipart). Separate from `api()` because that one speaks JSON, and because a big
+ * video wants progress, which `fetch` cannot report on the way up.
+ */
+export async function apiUpload<T>(path: string, form: FormData, onProgress?: (fraction: number) => void): Promise<T> {
+  await csrf();
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", apiUrl(path));
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("Accept", "application/json");
+    const token = readCookie("XSRF-TOKEN");
+    if (token) xhr.setRequestHeader("X-XSRF-TOKEN", token);
+    if (onProgress) xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
+    xhr.onerror = () => reject(new ApiError(0, "The server could not be reached."));
+    xhr.ontimeout = () => reject(new ApiError(0, "The upload took too long."));
+    xhr.onload = () => {
+      let body: { message?: string; errors?: Record<string, string[]> } & Record<string, unknown> = {};
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        // A proxy error page is not JSON; the status is all there is.
+      }
+      if (xhr.status >= 200 && xhr.status < 300) return resolve(body as T);
+      // Laravel groups a file's problem under its field; the sentence is what the admin needs.
+      const message = body.errors?.file?.[0] ?? body.message ?? (xhr.status === 413 ? "The file is larger than the server accepts." : `Upload failed (${xhr.status}).`);
+      reject(new ApiError(xhr.status, message, body.errors));
+    };
+    xhr.send(form);
+  });
+}
+
 function xsrfHeader(method: string): Record<string, string> {
   if (method === "GET" || method === "HEAD") return {};
   const token = readCookie("XSRF-TOKEN");
