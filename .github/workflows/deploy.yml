@@ -1,0 +1,111 @@
+name: CI & deploy
+
+# One pipeline: the gates run on every pull request and on every push to main, and a push to
+# main that passes them goes live. There is no second place where deploying is decided.
+#
+# The site is a static export, and the server has no Node, so the build has to happen here.
+# The two NEXT_PUBLIC_ values below are baked into the bundle and are public by definition —
+# they are settings, not secrets, and they are what makes a production build a production one:
+# it talks to the real API and it has no demo sign-in buttons.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:   # the same deploy, by hand, when main is already green
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NEXT_PUBLIC_API_URL: https://api.nclexbase.com
+  NEXT_PUBLIC_DEMO_AUTH: '0'
+
+jobs:
+  gates:
+    name: Types, lint and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Types
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src
+
+      - name: Build
+        run: npm run build
+
+      # The question bank is served by the API to signed-in students. If it ever ends up in the
+      # bundle again it is public to anyone who opens the page source, so the build fails here
+      # rather than on the internet.
+      - name: No question bank in the bundle
+        run: |
+          if grep -rl 'inpatient psychiatric unit' out >/dev/null 2>&1; then
+            echo "::error::question text found in the built site"
+            exit 1
+          fi
+          echo "clean"
+
+      - name: Keep the build for the deploy job
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: out
+          retention-days: 3
+
+  deploy:
+    name: Deploy to nclexbase.com
+    needs: gates
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # The very files the gates checked, not a second build of them.
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: out
+
+      - name: Pack the build
+        run: |
+          test -f out/index.html
+          tar -czf "../web-${GITHUB_SHA::12}.tgz" -C out .
+          ls -lh "../web-${GITHUB_SHA::12}.tgz"
+
+      - name: Open an SSH connection to the server
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Send the build and install it
+        env:
+          SRV: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          SHA="${GITHUB_SHA::12}"
+          ssh -o BatchMode=yes "$SRV" 'mkdir -p ~/releases ~/apps'
+          scp -o BatchMode=yes "../web-$SHA.tgz" "$SRV:releases/web-$SHA.tgz"
+          scp -o BatchMode=yes deploy/deploy.sh "$SRV:apps/web-deploy.sh"
+          ssh -o BatchMode=yes "$SRV" "chmod 700 ~/apps/web-deploy.sh && ~/apps/web-deploy.sh install ~/releases/web-$SHA.tgz $SHA"
+
+      - name: What is live now
+        if: always()
+        env:
+          SRV: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: ssh -o BatchMode=yes "$SRV" '~/apps/web-deploy.sh status'
