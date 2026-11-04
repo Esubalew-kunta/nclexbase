@@ -12,6 +12,11 @@
 # KEEP is the list of things in public_html that belong to the server, not to the build: the
 # noindex rules, cPanel's own PHP files, the certificate challenge folder. A deploy replaces
 # everything else and leaves those exactly as they are.
+#
+# KEEP_DIRS are the same idea one level down: folders inside a folder the build owns. The figures
+# that explain the case-study questions live in assets/cases. They are content, loaded onto the
+# server with the questions and never part of the build (the repo is public and holds no
+# question content), so a deploy has to carry them across instead of wiping them with assets/.
 set -euo pipefail
 
 ACTION=${1:-}
@@ -20,16 +25,32 @@ REL=$HOME/releases
 HEALTH_URL='https://nclexbase.com/'
 HOST_IP=91.204.209.6   # the box itself; pinned so a slow DNS answer can never fail a deploy
 KEEP=(.htaccess .user.ini php.ini .well-known cgi-bin)
+KEEP_DIRS=(assets/cases)
 HISTORY=$REL/web.history
 KEEP_RELEASES=5
 
 log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 
 healthy() {
-  local body
-  body=$(curl -fsS -k --max-time 25 --resolve "nclexbase.com:443:$HOST_IP" "$HEALTH_URL" 2>/dev/null) || return 1
-  # A page that loads but is not ours (a host error page, an empty index) is not healthy.
-  grep -q 'NCLEXBase' <<<"$body"
+  # Two checks, both aimed at the ways a bad build can look fine from outside:
+  #  - what is SERVED is byte for byte the index.html that was just installed. A fixed page that
+  #    merely contains the site's name would also pass for a stale copy held by the server's own
+  #    cache (which answered "healthy" for a broken build once, when two installs came a second
+  #    apart), so the URL carries a fresh query string and the bytes are compared with the disk.
+  #  - a page deeper than the front door exists. A build that is only an index.html has none.
+  local nonce tmp ok=1
+  nonce=$(date +%s%N)
+  tmp=$(mktemp "$HOME/apps/web-health.XXXXXX")
+  local fetch=(curl -fsS -k --max-time 25 -H 'Cache-Control: no-cache' --resolve "nclexbase.com:443:$HOST_IP")
+
+  "${fetch[@]}" -o "$tmp" "https://nclexbase.com/?health=$nonce" 2>/dev/null || ok=0
+  if [[ $ok == 1 ]] && ! cmp -s "$tmp" "$DOC/index.html"; then ok=0; fi
+  if [[ $ok == 1 ]]; then
+    "${fetch[@]}" "https://nclexbase.com/auth/signin/?health=$nonce" 2>/dev/null | grep -q 'NCLEXBase' || ok=0
+  fi
+
+  rm -f "$tmp"
+  [[ $ok == 1 ]]
 }
 
 keep_this() {
@@ -44,15 +65,32 @@ unpack() {
   #
   # Cleaned up by hand rather than with a RETURN trap: bash keeps such a trap for every later
   # function return too, and the second firing refers to a local that no longer exists.
-  local tarball=$1 staging ok=0
+  local tarball=$1 staging held ok=0
   staging=$(mktemp -d "$HOME/apps/web-incoming.XXXXXX")
 
   if tar -xzf "$tarball" -C "$staging" && [[ -f $staging/index.html ]]; then
+    # Set aside what the server owns inside folders the build replaces...
+    held=$(mktemp -d "$HOME/apps/web-held.XXXXXX")
+    for d in "${KEEP_DIRS[@]}"; do
+      if [[ -d $DOC/$d ]]; then
+        mkdir -p "$held/$(dirname "$d")"
+        mv "$DOC/$d" "$held/$d"
+      fi
+    done
     for f in "$DOC"/* "$DOC"/.[!.]*; do
       [[ -e $f ]] || continue
       keep_this "$(basename "$f")" || rm -rf "$f"
     done
     cp -a "$staging"/. "$DOC"/
+    # ...and put it back. A build that happens to ship a folder of the same name loses to the server's.
+    for d in "${KEEP_DIRS[@]}"; do
+      if [[ -d $held/$d ]]; then
+        mkdir -p "$DOC/$(dirname "$d")"
+        rm -rf "$DOC/$d"
+        mv "$held/$d" "$DOC/$d"
+      fi
+    done
+    rm -rf "$held"
     # The whole site is meant to stay out of search engines; a deploy that lost that rule
     # would be worse than a deploy that failed.
     grep -q 'X-Robots-Tag' "$DOC/.htaccess" && ok=1
