@@ -7,6 +7,7 @@ import { useConfig, useCopy, useReadinessExams, useSubjects } from "@/lib/conten
 import { BRAND } from "@/lib/brand";
 import { useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
+import { useTotals } from "@/lib/stats";
 import { scoreSession } from "@/lib/scoring";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/primitives";
@@ -22,14 +23,15 @@ import { PlacedFaqs } from "@/components/ui/PlacedFaqs";
 
 
 /** Readiness score band. Thresholds: Admin > Targets & Scoring. */
-export function readinessStatus(percent: number, bands: { high: number; borderline: number }) {
+function readinessStatus(percent: number, bands: { high: number; borderline: number }) {
   if (percent >= bands.high) return { label: "High", cls: "bg-success/10 text-success" };
   if (percent >= bands.borderline) return { label: "Borderline", cls: "bg-warning/15 text-ink" };
   return { label: "Low", cls: "bg-error/10 text-error" };
 }
 
 export default function PerformancePage() {
-  const { targets: TARGETS, readinessBands, totals } = useConfig();
+  const { targets: TARGETS, readinessBands } = useConfig();
+  const totals = useTotals();
   const copy = useCopy();
   const exams = useReadinessExams();
   const subjectIds = useSubjects().map((s) => s.id);

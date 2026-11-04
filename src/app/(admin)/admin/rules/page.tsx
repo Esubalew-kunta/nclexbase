@@ -3,7 +3,6 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import type { ScheduleItemCfg } from "@/lib/admin/config";
 import { newId } from "@/lib/admin/store";
-import { useAll } from "@/lib/content";
 import { AdminPage, Btn, Field, IconBtn, Input, Switch } from "@/components/admin/ui";
 import { ConfigPanel, useConfigSection } from "@/components/admin/config";
 
@@ -54,16 +53,6 @@ export default function RulesAdmin() {
   const targets = useConfigSection("targets", "pass targets");
   const bands = useConfigSection("readinessBands", "readiness bands");
   const schedule = useConfigSection("schedule", "study schedule rules");
-  const totalsSec = useConfigSection("totals", "catalog totals");
-  const questions = useAll("questions");
-  const caseRows = useAll("cases");
-  const tot = totalsSec.draft;
-  const bank = {
-    cases: caseRows.filter((c) => c.status === "published").length,
-    standalone: questions.filter((q) => q.source.kind === "standalone" && q.status === "published").length,
-    readiness: questions.filter((q) => q.source.kind === "readiness" && q.status === "published").length,
-    performanceQuestions: questions.filter((q) => q.status === "published").length,
-  };
   const t = targets.draft;
   const b = bands.draft;
   const s = schedule.draft;
@@ -160,29 +149,6 @@ export default function RulesAdmin() {
             </div>
         </ConfigPanel>
 
-        <ConfigPanel section={totalsSec} title="Catalog totals" description="Totals students see on Home, in Create Test and on Performance. They mirror the full product; set your own or use what is published in the bank.">
-          <div className="space-y-2">
-            {(
-              [
-                ["cases", "Case study questions", "Home, Create Test"],
-                ["standalone", "Standalone questions", "Home"],
-                ["readiness", "Readiness exam questions", "Home and Performance"],
-                ["performanceQuestions", "Questions counted on Performance", "Question Usage target"],
-              ] as const
-            ).map(([k, label, hint]) => (
-              <div key={k} className="grid items-center gap-2 sm:grid-cols-[1fr_120px_auto]">
-                <span className="text-sm text-ink">
-                  {label}
-                  <span className="block text-xs text-muted">{hint}</span>
-                </span>
-                <Input type="number" min={0} value={tot[k]} aria-label={label} onChange={(e) => totalsSec.setDraft({ ...tot, [k]: Math.max(0, Number(e.target.value) || 0) })} />
-                <Btn variant="ghost" onClick={() => totalsSec.setDraft({ ...tot, [k]: bank[k] })}>
-                  Use bank ({bank[k]})
-                </Btn>
-              </div>
-            ))}
-          </div>
-        </ConfigPanel>
       </div>
     </AdminPage>
   );

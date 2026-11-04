@@ -210,6 +210,7 @@ export function ExamScreen({ session, review }: { session: TestSession; review: 
                 index={caseIndex}
                 showBanner={firstOfCase}
                 visibleTabs={item.tabs ?? caseStudy.tabs.length}
+                itemTabs={item.caseTabs}
                 tab={tabs[caseStudy.id] ?? 0}
                 onTab={(t) => setTabs((s) => ({ ...s, [caseStudy.id]: t }))}
               />

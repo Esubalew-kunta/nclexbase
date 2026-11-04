@@ -6,7 +6,7 @@ import { useConfig, useCopy, useFaqs, usePublished, useSubjects } from "@/lib/co
 import { subjectHref } from "@/lib/routes";
 import { greeting, useProgress } from "@/lib/hooks";
 import { useStore } from "@/lib/store";
-import { useStats } from "@/lib/stats";
+import { useStats, useTotals } from "@/lib/stats";
 import { FaqList, SectionTitle } from "@/components/ui/primitives";
 import { HomeRow, LessonsBlock, SubjectIcon, TypeIcon, UsageBlock } from "@/components/ui/visuals";
 import { QuickActions } from "@/components/home/QuickActions";
@@ -22,7 +22,11 @@ export default function HomePage() {
   const faqs = useFaqs("home");
   const copy = useCopy();
   // Admin > Home & Navigation sets which sections show and in what order; totals come from Admin > Subjects & Systems.
-  const { homeLayout, totals } = useConfig();
+  const { homeLayout } = useConfig();
+  const totals = useTotals();
+  const sessions = useStore((s) => s.sessions);
+  // Readiness questions actually answered, from recorded attempts.
+  const readinessUsed = new Set(sessions.filter((s) => s.kind === "readiness").flatMap((s) => Object.keys(s.submitted))).size;
   const lessonCount = (course: string) => lessons.filter((l) => l.course === course).length;
 
   const render: Record<HomeSection, () => ReactNode> = {
@@ -55,7 +59,7 @@ export default function HomePage() {
           <UsageBlock usage={{ total: totals.standalone, ...progress.standaloneTotal }} />
         </HomeRow>
         <HomeRow href="/nclex/next-gen-readiness-exams" icon={<TypeIcon kind="readiness" />} title={copy("readiness.title")}>
-          <UsageBlock usage={{ total: totals.readiness, used: 0 }} />
+          <UsageBlock usage={{ total: totals.readiness, used: readinessUsed }} />
         </HomeRow>
       </section>
     ),

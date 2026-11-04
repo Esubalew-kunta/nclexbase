@@ -9,68 +9,40 @@ import faqsJson from "./live/faqs.json";
  * Raw captures live in research/; JSON copies are in ./live.
  */
 
-export interface SystemStat {
-  name: string;
-  /** Average score across all users (Performance page). */
-  avg: number;
-  /** Questions in this system, including case and readiness items. */
-  total: number;
-}
-
 export interface Subject {
   id: SubjectId;
   name: string;
-  /** "0 of N questions used" on Home. */
-  questionCount: number;
   lessonCount: number;
   videoRuntime: string;
-  /** Standalone questions (Standalone tab + Create Test). */
-  standaloneCount: number;
-  caseCount: number;
-  /** Questions counted on the Performance page. */
-  perfTotal: number;
-  avgScore: number;
-  avgTimeSec: number;
-  /** Standalone systems in live order with question counts. */
+  /**
+   * Standalone systems in live order. `count` is bootcamp's question count for the system and
+   * is only ever a sort key (HomeV1 lists each subject's largest systems first). It is never
+   * shown: every count the app prints is counted from the questions we actually have.
+   */
   systems: { name: string; count: number }[];
-  /** Performance systems (alphabetical on the live page) with averages. */
-  perfSystems: SystemStat[];
 }
 
-const S = systemsJson as Record<string, { avg: number; perfTotal: number; perfSystems: SystemStat[]; standaloneTotal: number; standaloneSystems: { name: string; total: number }[] }>;
+const S = systemsJson as Record<string, { standaloneSystems: { name: string; total: number }[] }>;
 const V = videosJson as Record<string, { lessons: number; runtime: string; items: Lesson[] }>;
 
-const base: { id: SubjectId; name: string; questionCount: number; caseCount: number; avgTimeSec: number }[] = [
-  { id: "adult-health", name: "Adult Health", questionCount: 569, caseCount: 27, avgTimeSec: 70 },
-  { id: "child-health", name: "Child Health", questionCount: 199, caseCount: 9, avgTimeSec: 68 },
-  { id: "fundamentals", name: "Fundamentals", questionCount: 155, caseCount: 0, avgTimeSec: 75 },
-  { id: "maternal-and-newborn-health", name: "Maternal & Newborn Health", questionCount: 213, caseCount: 12, avgTimeSec: 82 },
-  { id: "mental-health", name: "Mental Health", questionCount: 116, caseCount: 2, avgTimeSec: 76 },
-  { id: "pharmacology", name: "Pharmacology", questionCount: 183, caseCount: 0, avgTimeSec: 62 },
-  { id: "management-of-care", name: "Management of Care", questionCount: 145, caseCount: 0, avgTimeSec: 73 },
+const base: { id: SubjectId; name: string }[] = [
+  { id: "adult-health", name: "Adult Health" },
+  { id: "child-health", name: "Child Health" },
+  { id: "fundamentals", name: "Fundamentals" },
+  { id: "maternal-and-newborn-health", name: "Maternal & Newborn Health" },
+  { id: "mental-health", name: "Mental Health" },
+  { id: "pharmacology", name: "Pharmacology" },
+  { id: "management-of-care", name: "Management of Care" },
 ];
 
 export const SUBJECTS: Subject[] = base.map((b) => ({
   ...b,
   lessonCount: V[b.id].lessons,
   videoRuntime: V[b.id].runtime,
-  standaloneCount: S[b.id].standaloneTotal,
-  perfTotal: S[b.id].perfTotal,
-  avgScore: S[b.id].avg,
   systems: S[b.id].standaloneSystems.map((s) => ({ name: s.name, count: s.total })),
-  perfSystems: S[b.id].perfSystems,
 }));
 
 export const subjectById = (id: SubjectId) => SUBJECTS.find((s) => s.id === id)!;
-
-export const TOTALS = {
-  cases: 300,
-  standalone: 1280,
-  readiness: 600,
-  lessons: 0,
-  freeQuestions: 36,
-  performanceQuestions: 1580,
-};
 
 /* ------------------------------------------------------------------ */
 /* Crash course lessons                                                */
@@ -90,7 +62,12 @@ export const LESSONS: Record<SubjectId, Lesson[]> = Object.fromEntries(base.map(
 /* Readiness exams + Next Gen course                                   */
 /* ------------------------------------------------------------------ */
 
-export const READINESS_EXAMS = [1, 2, 3, 4].map((n) => ({
+/*
+ * One exam. Exams 2 to 4 used to be listed here, but they were the same 85 questions of exam 1
+ * in another order, with nothing of their own behind them. A new exam is added here only when
+ * its questions have been captured.
+ */
+export const READINESS_EXAMS = [1].map((n) => ({
   id: `readiness-exam-${n}`,
   number: n,
   title: `CAT Readiness Exam ${n}`,

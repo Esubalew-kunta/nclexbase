@@ -1,5 +1,5 @@
 import type { BowtieItem, CaseStudy, Item, SessionEntry } from "@/lib/types";
-import raw from "./live/readiness-exam1.json";
+import bundled from "./live/readiness-exam1.json";
 
 /*
  * CAT Readiness Exam 1, captured from the free exam on app.bootcamp.com (see scripts/build-readiness.py).
@@ -18,6 +18,13 @@ type Raw = {
   stem?: string;
   [k: string]: unknown;
 };
+
+/*
+ * With NEXT_PUBLIC_API_URL set the questions come from the API, so the bundled copy must not
+ * ship: this is a static site, and every file in it is public to anyone who asks. The env var
+ * is inlined at build time, which lets the bundler drop the JSON from a production build.
+ */
+const raw = process.env.NEXT_PUBLIC_API_URL ? { id: "", cases: [], items: [] } : bundled;
 
 const R = raw as unknown as {
   cases: { key: string; intro: string; subject: string; tabs: { label: string; html: string }[] }[];

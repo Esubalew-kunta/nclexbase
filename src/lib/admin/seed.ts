@@ -1,12 +1,9 @@
 import { CHEAT_SHEETS, LESSONS, NGN_COURSE, READINESS_EXAMS, SUBJECTS } from "@/data/catalog";
-import { CASES, CASE_ROWS } from "@/data/cases";
-import { STANDALONE } from "@/data/standalone";
 import { READINESS_ITEMS } from "@/data/readiness";
 import { MEMORY_TRICKS_SEED } from "@/data/memoryTricks";
 import { PLANS_SEED } from "@/data/plans";
 import faqsJson from "@/data/live/faqs.json";
 import { tabsFor } from "@/lib/subjectTabs";
-import type { SubjectId } from "@/lib/types";
 import type { AnnouncementRec, CaseRec, CheatSheetRec, Collections, CourseRec, FaqPlacement, FaqRec, LessonRec, MessageRec, PaymentMethodRec, PromoCodeRec, QuestionRec, ReadinessRec, SubjectRec, UserRec } from "./types";
 
 /*
@@ -40,31 +37,20 @@ const cheatSheets = (): CheatSheetRec[] => {
   });
 };
 
+/*
+ * Only captured content is bundled: the readiness exam, item for item. Case studies and
+ * standalone questions come from the API, imported from real captures with
+ * `php artisan nclex:import-content` (docs/CONTENT_CAPTURE.md). Nothing written for the
+ * prototype is seeded any more, and no case row exists without its questions, so every count
+ * the app shows is a count of real questions.
+ */
 const questions = (): QuestionRec[] => {
-  const out: QuestionRec[] = [];
   const meta = { access: "free" as const, status: "published" as const, updatedAt: SEEDED };
-  STANDALONE.forEach((it, i) => out.push({ ...it, ...meta, source: { kind: "standalone" }, order: i }));
-  CASES.forEach((c) => c.items.forEach((it, i) => out.push({ ...it, ...meta, source: { kind: "case", caseId: c.id }, order: i })));
   // Includes the readiness case items (they are listed in exam order).
-  READINESS_ITEMS.forEach((it, i) => out.push({ ...it, ...meta, source: { kind: "readiness" }, order: i }));
-  return out;
+  return READINESS_ITEMS.map((it, i) => ({ ...it, ...meta, source: { kind: "readiness" }, order: i }));
 };
 
-const cases = (): CaseRec[] =>
-  CASE_ROWS.map((r) => {
-    const c = CASES.find((x) => x.id === r.id);
-    return {
-      id: r.id,
-      number: r.number,
-      title: r.title,
-      subject: r.subject as SubjectId,
-      access: r.free ? "free" : "premium",
-      status: "published",
-      order: r.number,
-      content: c ? { intro: c.intro, exhibit: c.exhibit, tabs: c.tabs, itemIds: c.items.map((i) => i.id) } : null,
-      updatedAt: SEEDED,
-    };
-  });
+const cases = (): CaseRec[] => [];
 
 const readiness = (): ReadinessRec[] =>
   READINESS_EXAMS.map((r, i) => ({

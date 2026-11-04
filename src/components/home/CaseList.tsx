@@ -26,7 +26,7 @@ export function CaseList({ subject }: { subject?: string }) {
       {rows.map((row, i) => {
         const unlocked = plan === "premium" || row.access === "free";
         const session = sessions.find((s) => s.kind === "case" && s.sourceId === row.id);
-        const authored = resolveCase(row.id, row.subject);
+        const authored = resolveCase(row.id);
         const counts = session
           ? {
               used: Object.keys(session.submitted).length,

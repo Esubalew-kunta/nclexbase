@@ -84,6 +84,12 @@
   .prose-exam li { margin-bottom: 0.25rem; }
   .prose-exam b, .prose-exam strong { font-weight: 700; }
   .prose-exam h4 { font-weight: 700; margin: 1.25rem 0 0.25rem; }
+  /* Captured tab HTML keeps bootcamp's tables (timed notes, vitals, findings) but not their
+     styling, so a cell would centre vertically: a note's "0615:" floated halfway down beside
+     its paragraph. Top-aligned, as on the live site. No borders: the notes tables have none,
+     and the cleaned HTML no longer says which table is which. */
+  .prose-exam table { border-collapse: collapse; margin: 0 0 1rem; }
+  .prose-exam td, .prose-exam th { vertical-align: top; padding: 0.25rem 0.75rem 0.25rem 0; text-align: left; }
 }
 
 /* FAQ answers are HTML from the live site. */

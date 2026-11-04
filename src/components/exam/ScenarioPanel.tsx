@@ -1,18 +1,20 @@
 "use client";
 
 import clsx from "clsx";
-import type { CaseStudy, TabContent } from "@/lib/types";
+import type { CaseStudy, CaseTab, TabContent } from "@/lib/types";
 import { Html } from "./items/shared";
 
 /**
- * Left pane of a case study. Tabs unlock as the case progresses (item.tabs),
- * styled like the live Pearson look: rounded-top gray tabs, white active tab.
+ * Left pane of a case study. Tabs unlock as the case progresses (item.tabs), and an item that
+ * carries its own tab bodies (item.caseTabs) shows those instead of the case's, styled like the
+ * live Pearson look: rounded-top gray tabs, white active tab.
  */
 export function ScenarioPanel({
   caseStudy,
   index,
   showBanner,
   visibleTabs,
+  itemTabs,
   tab,
   onTab,
 }: {
@@ -20,10 +22,12 @@ export function ScenarioPanel({
   index: number;
   showBanner: boolean;
   visibleTabs: number;
+  /** The current item's own tab bodies, when the case changes them as it advances. */
+  itemTabs?: CaseTab[];
   tab: number;
   onTab: (i: number) => void;
 }) {
-  const tabs = caseStudy.tabs.slice(0, Math.max(1, visibleTabs));
+  const tabs = itemTabs?.length ? itemTabs : caseStudy.tabs.slice(0, Math.max(1, visibleTabs));
   const activeIndex = Math.min(tab, tabs.length - 1);
   const active = tabs[activeIndex];
   return (

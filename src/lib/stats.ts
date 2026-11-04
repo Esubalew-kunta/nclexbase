@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { getBank, useBank, type Bank } from "@/lib/content";
 import { scoreItem } from "./scoring";
 import { useStore } from "./store";
@@ -120,6 +121,35 @@ export function useStats(): StatsIndex {
   const bank = useBank();
   const sessions = useStore((s) => s.sessions);
   return statsFor(bank, sessions);
+}
+
+/** Library sizes shown on Home, Create Test and Performance. */
+export interface Totals {
+  /** Questions inside published case studies. */
+  cases: number;
+  standalone: number;
+  /** Published readiness exam questions. */
+  readiness: number;
+  /** Every published question the Performance page counts. */
+  performanceQuestions: number;
+}
+
+/**
+ * Counted from the published bank, never typed. These used to be admin-editable numbers
+ * ("300 case questions, 1280 standalone, 600 readiness") copied from the live product, which
+ * printed counts for questions this library does not have.
+ */
+export function totalsOf(bank: Bank): Totals {
+  const cases = bank.cases.reduce((n, c) => n + c.items.length, 0);
+  const standalone = bank.standalone.length;
+  let readiness = 0;
+  for (const q of bank.byId.values()) if (q.source.kind === "readiness" && q.status === "published") readiness++;
+  return { cases, standalone, readiness, performanceQuestions: cases + standalone + readiness };
+}
+
+export function useTotals(): Totals {
+  const bank = useBank();
+  return useMemo(() => totalsOf(bank), [bank]);
 }
 
 /** "62 %" or "—" when nobody has answered yet. */

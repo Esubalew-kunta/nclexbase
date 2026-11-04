@@ -10,6 +10,8 @@ import { todayISO } from "@/lib/daily";
 import { AdminPage, Btn, confirmDialog, Dialog, Field, Input, Panel, Select, Switch, toast } from "@/components/admin/ui";
 import { ConfigPanel, useConfigSection } from "@/components/admin/config";
 import { ImageDrop } from "@/components/admin/parts";
+import { apiMode } from "@/lib/api/client";
+import { useChangePassword } from "@/lib/api/useChangePassword";
 
 const EXPORT_VERSION = 1;
 
@@ -103,10 +105,42 @@ export default function SettingsAdmin() {
           )}
         </ConfigPanel>
 
-        <AdminAccount />
+        {apiMode() ? <AdminPassword /> : <AdminAccount />}
         <DataPanel />
       </div>
     </AdminPage>
+  );
+}
+
+/** The real thing, with a server behind it: the signed-in admin changes their own password. */
+function AdminPassword() {
+  const f = useChangePassword();
+  return (
+    <Panel title="Your password" description="Change the password of the account you are signed in with. Every other device is signed out; this one stays signed in.">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void f.submit();
+        }}
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="Current password" error={f.fields.current_password}>
+            <Input type="password" value={f.current} onChange={(e) => f.setCurrent(e.target.value)} autoComplete="current-password" />
+          </Field>
+          <Field label="New password" hint="At least 8 characters, and not one you use anywhere else.">
+            <Input type="password" value={f.next} onChange={(e) => f.setNext(e.target.value)} autoComplete="new-password" />
+          </Field>
+          <Field label="Repeat new password" error={f.fields.password || f.hint}>
+            <Input type="password" value={f.repeat} onChange={(e) => f.setRepeat(e.target.value)} autoComplete="new-password" />
+          </Field>
+        </div>
+        {f.error && <p role="alert" className="mt-2 text-sm text-error">{f.error}</p>}
+        {f.done && <p role="status" className="mt-2 text-sm font-medium text-primary">Your password has been changed. Other devices have been signed out.</p>}
+        <Btn variant="primary" className="mt-3" type="submit" disabled={!f.ready}>
+          {f.busy ? "Saving..." : "Change password"}
+        </Btn>
+      </form>
+    </Panel>
   );
 }
 

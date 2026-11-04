@@ -109,9 +109,19 @@ export function usePublished<K extends CollectionName>(col: K): Collections[K][]
 /* Site config                                                         */
 /* ------------------------------------------------------------------ */
 
-/** The config the admin's patch is applied on top of: the API's sections, or the built-in ones. */
+/**
+ * The config the admin's patch is applied on top of: the API's sections over the built-in ones.
+ *
+ * The API only sends the sections that have been saved, and a fresh database sends none
+ * (`config: {copy: {}}`). Using that as the whole config left `qotd` undefined and crashed the
+ * admin shell on its first render, so the API's sections are laid over the defaults instead.
+ */
+let apiBase: { api: SiteConfig; out: SiteConfig } | null = null;
 function configBase(): SiteConfig {
-  return (apiMode() ? useApiContent.getState().config : undefined) ?? DEFAULT_CONFIG;
+  const api = apiMode() ? useApiContent.getState().config : undefined;
+  if (!api) return DEFAULT_CONFIG;
+  if (apiBase?.api !== api) apiBase = { api, out: mergeDeep(DEFAULT_CONFIG, api) };
+  return apiBase.out;
 }
 
 let configCache: { patch: ConfigPatch; base: SiteConfig; out: SiteConfig } | null = null;

@@ -272,6 +272,16 @@ def convert(rec, meta, panel_map):
                     answers[k] = i
         assert None not in answers, (q, choices, answers)
         out.update(type="dragCloze", lead="" if lead_txt and lead_txt[:40] in template + stem_html else lead_txt, stem=stem_html, template=template, choices=choices, answers=answers)
+    elif typ == "dragAndDropSelectN":
+        # "Drag the top N findings to the box on the right." An unanswered submit leaves every
+        # option in the left box, each with its score icon, so the key is the options marked ok.
+        zones = {z.get("data-rbd-droppable-id"): z for z in left.xpath(".//div[@data-rbd-droppable-id]")}
+        src, dst = zones["answer-left"], zones["answers-right"]
+        assert not dst.xpath(".//div[@data-rbd-draggable-id]"), (q, "captured with options already placed")
+        label = lambda z: text(z.xpath("preceding-sibling::div")[0])
+        words = [(text(d), icon(d.find(".//img"))) for d in src.xpath(".//div[@data-rbd-draggable-id]")]
+        answers = [i for i, w in enumerate(words) if w[1] == "ok"]
+        out.update(type="dragTopN", lead="", stem=clean(lead) if lead is not None else "", n=len(answers), sourceLabel=label(src), targetLabel=label(dst), options=[w[0] for w in words], answers=answers)
     elif typ in ("dropdown", "dropdownRationale"):
         blocks = stem.xpath('.//p[.//select]')
         tp = blocks[0]

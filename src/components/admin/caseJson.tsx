@@ -66,7 +66,7 @@ export function CasePreview({ rec, questions }: { rec: CaseRec; questions: Quest
         {!questions.length && <span className="text-xs text-muted">No questions yet</span>}
       </div>
       <div className="rounded-lg border border-line bg-white px-4 pb-4 font-exam text-[15px] text-exam-ink">
-        <ScenarioPanel caseStudy={study} index={i} showBanner={i === 0} visibleTabs={q?.tabs ?? study.tabs.length} tab={tab} onTab={setTab} />
+        <ScenarioPanel caseStudy={study} index={i} showBanner={i === 0} visibleTabs={q?.tabs ?? study.tabs.length} itemTabs={q?.caseTabs} tab={tab} onTab={setTab} />
       </div>
       {q && <ItemPreview key={`${q.id}-${i}`} item={q} />}
     </div>

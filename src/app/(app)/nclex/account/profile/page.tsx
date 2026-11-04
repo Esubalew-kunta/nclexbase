@@ -6,12 +6,14 @@ import { useStore } from "@/lib/store";
 import { AccountShell, Field, PanelCard } from "@/components/home/AccountShell";
 import { apiMode } from "@/lib/api/client";
 import { logout } from "@/lib/api/auth";
+import { useChangePassword } from "@/lib/api/useChangePassword";
 import { signOutStudent } from "@/lib/demo";
 
 export default function ProfilePage() {
   const router = useRouter();
   const user = useStore((s) => s.user);
   const [name, setName] = useState(user.name);
+  const [open, setOpen] = useState(false);
   return (
     <AccountShell active="profile">
       <PanelCard title="Personal Details">
@@ -32,10 +34,16 @@ export default function ProfilePage() {
         />
         <Field label="Contact Email" right="Verified" type="email" defaultValue={user.email} />
         <Field label="Username" readOnly value={user.email} />
-        <button className="flex cursor-pointer items-center rounded-lg pt-4 pb-2 text-lg font-semibold text-primary transition-colors duration-100 hover:text-primary-hover">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex cursor-pointer items-center rounded-lg pt-4 pb-2 text-lg font-semibold text-primary transition-colors duration-100 hover:text-primary-hover"
+        >
           Change Password
         </button>
       </PanelCard>
+      {open && <ChangePasswordCard onClose={() => setOpen(false)} />}
       <div className="mx-auto mt-8 w-60">
         <button
           onClick={async () => {
@@ -50,5 +58,49 @@ export default function ProfilePage() {
         </button>
       </div>
     </AccountShell>
+  );
+}
+
+/** The form behind "Change Password". Only meaningful with a server to change it on. */
+function ChangePasswordCard({ onClose }: { onClose: () => void }) {
+  const f = useChangePassword();
+
+  if (!apiMode()) {
+    return (
+      <PanelCard title="Change Password">
+        <p className="text-base text-muted">Passwords are only kept when the site is connected to its server. There is nothing to change here yet.</p>
+      </PanelCard>
+    );
+  }
+
+  return (
+    <PanelCard title="Change Password">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void f.submit();
+        }}
+      >
+        <Field label="Current password" type="password" autoComplete="current-password" value={f.current} onChange={(e) => f.setCurrent(e.target.value)} className="mb-4" />
+        {f.fields.current_password && <p role="alert" className="-mt-2 mb-4 text-sm text-error">{f.fields.current_password}</p>}
+        <Field label="New password" type="password" autoComplete="new-password" value={f.next} onChange={(e) => f.setNext(e.target.value)} className="mb-4" />
+        <Field label="Repeat new password" type="password" autoComplete="new-password" value={f.repeat} onChange={(e) => f.setRepeat(e.target.value)} className="mb-4" />
+        {(f.hint || f.fields.password) && <p role="alert" className="mb-4 text-sm text-error">{f.fields.password || f.hint}</p>}
+        {f.error && <p role="alert" className="mb-4 text-sm text-error">{f.error}</p>}
+        {f.done && <p role="status" className="mb-4 text-sm font-medium text-primary">Your password has been changed. Other devices have been signed out.</p>}
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={!f.ready}
+            className="h-12 cursor-pointer rounded-lg bg-primary px-6 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {f.busy ? "Saving..." : "Save new password"}
+          </button>
+          <button type="button" onClick={onClose} className="h-12 cursor-pointer rounded-lg px-4 text-base font-semibold text-primary hover:text-primary-hover">
+            {f.done ? "Close" : "Cancel"}
+          </button>
+        </div>
+      </form>
+    </PanelCard>
   );
 }

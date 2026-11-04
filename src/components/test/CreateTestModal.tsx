@@ -7,7 +7,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { buildEntries, studyItems } from "@/lib/bank";
 import { useBank, useCaseRows, useConfig, useSubjects } from "@/lib/content";
 import { usedItemIds, useStore } from "@/lib/store";
-import { useStats } from "@/lib/stats";
+import { useStats, useTotals } from "@/lib/stats";
 import type { Item, Pool, SubjectId } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
 import { Checkbox, CountPill, Modal, Toggle } from "@/components/ui/primitives";
@@ -79,7 +79,8 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
   const allItems = useMemo(() => studyItems(), [bank]); // eslint-disable-line react-hooks/exhaustive-deps
   const caseRows = useCaseRows();
   const subjects = useSubjects();
-  const { freeTier, totals } = useConfig();
+  const { freeTier } = useConfig();
+  const totals = useTotals();
   const freeQuestions = freeTier.freeQuestions;
   const used = useMemo(() => usedItemIds(sessions), [sessions]);
   const inPool = (item: Item, pool: Pool) =>
@@ -96,7 +97,7 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
       label: "Case Studies",
       count: totals.cases,
       locked: isFree,
-      children: caseRows.map((r) => ({ id: `case:${r.id}`, label: r.title, count: r.number <= 2 ? 5 : 6, locked: isFree })),
+      children: caseRows.map((r) => ({ id: `case:${r.id}`, label: r.title, count: bank.cases.find((c) => c.id === r.id)?.items.length ?? 0, locked: isFree })),
     },
     ...subjects.map((s) => {
       // Names and systems come from Admin > Subjects & Systems; counts are the published standalone questions.

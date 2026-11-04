@@ -11,8 +11,6 @@ export interface SiteConfig {
   homeLayout: { sections: { key: HomeSection; visible: boolean }[]; quickActions: QuickAction[] };
   navigation: { sections: NavSectionCfg[] };
   freeTier: { freeQuestions: number };
-  /** Catalog totals shown on Home and in Create Test (mirrors the live product until the bank is complete). */
-  totals: { cases: number; standalone: number; readiness: number; performanceQuestions: number };
   targets: { score: number; usage: number };
   readinessBands: { high: number; borderline: number };
   schedule: ScheduleRules;
@@ -192,7 +190,6 @@ export const DEFAULT_CONFIG: SiteConfig = {
   },
   navigation: { sections: seedNavigation() },
   freeTier: { freeQuestions: 36 },
-  totals: { cases: 300, standalone: 1280, readiness: 600, performanceQuestions: 1580 },
   targets: { score: 62, usage: 85 },
   readinessBands: { high: 70, borderline: 60 },
   schedule: {
@@ -237,12 +234,12 @@ export const DEFAULT_CONFIG: SiteConfig = {
     headline: "One membership. Everything in it.",
     subhead: "Every subject, every Next Gen format, every case study.",
     included: [
-      "1,500+ NCLEX® questions",
-      "50 NCLEX® case studies",
+      "NCLEX® questions, each with a written rationale",
+      "Next Gen case studies",
       "Every Next Gen format: bowtie, matrix, cloze, highlight",
       "An explanation under every answer, right and wrong",
-      "4 CAT readiness exams",
-      "140+ printable cheat sheets",
+      "A CAT readiness exam",
+      "Printable cheat sheets",
       "Memory tricks for every subject",
       "Study schedule creator",
       "Pass targets tracker",

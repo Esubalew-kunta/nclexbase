@@ -1,20 +1,6 @@
 /** Subject slug. Seeded ones are the 7 NCLEX subjects; the admin can add more (Admin > Subjects & Systems). */
 export type SubjectId = string;
 
-export interface Subject {
-  id: SubjectId;
-  name: string;
-  /** Catalog numbers mirrored from the live site. */
-  questionCount: number;
-  lessonCount: number;
-  standaloneCount: number;
-  caseCount: number;
-  videoRuntime: string;
-  avgScore: number;
-  avgTimeSec: number;
-  systems: { name: string; count: number }[];
-}
-
 /* ------------------------------------------------------------------ */
 /* Question items (Next Gen NCLEX item types)                          */
 /* ------------------------------------------------------------------ */
@@ -45,6 +31,14 @@ interface ItemBase {
   lead?: string;
   /** Case studies reveal tabs progressively: how many scenario tabs this item shows. */
   tabs?: number;
+  /**
+   * The scenario tabs exactly as they stand at this item, replacing the case's own tabs.
+   *
+   * Live case studies change tab *content* as they advance (a new nurses' note, another
+   * vital-signs column), not only how many tabs are visible. Without this an early item shows
+   * the whole case, including the notes that give later answers away.
+   */
+  caseTabs?: CaseTab[];
   subject: SubjectId;
   system: string;
   topic: string;

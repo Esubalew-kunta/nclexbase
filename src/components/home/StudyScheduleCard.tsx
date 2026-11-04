@@ -11,7 +11,6 @@ const BENEFITS = [
   "Know exactly what to study every day",
   "Personalized to your exam date",
   "One click to get back on track",
-  "Proven plan trusted by 200,000+ students",
 ];
 
 export function ScheduleIllustration() {

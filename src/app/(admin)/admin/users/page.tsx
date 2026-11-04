@@ -15,12 +15,19 @@ import { accessEnd, referrerStatus } from "@/lib/promo";
 import { todayISO } from "@/lib/daily";
 import { AccessBadge, AdminPage, Badge, Btn, confirmDialog, Drawer, Field, fmtDate, Input, Meta, Segmented, toast } from "@/components/admin/ui";
 import { BulkBar, DataTable, ListEmpty, ListToolbar, useEditParam, useList, useSelection, type Column } from "@/components/admin/list";
+import { apiMode } from "@/lib/api/client";
+import { ApiUsers } from "./ApiUsers";
 
 const api = crud("users");
 const LOCAL = "local-student";
 const daysSince = (iso: string) => Math.floor((Date.parse(todayISO()) - Date.parse(iso)) / 864e5);
 
+/** With a server, the real accounts; without one, the prototype list below. */
 export default function UsersAdmin() {
+  return apiMode() ? <ApiUsers /> : <PrototypeUsers />;
+}
+
+function PrototypeUsers() {
   const mock = useAll("users");
   const student = useStore((s) => s.user);
   const sessions = useStore((s) => s.sessions);

@@ -43,7 +43,7 @@ export const COPY: CopyEntry[] = [
 
   { key: "performance.title", page: "Performance", label: "Title", default: "Performance" },
   { key: "performance.description", page: "Performance", label: "Description", long: true, default: "Performance tracks every question attempt for case studies, standalone questions, and readiness exams." },
-  { key: "performance.banner", page: "Performance", label: "Pass Targets message", long: true, default: "99% of NCLEXBase students who meet all targets pass the NCLEX." },
+  { key: "performance.banner", page: "Performance", label: "Pass Targets message", long: true, default: "Reach both targets to be on track for exam day. They are study goals, not a promise of a result." },
 
   { key: "previous.title", page: "Previous Tests", label: "Title", default: "Previous Tests" },
   { key: "review.coachGood", page: "Score report", label: "Coach message (above average)", long: true, default: "Great job! You scored above average. Keep reviewing the explanations to lock in what you learned." },

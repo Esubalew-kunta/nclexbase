@@ -3,7 +3,6 @@
 import {
   ArrowRight,
   Check,
-  BookOpenCheck,
   Brain,
   CalendarCheck,
   ClipboardList,
@@ -20,9 +19,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { CountUp, Reveal } from "@/components/home/motion";
+import { Reveal } from "@/components/home/motion";
 import { StudyToolsArt } from "@/components/home/StudyToolsArt";
-import { CHEAT_SHEETS, SUBJECTS, TOTALS } from "@/data/catalog";
+import { SUBJECTS } from "@/data/catalog";
 import { useFaqs, useSubjects } from "@/lib/content";
 
 /* eslint-disable @next/next/no-img-element */
@@ -55,7 +54,7 @@ import { useFaqs, useSubjects } from "@/lib/content";
  */
 
 const TOOLS: { icon: LucideIcon; title: string; body: string; tint: string }[] = [
-  { icon: Target, title: "CAT readiness exams", body: "85 to 150 questions, 5 hours", tint: "bg-primary-light text-primary" },
+  { icon: Target, title: "CAT readiness exam", body: "Timed and full length, like the real thing", tint: "bg-primary-light text-primary" },
   { icon: Sparkles, title: "Ask the AI tutor", body: "Stuck on an item? Ask it", tint: "bg-[#e9e8f6] text-[#5a52a3]" },
   { icon: FileText, title: "Cheat sheets", body: "One page per topic", tint: "bg-[#e4f1ea] text-success" },
   { icon: Brain, title: "Memory tricks & mnemonics", body: "Easy ways to remember key info", tint: "bg-[#f6efd9] text-[#8a6d22]" },
@@ -69,26 +68,6 @@ const TOOLS: { icon: LucideIcon; title: string; body: string; tint: string }[] =
 /** Every call to action on this page lands in the same place. */
 const JOIN = "/auth/join";
 
-/** 1,580 -> 1,500, shown with a "+". Rounds *down*, so the claim stays under the real figure. */
-const under = (n: number) => Math.floor(n / 100) * 100;
-
-/**
- * Questions, cases, sheets and lessons as the catalog has them, formatted once, here.
- *
- * The headline figure is shown as "1,500+" on the owner's instruction. Rounding is done by
- * `over`, from the catalog total, so it can only ever understate what is in the library.
- *
- * The case figure is the number of case *questions* (six per patient case, 50 cases), which is
- * why the label says questions. Calling 300 "case studies" would be the one number here that
- * does not survive a student counting them.
- */
-const LIBRARY = [
-  { icon: ClipboardList, value: under(TOTALS.performanceQuestions), suffix: "+", label: "Practice questions", note: "Every one with a written rationale" },
-  { icon: BookOpenCheck, value: TOTALS.cases, suffix: "", label: "Case-study questions", note: "Six around one patient, with the chart" },
-  { icon: FileText, value: CHEAT_SHEETS.length, suffix: "", label: "Cheat sheets", note: "One printable page per topic" },
-  { icon: Video, value: SUBJECTS.reduce((n, s) => n + s.lessonCount, 0), suffix: "", label: "Video lessons", note: "Crash courses by subject" },
-] as const;
-
 /* Pill buttons, per the owner's reference: fully rounded, the primary in gold, the secondary a
    white pill with a teal hairline. `shadow-premium` is the 2px gold underside that makes the
    primary look pressable; it is dropped on the active press so the button travels. */
@@ -101,7 +80,6 @@ export function HomeV1() {
       <Hero />
       <Subjects />
       <BeforeAfter />
-      <Library />
       <StudyTools />
       <Reviews />
       <Questions />
@@ -371,14 +349,17 @@ const OLD_WAY = [
 
 const NEW_WAY = [
   "Progress tracked for every subject and body system.",
-  "CAT readiness exams, the length and the clock of the real thing.",
+  "A CAT readiness exam, the length and the clock of the real thing.",
   "Next Gen formats: bowtie, matrix, cloze, highlight, select-N.",
   "Every option explained: why it is right, why the others are wrong.",
   "Performance pages that name your weak systems before test day.",
 ];
 
-/** Subjects for the illustration. Real names, so it is the product rather than a stock chart. */
-const PROGRESS_DEMO = SUBJECTS.slice(0, 3).map((subject, i) => ({ name: subject.name, percent: [78, 45, 62][i] }));
+/**
+ * Subjects for the illustration. Real names and no figures: a visitor has no progress yet, and
+ * any percentage printed here would be one nobody scored.
+ */
+const PROGRESS_DEMO = SUBJECTS.slice(0, 3).map((subject) => ({ name: subject.name }));
 
 function BeforeAfter() {
   return (
@@ -472,15 +453,13 @@ function BeforeAfter() {
               {/* The bars are an illustration of the app's own progress view, not one student's
                   real figures, so they are hidden from a screen reader; the link is not. */}
               <ul aria-hidden className="space-y-3.5">
-                {PROGRESS_DEMO.map(({ name, percent }) => (
+                {PROGRESS_DEMO.map(({ name }) => (
                   <li key={name}>
                     <span className="flex items-baseline justify-between text-sm font-semibold text-ink">
                       {name}
-                      <span className="text-muted">{percent}%</span>
+                      <span className="text-muted">Fills in as you answer</span>
                     </span>
-                    <span className="mt-1.5 block h-2 rounded-full bg-primary-light">
-                      <span className="block h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
-                    </span>
+                    <span className="mt-1.5 block h-2 rounded-full bg-primary-light" />
                   </li>
                 ))}
               </ul>
@@ -510,47 +489,6 @@ function BeforeAfter() {
             <ArrowRight size={18} strokeWidth={2.4} />
           </Link>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* What is in the library ------------------------------------------------- */
-
-/*
- * The numbers count up as they arrive, once each: a number that moves reads as a number
- * somebody is counting, a number that is simply printed reads as a label. See motion.tsx.
- *
- * The numbers sit *after* the free question, not before it.
- *
- * Before the demo a count is a claim and a visitor discounts it; after someone has answered a
- * real item and read the rationale, the same count answers the question they now have -- how
- * much more of this is there.
- */
-function Library() {
-  return (
-    <section className="bg-surface">
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-16">
-        <h2 className="text-center text-xs font-bold tracking-[0.16em] text-primary uppercase">What you get</h2>
-
-        <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
-          {LIBRARY.map(({ icon: Glyph, value, suffix, label, note }) => (
-            <li key={label} className="flex gap-4 border-t-2 border-primary-light pt-5 lg:block lg:text-center">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary lg:mx-auto">
-                <Glyph size={22} strokeWidth={1.8} />
-              </span>
-              <span className="lg:block">
-                <CountUp
-                  value={value}
-                  suffix={suffix}
-                  className="block text-3xl leading-none font-extrabold tracking-tight text-primary tabular-nums lg:mt-4 lg:text-4xl"
-                />
-                <span className="mt-1.5 block text-[15px] font-bold text-ink">{label}</span>
-                <span className="mt-0.5 block text-sm leading-5 text-muted">{note}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );
@@ -600,8 +538,9 @@ function StudyTools() {
 /*
  * The review rail.
  *
- * **These five are placeholders and the section says so on the page.** Nobody has sat the exam
- * with this product yet, so there is nothing real to quote; invented testimonials under
+ * **There are no reviews, so none are shown.** The five placeholders that stood here were
+ * removed on 2026-11-03 ("only real data"). Nobody has sat the exam with this product yet, so
+ * there is nothing real to quote; invented testimonials under
  * invented faces are the exact thing the owner was told to strip out of this site, and they
  * are also the kind of claim a reader can neither check nor forgive. The chip beside the
  * heading is driven by the same flag as the content: fill `REVIEWS` with real, permitted
@@ -623,43 +562,7 @@ const PLACEHOLDER = true;
  *  lifts it clear of the two it is tucked between, so the whole of it can be read. */
 const TILTS = [-5, 3.5, -2.5, 5, -3.5];
 
-const REVIEWS = [
-  {
-    name: "Hanna T.",
-    context: "Sat the NCLEX-RN in June",
-    stars: 5,
-    quote:
-      "The rationales are the reason I stayed. Other banks tell you the answer; here I understood why the other three were wrong, and that is what the exam actually tests.",
-  },
-  {
-    name: "Dawit A.",
-    context: "Adult Health, six weeks in",
-    stars: 5,
-    quote:
-      "I had never seen a bowtie question before I started. By exam day I had done enough of them that the format was boring, which is exactly what you want.",
-  },
-  {
-    name: "Selam G.",
-    context: "Studying while working nights",
-    stars: 5,
-    quote:
-      "I study on my phone between shifts. Everything works on it: the case studies, the chart tabs, the timed exams. I stopped waiting until I got home to a laptop.",
-  },
-  {
-    name: "Yonas B.",
-    context: "Pharmacology and Management of Care",
-    stars: 4,
-    quote:
-      "The performance page told me my weak system was prioritisation, not pharmacology like I assumed. I spent two weeks on the right thing instead of the comfortable thing.",
-  },
-  {
-    name: "Mahlet K.",
-    context: "First-time candidate",
-    stars: 5,
-    quote:
-      "Being able to pay in Birr without a card is what made it possible for me at all. Before this I was revising from a photocopied question book from 2019.",
-  },
-];
+const REVIEWS: { name: string; context: string; stars: number; quote: string }[] = [];
 
 function Reviews() {
   if (REVIEWS.length === 0) return null;

@@ -1,5 +1,4 @@
 import { NGN_COURSE, READINESS_EXAMS, SUBJECTS } from "@/data/catalog";
-import { CASE_ROWS } from "@/data/cases";
 
 /*
  * Links to content the admin can create. The site is a static export, so only seeded
@@ -9,7 +8,6 @@ import { CASE_ROWS } from "@/data/cases";
 
 const STATIC_SUBJECTS = new Set<string>(SUBJECTS.map((s) => s.id));
 const STATIC_EXAMS = new Set<string>(READINESS_EXAMS.map((e) => e.id));
-const STATIC_CASES = new Set<string>(CASE_ROWS.map((r) => r.id));
 const STATIC_NGN = new Set<string>(NGN_COURSE.map((_, i) => `ngn-${i + 1}`));
 
 /** Append a query parameter to a URL that may already have a query string. */
@@ -39,7 +37,7 @@ export function readinessHref(id: string): string {
 
 /** Deep link that starts (or resumes) a case study. */
 export function caseHref(id: string): string {
-  return STATIC_CASES.has(id) ? `/nclex/next-gen-cases/qbanks/${id}` : `/nclex/next-gen-cases/qbanks/start?id=${encodeURIComponent(id)}`;
+  return `/nclex/next-gen-cases/qbanks/start?id=${encodeURIComponent(id)}`;
 }
 
 export const isSeededSubject = (id: string) => STATIC_SUBJECTS.has(id);

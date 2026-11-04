@@ -86,6 +86,23 @@ export async function register(input: { name?: string; email: string; password: 
   });
 }
 
+/**
+ * Change the signed-in person's password. The server asks for the current one even though
+ * they are signed in, and signs every other device out; this session stays.
+ */
+export async function changePassword(current: string, next: string, repeat: string): Promise<AuthResult> {
+  try {
+    await api("/auth/password", {
+      method: "PUT",
+      body: { current_password: current, password: next, password_confirmation: repeat },
+    });
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof ApiError) return { ok: false, message: err.message, errors: err.errors };
+    return { ok: false, message: "We could not reach the server. Check your connection and try again." };
+  }
+}
+
 export async function logout(): Promise<void> {
   try {
     await api("/auth/logout", { body: {} });
