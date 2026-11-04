@@ -109,7 +109,7 @@ export function CaseList({ subject }: { subject?: string }) {
         }
       >
         <p className="px-6 py-5 text-base leading-6 text-ink">
-          Resetting <b>{confirm?.title}</b> clears your answers so you can start it again. Your performance history is kept.
+          Resetting <b>{confirm?.title}</b> clears your answers so you can start it again. Your Performance scores and the questions you have used are kept.
         </p>
       </Modal>
     </div>

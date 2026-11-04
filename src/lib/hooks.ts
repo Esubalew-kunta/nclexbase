@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getBank, useBank } from "@/lib/content";
 import { findItem, entriesForCase } from "./bank";
 import { scoreItem } from "./scoring";
-import { latestAttempts, usedItemIds, useStore } from "./store";
+import { usedItemIds, useStore } from "./store";
 import type { CaseStudy, MasteryTag, SubjectId } from "./types";
 
 export interface TagCounts {
@@ -17,39 +17,52 @@ export interface TagCounts {
 
 const emptyCounts = (): TagCounts => ({ used: 0, mastered: 0, reviewing: 0, learning: 0 });
 
-/** Aggregated usage, tags, and scores per subject/system from all submitted attempts. */
+/**
+ * Aggregated usage, tags, and scores per subject/system from every answer ever submitted.
+ *
+ * Every attempt counts, as on the live app: a retake adds to the totals rather than replacing the
+ * first try, and a question stays used after its case study or exam is reset. "Used" counts each
+ * question once; points, time and the number of answers count every attempt.
+ */
 export function useProgress() {
-  const sessions = useStore((s) => s.sessions);
+  const attempts = useStore((s) => s.attempts);
   const tags = useStore((s) => s.tags);
   const bank = useBank();
   return useMemo(() => {
     const CASES = bank.cases;
     const STANDALONE = bank.standalone;
-    const used = usedItemIds(sessions);
-    const attempts = latestAttempts(sessions);
+    const used = usedItemIds(attempts);
     const bySubject = new Map<SubjectId, { used: number; earned: number; max: number; time: number; answered: number }>();
     const bySystem = new Map<string, { earned: number; max: number; used: number }>();
     let earned = 0;
     let max = 0;
-    for (const [itemId, { answer, session }] of attempts) {
+    const counted = new Set<string>();
+    for (const a of attempts) {
       // History can outlive a question: skip rather than lose the whole page of statistics.
-      const item = findItem(itemId);
+      const item = findItem(a.itemId);
       if (!item) continue;
-      const sc = scoreItem(item, answer);
-      earned += sc.earned;
-      max += sc.max;
+      const first = !counted.has(a.itemId);
+      counted.add(a.itemId);
       const row = bySubject.get(item.subject) ?? { used: 0, earned: 0, max: 0, time: 0, answered: 0 };
-      row.used += 1;
-      row.earned += sc.earned;
-      row.max += sc.max;
-      row.time += session.timeSpent[itemId] ?? 0;
-      row.answered += 1;
-      bySubject.set(item.subject, row);
       const sysKey = `${item.subject}::${item.system}`;
       const sys = bySystem.get(sysKey) ?? { earned: 0, max: 0, used: 0 };
-      sys.earned += sc.earned;
-      sys.max += sc.max;
-      sys.used += 1;
+      if (first) {
+        row.used += 1;
+        sys.used += 1;
+      }
+      // Ended with the question unanswered: used, but nothing to score.
+      if (a.answer) {
+        const sc = scoreItem(item, a.answer);
+        earned += sc.earned;
+        max += sc.max;
+        row.earned += sc.earned;
+        row.max += sc.max;
+        row.time += a.time;
+        row.answered += 1;
+        sys.earned += sc.earned;
+        sys.max += sc.max;
+      }
+      bySubject.set(item.subject, row);
       bySystem.set(sysKey, sys);
     }
 
@@ -75,7 +88,7 @@ export function useProgress() {
     const standaloneFor = (subject: SubjectId) => countIds(STANDALONE.filter((i) => i.subject === subject).map((i) => i.id));
 
     return { used, bySubject, bySystem, earned, max, caseUsed, caseCounts, subjectCounts, casesTotal, standaloneTotal, standaloneFor };
-  }, [sessions, tags, bank]);
+  }, [attempts, tags, bank]);
 }
 
 /**

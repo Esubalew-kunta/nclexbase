@@ -1,5 +1,5 @@
 import type { Answer, Item, ScoringRule, Score, TestSession } from "./types";
-import { itemById } from "./bank";
+import { findItem } from "./bank";
 
 /**
  * Next Gen NCLEX scoring rules:
@@ -157,7 +157,11 @@ export function scoreSession(s: TestSession) {
   let max = 0;
   let time = 0;
   for (const e of s.entries) {
-    const item = itemById(e.itemId);
+    // After a full reload in API mode the bank arrives a moment after the first render. An item
+    // that is not there yet scores nothing for now rather than taking the whole page down; the
+    // page asks for a re-render when the bank lands (useBank).
+    const item = findItem(e.itemId);
+    if (!item) continue;
     const sc = scoreItem(item, s.submitted[e.itemId] ? s.answers[e.itemId] : undefined);
     earned += sc.earned;
     max += sc.max;

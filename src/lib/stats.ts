@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { getBank, useBank, type Bank } from "@/lib/content";
 import { scoreItem } from "./scoring";
 import { useStore } from "./store";
-import type { Item, TestSession } from "./types";
+import type { Attempt, Item } from "./types";
 
 /*
  * Question counts and averages are facts, not settings: they are counted from the published
@@ -60,7 +60,7 @@ const finish = (a: Acc): Stats => ({
 
 const EMPTY: SubjectStats = { ...finish(acc()), systems: new Map() };
 
-function compute(bank: Bank, sessions: TestSession[]): StatsIndex {
+function compute(bank: Bank, attempts: Attempt[]): StatsIndex {
   const subjects = new Map<string, { all: Acc; systems: Map<string, Acc> }>();
   const each = (item: Item, fn: (a: Acc) => void) => {
     let s = subjects.get(item.subject);
@@ -85,19 +85,18 @@ function compute(bank: Bank, sessions: TestSession[]): StatsIndex {
       });
   for (const q of bank.byId.values()) if (q.source.kind === "readiness" && q.status === "published") each(q, (a) => a.perfTotal++);
 
-  for (const s of sessions)
-    for (const e of s.entries) {
-      const item = bank.byId.get(e.itemId);
-      const answer = s.answers[e.itemId];
-      if (!item || !s.submitted[e.itemId] || !answer) continue;
-      const sc = scoreItem(item, answer);
-      each(item, (a) => {
-        a.earned += sc.earned;
-        a.max += sc.max;
-        a.time += s.timeSpent[e.itemId] ?? 0;
-        a.attempts++;
-      });
-    }
+  // Every answer ever given counts, not only the ones whose session is still around.
+  for (const at of attempts) {
+    const item = bank.byId.get(at.itemId);
+    if (!item || !at.answer) continue;
+    const sc = scoreItem(item, at.answer);
+    each(item, (a) => {
+      a.earned += sc.earned;
+      a.max += sc.max;
+      a.time += at.time;
+      a.attempts++;
+    });
+  }
 
   const out = new Map<string, SubjectStats>();
   for (const [id, s] of subjects) out.set(id, { ...finish(s.all), systems: new Map([...s.systems].map(([k, v]) => [k, finish(v)])) });
@@ -107,20 +106,20 @@ function compute(bank: Bank, sessions: TestSession[]): StatsIndex {
   };
 }
 
-let cache: { bank: Bank; sessions: TestSession[]; out: StatsIndex } | null = null;
-function statsFor(bank: Bank, sessions: TestSession[]): StatsIndex {
-  if (cache?.bank !== bank || cache.sessions !== sessions) cache = { bank, sessions, out: compute(bank, sessions) };
+let cache: { bank: Bank; attempts: Attempt[]; out: StatsIndex } | null = null;
+function statsFor(bank: Bank, attempts: Attempt[]): StatsIndex {
+  if (cache?.bank !== bank || cache.attempts !== attempts) cache = { bank, attempts, out: compute(bank, attempts) };
   return cache.out;
 }
 
 /** Non-hook read (lib code, builders). */
-export const getStats = () => statsFor(getBank(), useStore.getState().sessions);
+export const getStats = () => statsFor(getBank(), useStore.getState().attempts);
 
 /** Hook read; re-renders when the bank or recorded attempts change. */
 export function useStats(): StatsIndex {
   const bank = useBank();
-  const sessions = useStore((s) => s.sessions);
-  return statsFor(bank, sessions);
+  const attempts = useStore((s) => s.attempts);
+  return statsFor(bank, attempts);
 }
 
 /** Library sizes shown on Home, Create Test and Performance. */

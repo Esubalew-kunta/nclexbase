@@ -24,9 +24,9 @@ export default function HomePage() {
   // Admin > Home & Navigation sets which sections show and in what order; totals come from Admin > Subjects & Systems.
   const { homeLayout } = useConfig();
   const totals = useTotals();
-  const sessions = useStore((s) => s.sessions);
-  // Readiness questions actually answered, from recorded attempts.
-  const readinessUsed = new Set(sessions.filter((s) => s.kind === "readiness").flatMap((s) => Object.keys(s.submitted))).size;
+  const attempts = useStore((s) => s.attempts);
+  // Readiness questions actually answered, from recorded attempts (a Reset does not take them back).
+  const readinessUsed = new Set(attempts.filter((a) => a.kind === "readiness").map((a) => a.itemId)).size;
   const lessonCount = (course: string) => lessons.filter((l) => l.course === course).length;
 
   const render: Record<HomeSection, () => ReactNode> = {

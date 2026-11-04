@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Answer, MasteryTag, Pool, SessionEntry, SubjectId, TestSession } from "./types";
+import type { Answer, Attempt, MasteryTag, Pool, SessionEntry, SubjectId, TestSession } from "./types";
 import { scoreItem } from "./scoring";
 import { itemById } from "./bank";
 import { getConfig } from "./content";
@@ -42,7 +42,17 @@ interface PersistedState {
   /** `referredBy`: referral code from the join link (?ref=), used for the friend's discount. */
   user: { name: string; email: string; plan: "free" | "premium"; signedIn?: boolean; referredBy?: string };
   sessions: TestSession[];
+  /**
+   * Every answer ever submitted. Outlives its session, so a Reset clears the run and leaves
+   * the history. Performance and the "used" pool read this, not the sessions.
+   */
+  attempts: Attempt[];
   tags: Record<string, MasteryTag>;
+  /**
+   * Questions whose tag the app set from the score. A tag the student chose is theirs and is
+   * never changed by a later answer; one the app set follows the latest score, as on the live app.
+   */
+  autoTags: Record<string, true>;
   bookmarks: Record<string, boolean>;
   schedule: Schedule | null;
   /** Daily Warmup (pro): one question emailed every day. Front-end only for now; sending needs the backend. */
@@ -116,7 +126,9 @@ const today = () => new Date().toISOString().slice(0, 10);
 const initial: PersistedState = {
   user: { name: "", email: "student@example.com", plan: "free", signedIn: false },
   sessions: [],
+  attempts: [],
   tags: {},
+  autoTags: {},
   bookmarks: {},
   schedule: null,
   warmup: { enabled: false, email: "" },
@@ -139,6 +151,26 @@ const initial: PersistedState = {
 
 const patchSession = (sessions: TestSession[], id: string, fn: (s: TestSession) => TestSession) =>
   sessions.map((s) => (s.id === id ? fn(s) : s));
+
+const attemptOf = (session: TestSession, itemId: string, answer: Answer | undefined): Attempt => ({
+  itemId,
+  sessionId: session.id,
+  sourceId: session.sourceId,
+  kind: session.kind,
+  at: new Date().toISOString(),
+  answer,
+  time: session.timeSpent[itemId] ?? 0,
+});
+
+/** The history a v1 student already has, so the new rule does not start them from zero. */
+function attemptsFromSessions(sessions: TestSession[]): Attempt[] {
+  const out: Attempt[] = [];
+  for (const s of sessions)
+    for (const e of s.entries)
+      if (s.submitted?.[e.itemId])
+        out.push({ itemId: e.itemId, sessionId: s.id, sourceId: s.sourceId, kind: s.kind, at: s.createdAt, answer: s.answers?.[e.itemId], time: s.timeSpent?.[e.itemId] ?? 0 });
+  return out;
+}
 
 export const useStore = create<Store>()(
   persist(
@@ -186,14 +218,22 @@ export const useStore = create<Store>()(
       submit: (sid, itemId) =>
         set((s) => {
           const session = s.sessions.find((x) => x.id === sid);
-          // Live behavior: answering auto-tags the question (full credit → Mastered,
-          // partial → Reviewing, none → Learning) unless the user already tagged it.
-          let tags = s.tags;
-          if (session && !s.tags[itemId]) {
-            const { earned, max } = scoreItem(itemById(itemId), session.answers[itemId]);
+          if (!session) return s;
+          const answer = session.answers[itemId];
+          // Submitting twice must not count twice.
+          const already = s.attempts.some((a) => a.sessionId === sid && a.itemId === itemId);
+          const attempts = already ? s.attempts : [...s.attempts, attemptOf(session, itemId, answer)];
+
+          // Live behavior: answering tags the question by its score (full credit: Mastered, some:
+          // Reviewing, none: Learning). A tag the student set themselves is left alone; one the app
+          // set follows the latest score.
+          let { tags, autoTags } = s;
+          if (!s.tags[itemId] || s.autoTags[itemId]) {
+            const { earned, max } = scoreItem(itemById(itemId), answer);
             tags = { ...s.tags, [itemId]: earned >= max ? "mastered" : earned > 0 ? "reviewing" : "learning" };
+            autoTags = { ...s.autoTags, [itemId]: true };
           }
-          return { tags, sessions: patchSession(s.sessions, sid, (x) => ({ ...x, submitted: { ...x.submitted, [itemId]: true } })) };
+          return { attempts, tags, autoTags, sessions: patchSession(s.sessions, sid, (x) => ({ ...x, submitted: { ...x.submitted, [itemId]: true } })) };
         }),
 
       goTo: (sid, index) => set((s) => ({ sessions: patchSession(s.sessions, sid, (x) => ({ ...x, current: index })) })),
@@ -212,21 +252,28 @@ export const useStore = create<Store>()(
         })),
 
       endSession: (sid) =>
-        set((s) => ({
-          sessions: patchSession(s.sessions, sid, (x) => {
-            // Ending a test marks every item used; unanswered items score 0, as on the live app.
-            const submitted = { ...x.submitted };
-            for (const e of x.entries) submitted[e.itemId] = true;
-            return { ...x, submitted, status: "ended" };
-          }),
-        })),
+        set((s) => {
+          const session = s.sessions.find((x) => x.id === sid);
+          if (!session) return s;
+          // Ending a test marks every item used; unanswered items score 0, as on the live app.
+          const submitted = { ...session.submitted };
+          const attempts = [...s.attempts];
+          for (const e of session.entries) {
+            if (!submitted[e.itemId] && !attempts.some((a) => a.sessionId === sid && a.itemId === e.itemId)) attempts.push(attemptOf(session, e.itemId, session.answers[e.itemId]));
+            submitted[e.itemId] = true;
+          }
+          return { attempts, sessions: patchSession(s.sessions, sid, (x) => ({ ...x, submitted, status: "ended" })) };
+        }),
 
       setTag: (itemId, tag) =>
         set((s) => {
           const tags = { ...s.tags };
           if (tag) tags[itemId] = tag;
           else delete tags[itemId];
-          return { tags };
+          // Whatever the student does with a tag, it is theirs from here on.
+          const autoTags = { ...s.autoTags };
+          delete autoTags[itemId];
+          return { tags, autoTags };
         }),
 
       toggleBookmark: (itemId) => set((s) => ({ bookmarks: { ...s.bookmarks, [itemId]: !s.bookmarks[itemId] } })),
@@ -264,7 +311,7 @@ export const useStore = create<Store>()(
           return { streak: { count: s.streak.lastDay === yesterday ? s.streak.count + 1 : 1, lastDay: t } };
         }),
 
-      resetProgress: () => set({ sessions: [], tags: {}, bookmarks: {} }),
+      resetProgress: () => set({ sessions: [], attempts: [], tags: {}, autoTags: {}, bookmarks: {} }),
       resetAll: () => {
         useStore.persist.clearStorage();
         set({ ...initial, streak: { count: 1, lastDay: today() }, createTestOpen: false, createTestPreset: null, mobileNavOpen: false, contactOpen: false });
@@ -275,9 +322,16 @@ export const useStore = create<Store>()(
     }),
     {
       name: "nclex-bootcamp-clone",
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
+      // v1 kept progress only inside the sessions. v2 keeps every answer in `attempts` as well, so
+      // what a student has already done is carried over once rather than lost to the new rule.
+      migrate: (persisted, version) => {
+        const p = (persisted ?? {}) as Partial<PersistedState>;
+        if (version < 2) return { ...p, attempts: attemptsFromSessions(p.sessions ?? []), autoTags: {} } as PersistedState;
+        return p as PersistedState;
+      },
       // Deep-merge settings so fields added later (e.g. examSettings.timer) get defaults.
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<PersistedState>;
@@ -288,7 +342,9 @@ export const useStore = create<Store>()(
       partialize: (s): PersistedState => ({
         user: s.user,
         sessions: s.sessions,
+        attempts: s.attempts,
         tags: s.tags,
+        autoTags: s.autoTags,
         bookmarks: s.bookmarks,
         schedule: s.schedule,
         warmup: s.warmup,
@@ -309,17 +365,21 @@ export const useStore = create<Store>()(
 /* ------------------------------------------------------------------ */
 
 /** Item ids the user has submitted in any test. */
-export function usedItemIds(sessions: TestSession[]): Set<string> {
-  const used = new Set<string>();
-  for (const s of sessions) for (const id of Object.keys(s.submitted)) if (s.submitted[id]) used.add(id);
-  return used;
+/** Every question that has ever been submitted. Once used, always used, even after a Reset. */
+export function usedItemIds(attempts: Attempt[]): Set<string> {
+  return new Set(attempts.map((a) => a.itemId));
 }
 
-/** Latest submitted answer per item, across sessions. */
-export function latestAttempts(sessions: TestSession[]) {
-  const map = new Map<string, { session: TestSession; answer: Answer }>();
-  for (const s of sessions)
-    for (const e of s.entries)
-      if (s.submitted[e.itemId] && s.answers[e.itemId]) map.set(e.itemId, { session: s, answer: s.answers[e.itemId] });
-  return map;
+/**
+ * The first run of a case study or exam, and how many runs there have been.
+ *
+ * "First" is by when it was started, not by what is left in the sessions list: a Reset deletes the
+ * session but not its attempts, which is the point.
+ */
+export function firstRun(attempts: Attempt[], sourceId: string): { attempts: Attempt[]; runs: number } | null {
+  const mine = attempts.filter((a) => a.sourceId === sourceId);
+  if (!mine.length) return null;
+  const order: string[] = [];
+  for (const a of mine) if (!order.includes(a.sessionId)) order.push(a.sessionId);
+  return { attempts: mine.filter((a) => a.sessionId === order[0]), runs: order.length };
 }

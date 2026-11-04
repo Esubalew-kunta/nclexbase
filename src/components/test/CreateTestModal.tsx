@@ -60,7 +60,7 @@ interface Node {
 
 function CreateTestForm({ onClose }: { onClose: () => void }) {
   const router = useRouter();
-  const sessions = useStore((s) => s.sessions);
+  const attempts = useStore((s) => s.attempts);
   const tags = useStore((s) => s.tags);
   const bookmarks = useStore((s) => s.bookmarks);
   const plan = useStore((s) => s.user.plan);
@@ -82,7 +82,8 @@ function CreateTestForm({ onClose }: { onClose: () => void }) {
   const { freeTier } = useConfig();
   const totals = useTotals();
   const freeQuestions = freeTier.freeQuestions;
-  const used = useMemo(() => usedItemIds(sessions), [sessions]);
+  // Used for good: a question whose case study or exam was reset is still not "unused".
+  const used = useMemo(() => usedItemIds(attempts), [attempts]);
   const inPool = (item: Item, pool: Pool) =>
     pool === "unused" ? !used.has(item.id) : pool === "bookmarked" ? Boolean(bookmarks[item.id]) : tags[item.id] === pool;
   const poolCount = (pool: Pool) => {

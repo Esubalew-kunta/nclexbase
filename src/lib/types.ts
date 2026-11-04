@@ -208,6 +208,32 @@ export interface CaseStudy {
 export type Pool = "unused" | "learning" | "reviewing" | "mastered" | "bookmarked";
 export type MasteryTag = "learning" | "reviewing" | "mastered";
 
+/**
+ * One submitted answer, kept for good.
+ *
+ * A test session is the student's current run at something and can be reset or deleted. An
+ * attempt is the permanent record that the answer was given, so Performance can keep every
+ * answer (a retake adds to the totals, it does not replace the first try) and a question that
+ * was used stays used after its case study or exam is reset.
+ *
+ * The answer itself is stored, not the points: points are worked out when they are read, with the
+ * question as it is in the bank at that moment, as they always were.
+ */
+export interface Attempt {
+  itemId: string;
+  /** The run it was answered in. That session may be gone; the attempt is not. */
+  sessionId: string;
+  /** The case study or readiness exam that launched the run; absent for a custom test. */
+  sourceId?: string;
+  kind: TestSession["kind"];
+  /** When it was submitted (ISO). */
+  at: string;
+  /** Absent when a test was ended with this question unanswered: it counts as used, scores nothing. */
+  answer?: Answer;
+  /** Seconds spent on it in that run. */
+  time: number;
+}
+
 export interface SessionEntry {
   itemId: string;
   caseId?: string;
