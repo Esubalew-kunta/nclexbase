@@ -36,14 +36,18 @@ jobs:
 
       - run: npm ci
 
+      # Build first: Next writes the types for its own routes and layouts during the build, so
+      # a type check before it fails on names that do not exist yet (LayoutProps and friends).
+      # On a machine that has built once already this is invisible, which is exactly why it has
+      # to be pinned down here.
+      - name: Build
+        run: npm run build
+
       - name: Types
         run: npx tsc --noEmit
 
       - name: Lint
         run: npx eslint src
-
-      - name: Build
-        run: npm run build
 
       # The question bank is served by the API to signed-in students. If it ever ends up in the
       # bundle again it is public to anyone who opens the page source, so the build fails here
