@@ -38,6 +38,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { STORAGE_FULL_EVENT, useAdminStore } from "@/lib/admin/store";
+import { apiMode } from "@/lib/api/client";
 import { setAdminSyncNotifier, useAdminSync } from "@/lib/api/adminContent";
 import { getAll } from "@/lib/content";
 import { planReminder } from "@/lib/daily";
@@ -319,6 +320,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return () => setAdminSyncNotifier(null);
   }, []);
   const saving = useAdminSync((s) => s.busy);
+  const phase = useAdminSync((s) => s.phase);
+  // With a server, the screens wait until the admin's copy of the content has been read from it, however
+  // long that takes. Only when it never even starts (a leftover admin session in this browser with no
+  // server session) is the wait given up, so the screen is not blank forever.
+  const [gaveUp, setGaveUp] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setGaveUp(true), 12000);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const onFull = () => toast("Browser storage is full, so the last change was not saved. Export a backup (Settings), then delete unused items or uploads.", "error");
@@ -338,7 +348,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
      */
     if (hydrated && !session) router.replace(`/auth/signin?next=${encodeURIComponent(pathname)}`);
   }, [hydrated, session, pathname, router]);
-  if (!hydrated || !session)
+  if (!hydrated || !session || (apiMode() && phase !== "ready" && !(phase === "idle" && gaveUp)))
     return (
       <div className="flex h-dvh items-center justify-center bg-background">
         <span className="size-8 animate-spin rounded-full border-2 border-primary/25 border-t-primary" aria-label="Loading" />

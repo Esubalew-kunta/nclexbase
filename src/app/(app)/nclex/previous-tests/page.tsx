@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { findItem } from "@/lib/bank";
-import { avgPoints, scoreSession } from "@/lib/scoring";
+import { avgPoints, scoreSession, SHOW_QUESTION_AVERAGES } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/Icon";
 import { CopyHeader } from "@/components/ui/CopyHeader";
@@ -12,7 +12,7 @@ import { CopyHeader } from "@/components/ui/CopyHeader";
 const PAGE_SIZES = [10, 20, 30, 40, 50];
 
 /** Score cell: "19 %" + 70px blue bar with an average tick. */
-function ScoreBar({ pct, avg }: { pct: number; avg: number }) {
+function ScoreBar({ pct, avg }: { pct: number; avg: number | null }) {
   return (
     <div className="flex items-center gap-2">
       <p className="w-[42px] text-base leading-4 text-ink">{pct} %</p>
@@ -20,7 +20,7 @@ function ScoreBar({ pct, avg }: { pct: number; avg: number }) {
         <div className="flex h-[10px] overflow-hidden rounded-lg bg-primary-light shadow-[inset_0_1px_3px_0_rgba(14,90,92,0.1)]">
           <span className="h-2.5 bg-primary" style={{ width: `${pct}%` }} />
         </div>
-        <div className="absolute -top-px -bottom-px w-0.5 bg-gold" style={{ left: `${avg}%` }} />
+        {avg !== null && <div className="absolute -top-px -bottom-px w-0.5 bg-gold" style={{ left: `${avg}%` }} />}
       </div>
     </div>
   );
@@ -55,7 +55,7 @@ export default function PreviousTestsPage() {
               <th className={th}>Question Pool</th>
               <th className={th}>Date Taken</th>
               <th className={th}>Score</th>
-              <th className={`${th} text-muted`}>Avg. Score</th>
+              {SHOW_QUESTION_AVERAGES && <th className={`${th} text-muted`}>Avg. Score</th>}
               <th className={th}>Questions</th>
               <th className={th} />
             </tr>
@@ -80,8 +80,8 @@ export default function PreviousTestsPage() {
                     </div>
                   </td>
                   <td className="px-4">{new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
-                  <td className="px-4">{s.status === "ended" ? <ScoreBar pct={sc.percent} avg={avg} /> : <span className="text-muted">In progress</span>}</td>
-                  <td className="px-4 text-muted">{avg}%</td>
+                  <td className="px-4">{s.status === "ended" ? <ScoreBar pct={sc.percent} avg={SHOW_QUESTION_AVERAGES ? avg : null} /> : <span className="text-muted">In progress</span>}</td>
+                  {SHOW_QUESTION_AVERAGES && <td className="px-4 text-muted">{avg}%</td>}
                   <td className="px-4">{s.entries.length}</td>
                   <td className="pr-6 pl-4 text-right">
                     <Icon name="chevronRight" size={16} className="ml-auto text-primary" />

@@ -156,7 +156,7 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
                   <Field label="Topic" hint="Shown under the explanation, e.g. “Sepsis”.">
                     <Input value={q.topic} onChange={(e) => set({ topic: e.target.value })} />
                   </Field>
-                  <Field label="Average score (%)" hint="Shown to students as “% of students answered correctly”.">
+                  <Field label="Average score (%)" hint="Not shown to students for now: it is a typed number, not counted from real answers. Used for the Hard / Easy filter here.">
                     <Input type="number" min={0} max={100} value={q.avgPercent} onChange={(e) => set({ avgPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} />
                   </Field>
                   {standalone && (
@@ -246,7 +246,7 @@ function Editor({ initial, isNew }: { initial: QuestionRec; isNew: boolean }) {
 
           <Panel
             title="Video explanation"
-            description="Optional. Shown above the written explanation. Questions without a video show no video area at all."
+            description={`Optional. Shown above the written explanation. Questions without a video show no video area at all.${caseRec?.content?.video ? " This question's case has a video of its own; a video here replaces it for this question." : ""}`}
             actions={q.video && <Switch checked={q.video.visible} onChange={(v) => set({ video: { ...q.video!, visible: v } })} label="Show to students" />}
           >
             <VideoDrop value={q.video} onChange={(video) => set({ video })} />

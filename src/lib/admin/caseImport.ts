@@ -135,7 +135,7 @@ export function normalizeCase(raw: unknown, ctx: CaseContext, seen: { cases: Set
     access,
     status,
     order: previous?.order ?? number,
-    content: { intro: (raw.intro as string | undefined) ?? "", tabs, itemIds: recs.map((q) => q.id), ...(previous?.content?.exhibit ? { exhibit: true } : {}) },
+    content: { intro: (raw.intro as string | undefined) ?? "", tabs, itemIds: recs.map((q) => q.id), ...(previous?.content?.exhibit ? { exhibit: true } : {}), ...(previous?.content?.video ? { video: previous.content.video } : {}) },
     updatedAt: ctx.today,
   };
   const keep = new Set(rec.content!.itemIds);

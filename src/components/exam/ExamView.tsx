@@ -194,7 +194,7 @@ export function ExamView({
           )}
         </div>
       )}
-      {reveal && <Feedback item={item} answer={submitted ? current : undefined} seconds={session.timeSpent[item.id] ?? 0} plan={plan} />}
+      {reveal && <Feedback item={item} answer={submitted ? current : undefined} seconds={session.timeSpent[item.id] ?? 0} plan={plan} caseVideo={caseStudy?.video} />}
       <div className="h-[72px]" />
     </div>
   );

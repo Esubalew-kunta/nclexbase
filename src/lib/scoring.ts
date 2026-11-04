@@ -170,6 +170,17 @@ export function scoreSession(s: TestSession) {
   return { earned, max, percent: max ? Math.round((earned / max) * 100) : 0, time };
 }
 
+/**
+ * Whether students are shown the per-question "average score".
+ *
+ * Off on purpose. `avgPercent` is a number typed in by an admin or carried in from the source, not
+ * counted from students' answers, and everything built on it ("Avg Points Scored", the Average
+ * column and tick in the score report, "% of students answered this correctly") would present it
+ * as a real statistic. Turn it on only once it is counted from real answers (docs/BACKEND_PLAN.md,
+ * `question_stats`). The number is still stored and editable in the admin.
+ */
+export const SHOW_QUESTION_AVERAGES = false;
+
 /** Mock "average user" points for an item, from its avgPercent. */
 export function avgPoints(item: Item) {
   return Math.round(maxPoints(item) * item.avgPercent) / 100;

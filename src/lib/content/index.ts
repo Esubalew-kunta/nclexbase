@@ -264,14 +264,15 @@ function readinessCasesFrom(byId: Map<string, QuestionRec>): CaseStudy[] {
   }));
 }
 
-let bankCache: { q: unknown; c: unknown; served: unknown; servedCases: unknown; bank: Bank } | null = null;
+let bankCache: { q: unknown; c: unknown; served: unknown; servedCases: unknown; videos: unknown; bank: Bank } | null = null;
 
 export function getBank(): Bank {
   const s = useAdminStore.getState();
   // In API mode the question bank arrives after boot, so its identity is part of the key.
   const served = apiMode() ? useApiContent.getState().questions : undefined;
   const servedCases = apiMode() ? useApiContent.getState().collections.cases : undefined;
-  if (bankCache && bankCache.q === s.data.questions && bankCache.c === s.data.cases && bankCache.served === served && bankCache.servedCases === servedCases) return bankCache.bank;
+  const videos = apiMode() ? useApiContent.getState().caseVideos : undefined;
+  if (bankCache && bankCache.q === s.data.questions && bankCache.c === s.data.cases && bankCache.served === served && bankCache.servedCases === servedCases && bankCache.videos === videos) return bankCache.bank;
   const questions = mergeCollection("questions", s.data.questions as CollectionPatch<QuestionRec> | undefined);
   const caseRecs = mergeCollection("cases", s.data.cases as CollectionPatch<CaseRec> | undefined);
   const byId = new Map(questions.map((q) => [q.id, q]));
@@ -280,7 +281,9 @@ export function getBank(): Bank {
   const toCase = (rec: CaseRec): CaseStudy | null => {
     if (!rec.content) return null;
     const items = rec.content.itemIds.map((id) => byId.get(id)).filter(Boolean) as Item[];
-    return { id: rec.id, title: rec.title, subject: rec.subject, intro: rec.content.intro, exhibit: rec.content.exhibit, tabs: rec.content.tabs, items };
+    // The case's own video: from the record when the admin holds the full record, otherwise from the question bank.
+    const video = rec.content.video ?? videos?.[rec.id];
+    return { id: rec.id, title: rec.title, subject: rec.subject, intro: rec.content.intro, exhibit: rec.content.exhibit, tabs: rec.content.tabs, items, ...(video ? { video } : {}) };
   };
   const all = caseRecs.map(toCase).filter(Boolean) as CaseStudy[];
   for (const c of all) for (const it of c.items) caseOf.set(it.id, c);
@@ -297,7 +300,7 @@ export function getBank(): Bank {
     standalone: questions.filter((q) => q.source.kind === "standalone" && published(q)).sort(byOrder),
     cases: all.filter((c) => live.has(c.id) && c.items.length > 0),
   };
-  bankCache = { q: s.data.questions, c: s.data.cases, served, servedCases, bank };
+  bankCache = { q: s.data.questions, c: s.data.cases, served, servedCases, videos, bank };
   return bank;
 }
 
@@ -307,5 +310,6 @@ export function useBank(): Bank {
   useAdminStore((s) => s.data.cases);
   useApiContent((s) => s.questions);
   useApiContent((s) => s.collections.cases);
+  useApiContent((s) => s.caseVideos);
   return getBank();
 }

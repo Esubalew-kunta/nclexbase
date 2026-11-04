@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { api, apiMode } from "@/lib/api/client";
 import type { CollectionName, Collections, QuestionRec } from "@/lib/admin/types";
 import type { SiteConfig } from "@/lib/admin/config";
+import type { ExplanationVideo } from "@/lib/types";
 
 /*
  * The content the API sent, held in one place so lib/content can stay synchronous.
@@ -43,6 +44,11 @@ interface ApiContentState {
   /** key → default text, replacing COPY_DEFAULTS when the API is in charge. */
   copy: Record<string, string>;
   questions?: QuestionRec[];
+  /**
+   * Each case study's own video, by case id. It arrives with the question bank, not the catalogue:
+   * the catalogue is public and the video explains the answers.
+   */
+  caseVideos: Record<string, ExplanationVideo>;
 }
 
 export const useApiContent = create<ApiContentState>(() => ({
@@ -50,6 +56,7 @@ export const useApiContent = create<ApiContentState>(() => ({
   collections: {},
   readinessCases: [],
   copy: {},
+  caseVideos: {},
 }));
 
 /** True once content may be read: either the API answered, or there is no API to wait for. */
@@ -100,8 +107,8 @@ export async function loadQuestionBank(): Promise<void> {
   if (!apiMode() || useApiContent.getState().questions) return;
 
   try {
-    const { questions } = await api<{ questions: QuestionRec[] }>("/content/bank");
-    useApiContent.setState({ questions });
+    const { questions, caseVideos } = await api<{ questions: QuestionRec[]; caseVideos?: Record<string, ExplanationVideo> }>("/content/bank");
+    useApiContent.setState({ questions, caseVideos: caseVideos ?? {} });
   } catch {
     // A guest gets 401 here. Leaving `questions` undefined is the correct "not available".
   }
@@ -118,5 +125,6 @@ export function resetApiContent(): void {
     config: undefined,
     copy: {},
     questions: undefined,
+    caseVideos: {},
   });
 }

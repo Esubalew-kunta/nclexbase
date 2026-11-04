@@ -210,6 +210,8 @@ export interface CaseStudy {
   exhibit?: boolean;
   tabs: CaseTab[];
   items: Item[];
+  /** One explanation video for all of the case's questions (a question's own video wins for that question). */
+  video?: ExplanationVideo;
 }
 
 /* ------------------------------------------------------------------ */

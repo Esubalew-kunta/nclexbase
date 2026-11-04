@@ -1,5 +1,5 @@
 import type { SubjectTab } from "@/lib/subjectTabs";
-import type { CaseTab, Item, SubjectId } from "@/lib/types";
+import type { CaseTab, ExplanationVideo, Item, SubjectId } from "@/lib/types";
 
 /*
  * Admin content model. Every collection here is a draft of a future database table:
@@ -82,6 +82,8 @@ export interface CaseContent {
   tabs: CaseTab[];
   /** Question ids (records in the questions collection), in exam order. */
   itemIds: string[];
+  /** One explanation video for all of the case's questions. */
+  video?: ExplanationVideo;
 }
 
 export interface CaseRec {

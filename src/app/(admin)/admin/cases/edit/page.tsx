@@ -10,8 +10,8 @@ import type { CaseContent, CaseRec, QuestionRec, Status } from "@/lib/admin/type
 import type { CaseTab, ItemType, TabContent } from "@/lib/types";
 import { getAll, useAll, useSubjects } from "@/lib/content";
 import { caseHref } from "@/lib/routes";
-import { AdminPage, Badge, Btn, confirmDialog, Dialog, EmptyState, Field, IconBtn, Input, Panel, Segmented, Select, StatusBadge, stripHtml, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
-import { HistoryButton, StatusPicker, SubjectSelect } from "@/components/admin/parts";
+import { AdminPage, Badge, Btn, confirmDialog, Dialog, EmptyState, Field, IconBtn, Input, Panel, Segmented, Select, StatusBadge, stripHtml, Switch, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
+import { HistoryButton, StatusPicker, SubjectSelect, VideoDrop } from "@/components/admin/parts";
 import { JsonEditor, pretty, tryParse } from "@/components/admin/json";
 import { CasePreview, saveCaseRows, useCaseContext } from "@/components/admin/caseJson";
 import { caseToJson, normalizeCase } from "@/lib/admin/caseImport";
@@ -188,6 +188,15 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
                   <Field label="Intro" hint="The sentence above the tabs, e.g. “The nurse is caring for a 68-year-old client…”.">
                     <TextArea value={content.intro} onChange={(e) => setContent({ intro: e.target.value })} rows={2} className="min-h-0" />
                   </Field>
+                </Panel>
+
+                <Panel
+                  title="Case video"
+                  description="Optional. One video that explains all of this case's questions. Students see it above the written explanation after they submit each question. A question with a video of its own shows that one instead."
+                  actions={content.video && <Switch checked={content.video.visible} onChange={(v) => setContent({ video: { ...content.video!, visible: v } })} label="Show to students" />}
+                >
+                  <VideoDrop value={content.video} onChange={(video) => setContent({ video })} />
+                  {content.video && !content.video.visible && <p className="mt-2 text-xs text-muted">Hidden: students don&apos;t see this video until you switch it back on and save.</p>}
                 </Panel>
 
                 <Panel

@@ -42,7 +42,7 @@ export function previewForQuestion(q: Item, opts: { note?: string } = {}): Previ
 /** What to preview for a case study: all its items, in order. */
 export function previewForCase(rec: CaseRec, questions: QuestionRec[], opts: { note?: string } = {}): PreviewSource | null {
   if (!rec.content) return null;
-  const study: CaseStudy = { id: rec.id, title: rec.title, subject: rec.subject, intro: rec.content.intro, exhibit: rec.content.exhibit, tabs: rec.content.tabs, items: questions };
+  const study: CaseStudy = { id: rec.id, title: rec.title, subject: rec.subject, intro: rec.content.intro, exhibit: rec.content.exhibit, tabs: rec.content.tabs, items: questions, ...(rec.content.video ? { video: rec.content.video } : {}) };
   return { items: questions, study, start: 0, note: opts.note };
 }
 

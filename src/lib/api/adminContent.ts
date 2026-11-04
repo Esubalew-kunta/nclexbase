@@ -32,8 +32,14 @@ export interface SyncNotice {
   text: string;
 }
 
-/** How many saves are on their way, for the indicator in the admin header. */
-export const useAdminSync = create<{ busy: number }>(() => ({ busy: 0 }));
+/**
+ * `busy`: how many saves are on their way, for the indicator in the admin header.
+ * `phase`: "idle" until an admin signs in, "starting" while the admin's copy of the questions and
+ * cases is read from the server, "ready" after. The admin screens wait while it is starting, because
+ * an editor takes its starting copy of a record when it opens, and a copy taken before the case
+ * videos arrived would later save the case without its video.
+ */
+export const useAdminSync = create<{ busy: number; phase: "idle" | "starting" | "ready" }>(() => ({ busy: 0, phase: "idle" }));
 
 const SET_ASIDE_KEY = "nclexbase-admin-set-aside";
 const RETRY_429_MS = 10_000;
@@ -87,11 +93,24 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export function startAdminContentSync(): void {
   if (!apiMode() || unsubscribe || starting) return;
+  useAdminSync.setState({ phase: "starting" });
   starting = (async () => {
     // The base the screens read must be there before an edit can replace a record in it.
-    await loadQuestionBank();
+    // A busy minute can answer 429; the bank is worth a few patient tries before giving up.
+    for (let attempt = 0; attempt < 4 && !useApiContent.getState().questions; attempt++) {
+      if (attempt) await sleep(RETRY_429_MS);
+      await loadQuestionBank();
+    }
     if (!useApiContent.getState().questions) {
       say({ tone: "error", text: "The question bank could not be loaded, so edits to questions and cases cannot be saved to the server right now. Reload the page." });
+      useAdminSync.setState({ phase: "ready" });
+      return;
+    }
+    // The public catalogue has no case videos, so the admin reads the full case records. Saving a case
+    // from a copy that lacked its video would clear the video on the server, so without them nothing is saved.
+    if (!(await loadAdminCases())) {
+      say({ tone: "error", text: "The case studies could not be loaded in full, so edits to questions and cases cannot be saved to the server right now. Reload the page." });
+      useAdminSync.setState({ phase: "ready" });
       return;
     }
     setAside();
@@ -118,12 +137,14 @@ export function startAdminContentSync(): void {
     };
     // Anything saved between the page loading and now has not been sent yet.
     schedule();
+    useAdminSync.setState({ phase: "ready" });
   })().finally(() => {
     starting = null;
   });
 }
 
 export function stopAdminContentSync(): void {
+  useAdminSync.setState({ phase: "idle" });
   unsubscribe?.();
   unsubscribe = null;
   if (timer) clearTimeout(timer);
@@ -347,7 +368,34 @@ function setBase(col: Col, list: Rec[]) {
   else useApiContent.setState((s) => ({ collections: { ...s.collections, cases: list as CaseRec[] } }));
 }
 
+/** Every case study with its video, as the admin API serves it. False when they could not be read. */
+async function loadAdminCases(): Promise<boolean> {
+  try {
+    const all: CaseRec[] = [];
+    for (let page = 1; ; page++) {
+      const res = await withRetry(() => api<{ data: CaseRec[]; meta: { lastPage: number } }>(`/admin/content/cases?per_page=200&page=${page}`));
+      all.push(...res.data);
+      if (page >= res.meta.lastPage) break;
+    }
+    setBase("cases", all);
+    useApiContent.setState({ caseVideos: Object.fromEntries(all.filter((c) => c.content?.video).map((c) => [c.id, c.content!.video!])) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function replaceInBase(col: Col, id: string, saved: Rec) {
+  if (col === "cases") {
+    // Keep the video map the student view reads in step with what was just saved.
+    const video = (saved as CaseRec).content?.video;
+    useApiContent.setState((s) => {
+      const next = { ...s.caseVideos };
+      if (video) next[id] = video;
+      else delete next[id];
+      return { caseVideos: next };
+    });
+  }
   const list = baseList(col);
   setBase(col, list.some((r) => r.id === id) ? list.map((r) => (r.id === id ? saved : r)) : [...list, saved]);
 }

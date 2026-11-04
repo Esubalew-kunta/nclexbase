@@ -9,7 +9,7 @@ import { getStats } from "@/lib/stats";
 import { CoachPhoto } from "@/components/ui/CoachPhoto";
 import { subjectHref } from "@/lib/routes";
 import { caseForItem, itemById } from "@/lib/bank";
-import { avgPoints, chanceOfPassing, formatDuration, scoreItem, scoreSession } from "@/lib/scoring";
+import { avgPoints, chanceOfPassing, formatDuration, scoreItem, scoreSession, SHOW_QUESTION_AVERAGES } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import { formatFull } from "@/lib/schedule";
 import { BRAND } from "@/lib/brand";
@@ -37,7 +37,7 @@ function Report() {
 }
 
 /** 270° ring like the live canvas gauge: pale track, teal value arc, average tick. */
-function RingGauge({ value, avg }: { value: number; avg: number }) {
+function RingGauge({ value, avg }: { value: number; avg: number | null }) {
   const r = 112;
   const cx = 133;
   const cy = 128;
@@ -50,7 +50,7 @@ function RingGauge({ value, avg }: { value: number; avg: number }) {
     return `M ${x1} ${y1} A ${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${x2} ${y2}`;
   };
   const v = Math.max(0, Math.min(100, value));
-  const t = start + (sweep * avg) / 100;
+  const t = start + (sweep * (avg ?? 0)) / 100;
   const [a1, b1] = polar(t, r - 14);
   const [a2, b2] = polar(t, r + 14);
   return (
@@ -63,7 +63,7 @@ function RingGauge({ value, avg }: { value: number; avg: number }) {
       </defs>
       <path d={arc(start, start + sweep)} stroke={BRAND.primaryLight} strokeWidth="22" fill="none" strokeLinecap="round" />
       {v > 0 && <path d={arc(start, start + (sweep * v) / 100)} stroke="url(#ring)" strokeWidth="22" fill="none" strokeLinecap="round" />}
-      <line x1={a1} y1={b1} x2={a2} y2={b2} stroke={BRAND.gold} strokeWidth="3" />
+      {avg !== null && <line x1={a1} y1={b1} x2={a2} y2={b2} stroke={BRAND.gold} strokeWidth="3" />}
     </svg>
   );
 }
@@ -182,7 +182,8 @@ function ScoreReport({ session }: { session: TestSession }) {
   const avgPerQ = stats.avgTime / Math.max(1, session.entries.length);
   const [open, setOpen] = useState<Set<string>>(() => new Set(stats.subjects.map((s) => s.id)));
   const [openCases, setOpenCases] = useState<Set<string>>(() => new Set(stats.caseIds));
-  const good = sc.percent >= avgPct;
+  // Without the question averages, the coach line follows the student's own chance of passing.
+  const good = SHOW_QUESTION_AVERAGES ? sc.percent >= avgPct : ['High', 'Very High'].includes(chanceOfPassing(sc.percent));
   const copy = useCopy();
   const message = good ? copy("review.coachGood") : copy("review.coachBad");
   const review = (index = 0) => {
@@ -229,11 +230,11 @@ function ScoreReport({ session }: { session: TestSession }) {
           <div className="flex flex-col gap-8 lg:flex-row">
             <div className="flex flex-1 items-center justify-center py-6">
               <div className="relative">
-                <RingGauge value={sc.percent} avg={avgPct} />
+                <RingGauge value={sc.percent} avg={SHOW_QUESTION_AVERAGES ? avgPct : null} />
                 <div className="absolute top-1/2 left-1/2 w-[140px] -translate-x-1/2 -translate-y-[42%] text-center">
                   <p className="text-lg leading-[18px] font-bold text-primary">Your Score</p>
                   <div className="my-2 text-[64px] leading-[64px] font-bold tracking-[-1px] text-primary">{sc.percent}%</div>
-                  <p className="text-lg leading-[18px] text-muted">Average: {avgPct} %</p>
+                  {SHOW_QUESTION_AVERAGES && <p className="text-lg leading-[18px] text-muted">Average: {avgPct} %</p>}
                 </div>
               </div>
             </div>
@@ -244,18 +245,26 @@ function ScoreReport({ session }: { session: TestSession }) {
                     <tr className="border-b border-line bg-background text-base leading-4 font-semibold">
                       <td className="w-1/2 px-6" />
                       <td className="p-4">You</td>
-                      <td className="p-4 text-muted">Average</td>
+                      {SHOW_QUESTION_AVERAGES && <td className="p-4 text-muted">Average</td>}
                     </tr>
-                    {[
-                      ["Score", `${sc.percent}%`, `${avgPct}%`],
-                      ["Correct / Total Pts", `${sc.earned} / ${sc.max}`, `${round1(stats.avgEarned)} / ${sc.max}`],
-                      ["Time Per Question", formatDuration(perQ), formatDuration(avgPerQ)],
-                      ["Total Time", formatDuration(sc.time), formatDuration(stats.avgTime)],
-                    ].map(([k, you, avg], i, a) => (
+                    {(SHOW_QUESTION_AVERAGES
+                      ? [
+                          ["Score", `${sc.percent}%`, `${avgPct}%`],
+                          ["Correct / Total Pts", `${sc.earned} / ${sc.max}`, `${round1(stats.avgEarned)} / ${sc.max}`],
+                          ["Time Per Question", formatDuration(perQ), formatDuration(avgPerQ)],
+                          ["Total Time", formatDuration(sc.time), formatDuration(stats.avgTime)],
+                        ]
+                      : [
+                          ["Score", `${sc.percent}%`, ""],
+                          ["Correct / Total Pts", `${sc.earned} / ${sc.max}`, ""],
+                          ["Time Per Question", formatDuration(perQ), ""],
+                          ["Total Time", formatDuration(sc.time), ""],
+                        ]
+                    ).map(([k, you, avg], i, a) => (
                       <tr key={k} className={clsx("bg-white text-base leading-4", i < a.length - 1 && "border-b border-line")}>
                         <td className="h-12 px-6">{k}</td>
                         <td className="p-4">{you}</td>
-                        <td className="p-4 text-muted">{avg}</td>
+                        {SHOW_QUESTION_AVERAGES && <td className="p-4 text-muted">{avg}</td>}
                       </tr>
                     ))}
                   </tbody>
@@ -298,7 +307,7 @@ function ScoreReport({ session }: { session: TestSession }) {
                   <SortArrows />
                 </span>
               </td>
-              <td className="p-4">Avg. Score</td>
+              {SHOW_QUESTION_AVERAGES && <td className="p-4">Avg. Score</td>}
               <td className="w-14 p-4" />
             </tr>
             {stats.subjects.map((s) => {
@@ -330,16 +339,16 @@ function ScoreReport({ session }: { session: TestSession }) {
                       <div className="flex items-center gap-2">
                         <SubjectIcon id={s.id} size={20} />
                         <p className="text-base leading-4 group-hover:text-primary">{subjectName(s.id)}</p>
-                        {pct < s.avg && <WarningInline />}
+                        {SHOW_QUESTION_AVERAGES && pct < s.avg && <WarningInline />}
                       </div>
                     </td>
                     <td className="p-4 text-base leading-4">
                       {round1(s.earned)} / {s.max}
                     </td>
                     <td className="p-4">
-                      <ScoreCell pct={pct} avg={s.avg} />
+                      <ScoreCell pct={pct} avg={SHOW_QUESTION_AVERAGES ? s.avg : null} />
                     </td>
-                    <td className="p-4 text-base leading-4 text-muted">{s.avg}%</td>
+                    {SHOW_QUESTION_AVERAGES && <td className="p-4 text-base leading-4 text-muted">{s.avg}%</td>}
                     <td className="p-4 text-right">
                       <Link
                         href={subjectHref(s.id)}
@@ -363,9 +372,9 @@ function ScoreReport({ session }: { session: TestSession }) {
                             {round1(sys.earned)} / {sys.max}
                           </td>
                           <td className="p-4">
-                            <ScoreCell pct={sp} avg={sys.avg} />
+                            <ScoreCell pct={sp} avg={SHOW_QUESTION_AVERAGES ? sys.avg : null} />
                           </td>
-                          <td className="p-4 text-base leading-4 text-muted">{sys.avg}%</td>
+                          {SHOW_QUESTION_AVERAGES && <td className="p-4 text-base leading-4 text-muted">{sys.avg}%</td>}
                           <td />
                         </tr>
                       );

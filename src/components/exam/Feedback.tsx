@@ -7,17 +7,19 @@ import { ArrowRight, ArrowUp, CircleAlert, CircleCheck, CirclePlay, CircleX, Clo
 import { subjectName, systemLabel, useConfig } from "@/lib/content";
 import { subjectHref } from "@/lib/routes";
 import { useStore } from "@/lib/store";
-import { avgPoints, formatClock, scoreItem, scoringRule } from "@/lib/scoring";
+import { avgPoints, formatClock, scoreItem, scoringRule, SHOW_QUESTION_AVERAGES } from "@/lib/scoring";
 import type { Answer, ExplanationVideo, Item } from "@/lib/types";
 import { Html } from "./items/shared";
 import { VideoPlayer } from "./VideoPlayer";
 
-export function Feedback({ item, answer, seconds, plan: planOverride }: { item: Item; answer: Answer | undefined; seconds: number; plan?: "free" | "premium" }) {
+export function Feedback({ item, answer, seconds, plan: planOverride, caseVideo }: { item: Item; answer: Answer | undefined; seconds: number; plan?: "free" | "premium"; caseVideo?: ExplanationVideo }) {
   const ownPlan = useStore((s) => s.user.plan);
   // The admin preview draws the cards as a paying student sees them.
   const plan = planOverride ?? ownPlan;
   const askAi = useConfig().exam.askAi;
   const { earned, max } = scoreItem(item, answer);
+  // A question with a video of its own shows that one; otherwise the case's single video explains all of its questions.
+  const video = item.video?.visible ? item.video : caseVideo?.visible ? caseVideo : undefined;
   const status = earned === max ? "Correct" : earned === 0 ? "Incorrect" : "Partial Credit";
 
   return (
@@ -34,7 +36,7 @@ export function Feedback({ item, answer, seconds, plan: planOverride }: { item: 
         </h3>
         <div className="divide-y divide-line rounded-lg border border-line text-[15px]">
           <StatRow icon={CircleCheck} label="Credit" value={`${earned} / ${max}`} />
-          <StatRow icon={Scale} label="Avg Points Scored" value={`${avgPoints(item)} / ${max}`} />
+          {SHOW_QUESTION_AVERAGES && <StatRow icon={Scale} label="Avg Points Scored" value={`${avgPoints(item)} / ${max}`} />}
           <StatRow icon={SquarePen} label="Scoring Rule" value={`${scoringRule(item)} Scoring`} />
           <StatRow icon={Timer} label="Time Spent" value={formatClock(seconds).replace(/^00:/, "")} />
         </div>
@@ -42,7 +44,7 @@ export function Feedback({ item, answer, seconds, plan: planOverride }: { item: 
 
       <section>
         <SectionHead icon={FileText}>Explanation</SectionHead>
-        <VideoExplanation video={item.video} title={item.topic} />
+        <VideoExplanation video={video} title={item.topic} />
         <div className="prose-exam rounded-lg border border-line bg-primary-light px-5 pt-5 pb-1 leading-7">
           <Html html={item.rationale.explanation} />
           {item.rationale.incorrect && (

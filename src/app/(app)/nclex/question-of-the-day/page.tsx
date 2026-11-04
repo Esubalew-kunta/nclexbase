@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { LETTERS, questionForDate, todayISO } from "@/lib/daily";
 import { useConfig, useCopy } from "@/lib/content";
+import { SHOW_QUESTION_AVERAGES } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
 import { Button, Card, PageHeader } from "@/components/ui/primitives";
 
@@ -82,7 +83,7 @@ function QotdBody() {
         ) : (
           <div className="mt-6 rounded-lg border border-line bg-primary-light p-5 text-exam-ink">
             <h4 className={clsx("mb-2 text-xl font-bold", choice === item.answer ? "text-success" : "text-error")}>{choice === item.answer ? "Correct!" : "Not quite"}</h4>
-            <p className="mb-1 text-sm text-muted">{item.avgPercent}% of students answered this correctly.</p>
+            {SHOW_QUESTION_AVERAGES && <p className="mb-1 text-sm text-muted">{item.avgPercent}% of students answered this correctly.</p>}
             <div className="text-base leading-6 text-exam-ink [&_p]:mb-3" dangerouslySetInnerHTML={{ __html: item.rationale.explanation }} />
             {item.rationale.takeaway.length > 0 && (
               <>
