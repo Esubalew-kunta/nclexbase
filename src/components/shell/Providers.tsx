@@ -7,6 +7,7 @@ import { useAdminStore } from "@/lib/admin/store";
 import { apiMode } from "@/lib/api/client";
 import { loadApiContent, loadQuestionBank, useApiContent } from "@/lib/api/content";
 import { restoreSession } from "@/lib/api/auth";
+import { startAdminContentSync } from "@/lib/api/adminContent";
 
 /** Rehydrates persisted state after mount so static HTML and first client render match. */
 export function Providers({ children }: { children: ReactNode }) {
@@ -62,6 +63,19 @@ export function Providers({ children }: { children: ReactNode }) {
 
   const status = useApiContent((s) => s.status);
   const error = useApiContent((s) => s.error);
+  const bank = useApiContent((s) => s.bank);
+
+  // An admin whose editor gave up at the first failure gets it back once the questions are here.
+  const retryBank = async () => {
+    await loadQuestionBank();
+    if (useAdminStore.getState().session) startAdminContentSync();
+  };
+
+  // The server said the session is gone: find out for sure (this also signs the screens out),
+  // so the visitor is asked to sign in instead of looking at lists with no questions in them.
+  useEffect(() => {
+    if (apiMode() && bank === "signedOut" && signedIn) void restoreSession();
+  }, [bank, signedIn]);
 
   // Rendering the app with no content would look like an empty product rather than an outage.
   if (status === "error") {
@@ -82,5 +96,17 @@ export function Providers({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {apiMode() && signedIn && bank === "error" && (
+        <div role="alert" className="fixed inset-x-0 top-0 z-[100] flex flex-wrap items-center justify-center gap-3 bg-ink px-4 py-2 text-sm text-white">
+          <span>The questions could not be loaded.</span>
+          <button type="button" onClick={() => void retryBank()} className="rounded-[64px] bg-white px-3 py-1 text-sm font-semibold text-ink hover:bg-white/90">
+            Try again
+          </button>
+        </div>
+      )}
+      {children}
+    </>
+  );
 }

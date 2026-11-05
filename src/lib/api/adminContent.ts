@@ -96,13 +96,10 @@ export function startAdminContentSync(): void {
   useAdminSync.setState({ phase: "starting" });
   starting = (async () => {
     // The base the screens read must be there before an edit can replace a record in it.
-    // A busy minute can answer 429; the bank is worth a few patient tries before giving up.
-    for (let attempt = 0; attempt < 4 && !useApiContent.getState().questions; attempt++) {
-      if (attempt) await sleep(RETRY_429_MS);
-      await loadQuestionBank();
-    }
+    // loadQuestionBank already retries a busy minute (429) or a dropped connection.
+    await loadQuestionBank();
     if (!useApiContent.getState().questions) {
-      say({ tone: "error", text: "The question bank could not be loaded, so edits to questions and cases cannot be saved to the server right now. Reload the page." });
+      say({ tone: "error", text: "The question bank could not be loaded, so edits to questions and cases cannot be saved to the server right now. Use Try again at the top of the page." });
       useAdminSync.setState({ phase: "ready" });
       return;
     }

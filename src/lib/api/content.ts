@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { api, apiMode } from "@/lib/api/client";
+import { api, ApiError, apiMode } from "@/lib/api/client";
 import type { CollectionName, Collections, QuestionRec } from "@/lib/admin/types";
 import type { SiteConfig } from "@/lib/admin/config";
 import type { ExplanationVideo } from "@/lib/types";
@@ -45,6 +45,12 @@ interface ApiContentState {
   copy: Record<string, string>;
   questions?: QuestionRec[];
   /**
+   * Where the question bank stands. `signedOut` is the server saying the session is gone (a 401),
+   * `error` is any other failure after the retries; both leave `questions` undefined, and the
+   * screens must say so rather than show an empty list.
+   */
+  bank: "idle" | "loading" | "ready" | "error" | "signedOut";
+  /**
    * Each case study's own video, by case id. It arrives with the question bank, not the catalogue:
    * the catalogue is public and the video explains the answers.
    */
@@ -57,6 +63,7 @@ export const useApiContent = create<ApiContentState>(() => ({
   readinessCases: [],
   copy: {},
   caseVideos: {},
+  bank: "idle",
 }));
 
 /** True once content may be read: either the API answered, or there is no API to wait for. */
@@ -102,23 +109,55 @@ export function loadApiContent(opts: { withBank?: boolean } = {}): Promise<void>
   return inFlight;
 }
 
-/** The paid content, fetched separately because it needs a session. */
-export async function loadQuestionBank(): Promise<void> {
-  if (!apiMode() || useApiContent.getState().questions) return;
+/** Waits before each retry of the bank: a cold server or a busy minute (429) usually clears in seconds. */
+const BANK_RETRY_MS = [1000, 3000, 8000];
 
-  try {
-    const { questions, caseVideos } = await api<{ questions: QuestionRec[]; caseVideos?: Record<string, ExplanationVideo> }>("/content/bank");
-    useApiContent.setState({ questions, caseVideos: caseVideos ?? {} });
-  } catch {
-    // A guest gets 401 here. Leaving `questions` undefined is the correct "not available".
-  }
+let bankInFlight: Promise<void> | null = null;
+
+/**
+ * The paid content, fetched separately because it needs a session.
+ *
+ * One call at a time: the shell, the login and the admin sync all ask for it. A 401 means the
+ * session is gone, which is not worth retrying; a 429, a 5xx or a dropped connection is. Nothing
+ * here is silent: the outcome is in `bank`, and the screens read it.
+ */
+export function loadQuestionBank(): Promise<void> {
+  if (!apiMode() || useApiContent.getState().questions) return Promise.resolve();
+  if (bankInFlight) return bankInFlight;
+
+  bankInFlight = (async () => {
+    useApiContent.setState({ bank: "loading" });
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const { questions, caseVideos } = await api<{ questions: QuestionRec[]; caseVideos?: Record<string, ExplanationVideo> }>("/content/bank");
+        useApiContent.setState({ questions, caseVideos: caseVideos ?? {}, bank: "ready" });
+        return;
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          useApiContent.setState({ bank: "signedOut" });
+          return;
+        }
+        if (attempt >= BANK_RETRY_MS.length) {
+          useApiContent.setState({ bank: "error" });
+          return;
+        }
+        await new Promise((r) => setTimeout(r, BANK_RETRY_MS[attempt]));
+      }
+    }
+  })().finally(() => {
+    bankInFlight = null;
+  });
+
+  return bankInFlight;
 }
 
 /** Test hook: forget everything so a reload re-fetches. */
 export function resetApiContent(): void {
   inFlight = null;
+  bankInFlight = null;
   useApiContent.setState({
     status: apiMode() ? "loading" : "off",
+    bank: "idle",
     error: undefined,
     collections: {},
     readinessCases: [],

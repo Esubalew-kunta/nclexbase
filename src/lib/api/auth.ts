@@ -126,7 +126,7 @@ export async function logout(): Promise<void> {
   }
   useStore.setState((s) => ({ user: { ...s.user, signedIn: false } }));
   useAdminStore.setState({ session: null });
-  useApiContent.setState({ questions: undefined });
+  useApiContent.setState({ questions: undefined, bank: "idle" });
 }
 
 /**
@@ -140,8 +140,10 @@ export async function restoreSession(): Promise<ApiUser | null> {
     const { data } = await api<{ data: ApiUser }>("/auth/me");
     adoptUser(data);
     return data;
-  } catch {
+  } catch (err) {
     useStore.setState((s) => ({ user: { ...s.user, signedIn: false } }));
+    // The cookie says there is no session: the admin screens must not keep their own copy of one.
+    if (err instanceof ApiError && err.status === 401) useAdminStore.setState({ session: null });
     return null;
   }
 }

@@ -9,6 +9,8 @@ import { newId } from "@/lib/admin/store";
 import type { CaseContent, CaseRec, QuestionRec, Status } from "@/lib/admin/types";
 import type { CaseTab, ItemType, TabContent } from "@/lib/types";
 import { getAll, useAll, useSubjects } from "@/lib/content";
+import { apiMode } from "@/lib/api/client";
+import { useApiContent } from "@/lib/api/content";
 import { caseHref } from "@/lib/routes";
 import { AdminPage, Badge, Btn, confirmDialog, Dialog, EmptyState, Field, IconBtn, Input, Panel, Segmented, Select, StatusBadge, stripHtml, Switch, TextArea, toast, sameRecord, useUnsavedGuard } from "@/components/admin/ui";
 import { HistoryButton, StatusPicker, SubjectSelect, VideoDrop } from "@/components/admin/parts";
@@ -49,6 +51,8 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
   /** Form fields or the whole case (details, tabs and questions) as JSON. */
   const [mode, setMode] = useState<"form" | "json">("form");
   const questions = useAll("questions");
+  // The questions arrive after the case does (and need the session); an empty list is not "none yet" until they have.
+  const bankPending = useApiContent((s) => apiMode() && s.bank !== "ready");
   const subjects = useSubjects(true);
   const dirty = !sameRecord(f, rec);
   useUnsavedGuard(dirty);
@@ -237,7 +241,7 @@ function CaseEditor({ rec }: { rec: CaseRec }) {
                   }
                 >
                   {items.length === 0 ? (
-                    <p className="text-sm text-muted">No questions yet.</p>
+                    <p className="text-sm text-muted">{bankPending ? "The questions are not loaded yet. If this stays, reload the page or sign in again." : "No questions yet."}</p>
                   ) : (
                     <ol className="divide-y divide-line rounded-md border border-line">
                       {items.map((q, i) => {
