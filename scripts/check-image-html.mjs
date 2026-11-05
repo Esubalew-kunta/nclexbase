@@ -76,6 +76,35 @@ test("a picture is added at the end in its own paragraph, with the address escap
   assert.equal(appendImage("", "/a.png", 'q"'), '<p><img src="/a.png" alt="q&quot;"></p>');
 });
 
+const HOVER = (words, src = "/assets/cases/h.png") => `<span class="hover-link" tabindex="0">${words}<span class="hover-card"><img src="${src}" alt="${words}" loading="lazy"></span></span>`;
+
+test("a picture inside a hover link is found, and says which words show it", () => {
+  const html = `<p>Sign of ${HOVER("compartment syndrome")}, then ${A}.</p>`;
+  const found = findImages(html);
+  assert.equal(found.length, 2);
+  assert.equal(found[0].hoverText, "compartment syndrome");
+  assert.equal(found[1].hoverText, undefined);
+});
+
+test("replacing a hover picture changes the file and leaves the link around it", () => {
+  const html = `<p>See ${HOVER("edema")} now</p>`;
+  const [img] = findImages(html);
+  const out = replaceImage(html, 0, withAttr(img.tag, "src", "/assets/media/new.png"));
+  assert.equal(out, html.replace("/assets/cases/h.png", "/assets/media/new.png"));
+  assert.equal(findImages(out)[0].hoverText, "edema");
+});
+
+test("deleting a hover picture leaves its words as plain text, and only those", () => {
+  const html = `<p>See ${HOVER("deep vein thrombosis")} and ${HOVER("edema", "/assets/cases/e.png")} now</p>`;
+  assert.equal(removeImage(html, 0), `<p>See deep vein thrombosis and ${HOVER("edema", "/assets/cases/e.png")} now</p>`);
+  assert.equal(removeImage(html, 1), `<p>See ${HOVER("deep vein thrombosis")} and edema now</p>`);
+});
+
+test("words with bold inside keep it when the hover picture is deleted", () => {
+  const html = `<p>A <span class="hover-link" tabindex="0"><b>big</b> clot<span class="hover-card"><img src="/a.png" alt="" loading="lazy"></span></span>.</p>`;
+  assert.equal(removeImage(html, 0), "<p>A <b>big</b> clot.</p>");
+});
+
 let failed = 0;
 for (const [name, fn] of cases) {
   try {

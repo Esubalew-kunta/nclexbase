@@ -124,7 +124,7 @@ function Row({ img, where, html, onHtml }: { img: HtmlImage; where: Where; html:
   };
 
   const remove = async () => {
-    if (!(await confirmDialog({ title: "Delete this picture?", body: "It is taken out of this question. Other questions that show the same picture keep it. Save the question to apply.", confirm: "Delete picture", danger: true }))) return;
+    if (!(await confirmDialog({ title: "Delete this picture?", body: img.hoverText ? `The words “${img.hoverText}” stay in the explanation as plain text. Other questions that show the same picture keep it. Save the question to apply.` : "It is taken out of this question. Other questions that show the same picture keep it. Save the question to apply.", confirm: "Delete picture", danger: true }))) return;
     onHtml(removeImage(html, img.index));
   };
 
@@ -136,7 +136,7 @@ function Row({ img, where, html, onHtml }: { img: HtmlImage; where: Where; html:
       </a>
       <div className="min-w-0 flex-1 basis-56">
         <p className="truncate text-xs text-muted" title={img.src}>
-          {label}
+          {img.hoverText ? `Shown when hovering “${img.hoverText}” · ${label}` : label}
         </p>
         <Input value={img.alt} onChange={(e) => onHtml(replaceImage(html, img.index, withAttr(img.tag, "alt", e.target.value)))} placeholder="Describe the picture (read aloud to screen reader users)" aria-label="Picture description" className="mt-1 h-8" />
         {error && (

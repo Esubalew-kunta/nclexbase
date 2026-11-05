@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { BRAND } from "@/lib/brand";
+import { HoverHtml } from "@/components/exam/HoverLinks";
 import type { Answer, Item } from "@/lib/types";
 
 export interface ItemProps<T extends Item> {
@@ -65,6 +66,8 @@ export function NativeInput({
 }
 
 export function Html({ html, className }: { html: string; className?: string }) {
+  // Words that show a picture or play a sound on hover need the card; nothing else pays for it.
+  if (html.includes('class="hover-link"')) return <HoverHtml html={html} className={className} />;
   // Content comes from local, trusted mock data files.
   return <span className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }

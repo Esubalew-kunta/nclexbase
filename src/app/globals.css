@@ -92,6 +92,13 @@
   .prose-exam td, .prose-exam th { vertical-align: top; padding: 0.25rem 0.75rem 0.25rem 0; text-align: left; }
 }
 
+/* Words in an explanation that show a picture or play a sound on hover (see components/exam/HoverLinks.tsx).
+   The media sits inside the link, hidden; the card is drawn by the component. A link whose picture was
+   deleted in the admin goes back to looking like plain text. */
+.hover-link { color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.hover-link:not(:has(.hover-card img, .hover-card audio)) { color: inherit; text-decoration: none; cursor: inherit; }
+.hover-link .hover-card { display: none; }
+
 /* FAQ answers are HTML from the live site. */
 .faq-answer p { margin: 0 0 18px; }
 .faq-answer p:last-child { margin-bottom: 0; }
