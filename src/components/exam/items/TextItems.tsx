@@ -41,9 +41,11 @@ export function HighlightTextItemView({ item, answer, onChange, locked, reveal }
         "hl rounded-sm px-0.5",
         !locked && "cursor-pointer hover:bg-[#fff6b8]",
         on && !reveal && "bg-[#ffe95c]",
-        reveal && on && isAnswer && "bg-success/20",
-        reveal && on && !isAnswer && "bg-error/15 line-through decoration-error",
-        reveal && !on && isAnswer && "outline-2 outline-success outline-dashed",
+        // After Submit every phrase says whether it was right, picked or not (the key, as on the
+        // source); the student's own picks keep a stronger tint so they can see what they chose.
+        reveal && (isAnswer ? "hl-key hl-right" : "hl-key hl-wrong"),
+        reveal && on && isAnswer && "bg-success/25",
+        reveal && on && !isAnswer && "bg-error/20",
       );
     });
   });
