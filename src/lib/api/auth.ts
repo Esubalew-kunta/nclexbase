@@ -23,6 +23,7 @@ export interface ApiUser {
   role: "student" | "admin";
   status: string;
   plan: "free" | "premium";
+  emailVerified: boolean;
   accessUntil: string | null;
   createdAt: string | null;
 }
@@ -53,7 +54,7 @@ export function adoptUser(user: ApiUser): void {
   // Read before it is overwritten below: it says whose progress this browser was holding.
   const previousEmail = useStore.getState().user.email;
   useStore.setState((s) => ({
-    user: { ...s.user, name: user.name, email: user.email, plan: user.plan, signedIn: true },
+    user: { ...s.user, name: user.name, email: user.email, plan: user.plan, emailVerified: user.emailVerified, signedIn: true },
   }));
 
   useAdminStore.setState({
@@ -101,12 +102,32 @@ export async function register(input: { name?: string; email: string; password: 
  * Change the signed-in person's password. The server asks for the current one even though
  * they are signed in, and signs every other device out; this session stays.
  */
-export async function changePassword(current: string, next: string, repeat: string): Promise<AuthResult> {
+export function changePassword(current: string, next: string, repeat: string): Promise<AuthResult> {
+  return outcome(() => api("/auth/password", { method: "PUT", body: { current_password: current, password: next, password_confirmation: repeat } }));
+}
+
+/**
+ * Ask for a reset link. The server answers the same whether or not the address has an account, so
+ * `ok` means "the request was accepted", never "this person exists".
+ */
+export function requestPasswordReset(email: string): Promise<AuthResult> {
+  return outcome(() => api("/auth/forgot", { body: { email: email.trim() } }));
+}
+
+/** Send the verification email again, for the signed-in person who never got or lost the first. */
+export function resendVerification(): Promise<AuthResult> {
+  return outcome(() => api("/auth/email/resend", { body: {} }));
+}
+
+/** Use the link from the email: the token and address it carried, and the new password. */
+export function resetPassword(input: { token: string; email: string; password: string }): Promise<AuthResult> {
+  return outcome(() => api("/auth/reset", { body: input }));
+}
+
+/** A call that answers yes or no, with the server's words when it says no. */
+async function outcome(run: () => Promise<unknown>): Promise<AuthResult> {
   try {
-    await api("/auth/password", {
-      method: "PUT",
-      body: { current_password: current, password: next, password_confirmation: repeat },
-    });
+    await run();
     return { ok: true };
   } catch (err) {
     if (err instanceof ApiError) return { ok: false, message: err.message, errors: err.errors };
@@ -149,10 +170,9 @@ export async function restoreSession(): Promise<ApiUser | null> {
 }
 
 async function attempt(run: () => Promise<ApiUser>): Promise<AuthResult> {
-  try {
-    return { ok: true, user: await run() };
-  } catch (err) {
-    if (err instanceof ApiError) return { ok: false, message: err.message, errors: err.errors };
-    return { ok: false, message: "We could not reach the server. Check your connection and try again." };
-  }
+  let user: ApiUser | undefined;
+  const result = await outcome(async () => {
+    user = await run();
+  });
+  return result.ok ? { ...result, user } : result;
 }

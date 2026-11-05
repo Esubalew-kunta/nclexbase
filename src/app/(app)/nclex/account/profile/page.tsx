@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { AccountShell, Field, PanelCard } from "@/components/home/AccountShell";
 import { apiMode } from "@/lib/api/client";
-import { logout } from "@/lib/api/auth";
+import { logout, resendVerification } from "@/lib/api/auth";
 import { useChangePassword } from "@/lib/api/useChangePassword";
 import { signOutStudent } from "@/lib/demo";
 
@@ -32,7 +32,8 @@ export default function ProfilePage() {
           onChange={(e) => setName(e.target.value)}
           onBlur={() => useStore.setState((s) => ({ user: { ...s.user, name } }))}
         />
-        <Field label="Contact Email" right="Verified" type="email" defaultValue={user.email} />
+        <Field label="Contact Email" right={user.emailVerified === false ? "Not verified" : "Verified"} type="email" defaultValue={user.email} />
+        {user.emailVerified === false && <ResendVerification />}
         <Field label="Username" readOnly value={user.email} />
         <button
           type="button"
@@ -58,6 +59,33 @@ export default function ProfilePage() {
         </button>
       </div>
     </AccountShell>
+  );
+}
+
+/**
+ * A way to get the verification email again, under the email field. It sits outside the field's
+ * label on purpose: a button inside a label becomes the thing the label names.
+ */
+function ResendVerification() {
+  const [state, setState] = useState<{ busy?: boolean; text?: string }>({});
+
+  const send = async () => {
+    setState({ busy: true });
+    const res = await resendVerification();
+    setState({ text: res.ok ? "Sent. Check your inbox and spam folder." : (res.message ?? "We could not send it.") });
+  };
+
+  return (
+    <div className="-mt-3 mb-4 text-sm">
+      <button type="button" onClick={() => void send()} disabled={state.busy} className="cursor-pointer font-semibold text-primary hover:text-primary-hover disabled:opacity-50">
+        {state.busy ? "Sending…" : "Send verification email"}
+      </button>
+      {state.text && (
+        <p role="status" className="mt-1 text-muted">
+          {state.text}
+        </p>
+      )}
+    </div>
   );
 }
 

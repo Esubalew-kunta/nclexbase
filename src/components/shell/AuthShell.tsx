@@ -7,7 +7,7 @@ import { LogoStacked } from "@/components/ui/Logo";
 import { apiMode } from "@/lib/api/client";
 
 /**
- * Shared frame for /auth/signin, /auth/join and /auth/forgot:
+ * Shared frame for /auth/signin, /auth/join, /auth/forgot and /auth/reset:
  * off-white page, stacked NCLEXBase logo, 528px white card with a teal top edge.
  *
  * `aside` sits beside the card on a wide screen and falls in under it on a narrow one, where
@@ -122,6 +122,16 @@ export function AuthError({ message }: { message?: string }) {
   if (!message) return null;
   return (
     <p role="alert" className="mb-4 rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+      {message}
+    </p>
+  );
+}
+
+/** Good news for the top of a form ("Email verified"). Renders nothing when there is nothing to say. */
+export function AuthNotice({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p role="status" className="mb-4 rounded-lg border border-success/30 bg-success/5 px-4 py-3 text-sm text-success">
       {message}
     </p>
   );

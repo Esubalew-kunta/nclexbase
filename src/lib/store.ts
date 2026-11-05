@@ -40,7 +40,7 @@ export interface SchedulePrefs {
 interface PersistedState {
   /** `signedIn`: prototype session (see lib/demo.ts); student pages send signed-out visitors to /auth/signin. */
   /** `referredBy`: referral code from the join link (?ref=), used for the friend's discount. */
-  user: { name: string; email: string; plan: "free" | "premium"; signedIn?: boolean; referredBy?: string };
+  user: { name: string; email: string; plan: "free" | "premium"; signedIn?: boolean; referredBy?: string; /** From the server; undefined in the prototype, which has no mail. */ emailVerified?: boolean };
   sessions: TestSession[];
   /**
    * Every answer ever submitted. Outlives its session, so a Reset clears the run and leaves

@@ -7,7 +7,15 @@ import { apiMode } from "@/lib/api/client";
 import { login } from "@/lib/api/auth";
 import { useAdminStore } from "@/lib/admin/store";
 import { DEMO_ADMIN, DEMO_STUDENT, demoAuthEnabled, signInAdmin, signInStudent, type DemoAccount } from "@/lib/demo";
-import { AuthError, AuthField, AuthLink, AuthShell, AuthSubmit, PasswordField } from "@/components/shell/AuthShell";
+import { AuthError, AuthField, AuthNotice, AuthLink, AuthShell, AuthSubmit, PasswordField } from "@/components/shell/AuthShell";
+
+/** What the link in the verification email did, as the API reports it in `?verified=`. */
+const VERIFIED: Record<string, { text: string; good: boolean }> = {
+  "1": { text: "Your email is verified. You can log in.", good: true },
+  already: { text: "That email was already verified. You can log in.", good: true },
+  expired: { text: "That verification link has expired. Log in, then ask for a new one on your Account page.", good: false },
+  invalid: { text: "That verification link is not valid. Log in, then ask for a new one on your Account page.", good: false },
+};
 
 /**
  * Sign in. One form for everybody: with an API configured the credentials are checked by the
@@ -17,7 +25,9 @@ import { AuthError, AuthField, AuthLink, AuthShell, AuthSubmit, PasswordField } 
  */
 function SignIn() {
   const router = useRouter();
-  const next = useSearchParams().get("next");
+  const params = useSearchParams();
+  const next = params.get("next");
+  const verified = VERIFIED[params.get("verified") ?? ""];
   const live = apiMode();
   const [email, setEmail] = useState(live ? "" : DEMO_STUDENT.email);
   const [password, setPassword] = useState(live ? "" : DEMO_STUDENT.password);
@@ -112,7 +122,8 @@ function SignIn() {
         ) : undefined
       }
     >
-      <AuthError message={error} />
+      <AuthNotice message={verified?.good ? verified.text : undefined} />
+      <AuthError message={error ?? (verified?.good === false ? verified.text : undefined)} />
       <AuthField label="Email / username" right="(Case Sensitive)" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
       <PasswordField
         label="Password"
